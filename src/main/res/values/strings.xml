@@ -1,0 +1,43 @@
+<resources>
+    <string name="app_name">CashVan</string>
+    <!-- Sign In Screen Strings -->
+    <string name="signin_title">Start your journey from here !</string>
+    <string name="signin_subtitle">Sign in and get started now</string>
+    <string name="signin_delivery_rep_number">Delivery Representative Number</string>
+    <string name="signin_password">Password</string>
+    <string name="signin_button">Sign In</string>
+    <string name="signin_delivery_rep_placeholder">12341</string>
+    <string name="signin_password_placeholder">••••••••••</string>
+
+    <!-- Accessibility Strings -->
+    <string name="show_password">Show password</string>
+    <string name="hide_password">Hide password</string>
+
+    <!-- Header Strings -->
+    <string name="header_start">Elano</string>
+    <string name="notifications">Notifications</string>
+
+    <!-- Home Screen Strings -->
+    <string name="home_main_message">Ready to receive your first order today?</string>
+    <string name="home_subtitle_message">Let us know when you\'re available and we\'ll start sending orders</string>
+    <string name="create_first_order">Create Your First Order</string>
+
+    <!-- Bottom Navigation Strings -->
+    <string name="nav_home">Orders</string>
+    <string name="nav_inventory">Inventory</string>
+    <string name="nav_account">Account</string>
+
+    <string name="default_user_name">Mohammed Ahmed</string>
+    <string name="sales_representative_title">Sales Representative</string>
+    <string name="today">Today</string>
+
+
+    <string name="inventory_title">Inventory</string>
+    <string name="current_inventory">Current Inventory</string>
+    <string name="cartoon_label">Cartoon</string>
+    <string name="product_code">Product Code</string>
+    <string name="total_label">Total</string>
+    <string name="available_label">Available</string>
+    <string name="sold_label">Sold</string>
+    <string name="add_item">Add Item</string>
+</resources>
