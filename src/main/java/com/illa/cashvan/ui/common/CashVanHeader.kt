@@ -24,12 +24,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
 import com.illa.cashvan.core.getCurrentDate
+import com.illa.cashvan.core.user.presentation.viewmodel.UserViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun CashVanHeader(
     modifier: Modifier = Modifier,
-    userName: String,
+    userViewModel: UserViewModel = koinViewModel()
 ) {
+    val uiState by userViewModel.uiState.collectAsState()
+    val userName = uiState.userName
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -146,5 +150,5 @@ fun CashVanHeader(
 @Preview(showBackground = true, locale = "ar")
 @Composable
 fun CashVanHeaderPreview() {
-    CashVanHeader(userName = "عبدالرحمن عزب")
+    CashVanHeader()
 }

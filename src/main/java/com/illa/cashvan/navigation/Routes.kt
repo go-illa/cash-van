@@ -1,5 +1,6 @@
 package com.illa.cashvan.navigation
 
+data object SplashKey
 data object SignInKey
 data object HomeKey
 data object ProfileKey

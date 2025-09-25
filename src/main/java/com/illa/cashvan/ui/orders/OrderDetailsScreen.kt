@@ -59,7 +59,7 @@ fun OrderDetailsScreen(
             .fillMaxSize()
             .background(Color(0xFFF5F5F5))
     ) {
-        CashVanHeader(userName = "عبدالرحمن عزب")
+        CashVanHeader()
         Column(
             modifier = Modifier
                 .weight(1f)

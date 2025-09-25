@@ -1,6 +1,5 @@
 package com.illa.cashvan.ui.orders
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,18 +12,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -41,8 +37,7 @@ import com.illa.cashvan.ui.orders.ui_components.OrderItem
 @Composable
 fun OrderScreen(
     onAddOrderClick: () -> Unit = {},
-    onOrderClick: (OrderItem) -> Unit = {},
-    userName: String = "مندوب المبيعات"
+    onOrderClick: (OrderItem) -> Unit = {}
 ) {
     val sampleOrders = MockData.orderItems
 
@@ -52,9 +47,7 @@ fun OrderScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            CashVanHeader(
-                userName = userName
-            )
+            CashVanHeader()
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -108,15 +101,11 @@ fun OrderScreen(
 @Preview(showBackground = true, locale = "ar")
 @Composable
 fun OrderScreenPreview() {
-    OrderScreen(
-        userName = "عبدالرحمن عزب"
-    )
+    OrderScreen()
 }
 
 @Preview(showBackground = true, locale = "ar")
 @Composable
 fun OrderScreenEmptyPreview() {
-    OrderScreen(
-        userName = "عبدالرحمن عزب"
-    )
+    OrderScreen()
 }

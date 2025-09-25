@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1027380722836",
+    "project_id": "cashvan-app",
+    "storage_bucket": "cashvan-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1027380722836:android:bdf498ed12d4cd6e3ec881",
+        "android_client_info": {
+          "package_name": "com.illa.cashvan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJkal-UMTq0hxaYP3Jm47Hqtm7AQ_fv6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1027380722836:android:bdf498ed12d4cd6e3ec882",
+        "android_client_info": {
+          "package_name": "com.illa.cashvan.staging"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDJkal-UMTq0hxaYP3Jm47Hqtm7AQ_fv6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

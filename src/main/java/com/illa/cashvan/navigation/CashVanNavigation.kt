@@ -12,12 +12,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation3.*
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
+import com.illa.cashvan.core.auth.presentation.viewmodel.AuthenticationViewModel
 import com.illa.cashvan.ui.home.HomeScreen
 import com.illa.cashvan.ui.inventory.InventoryScreen
 import com.illa.cashvan.ui.orders.CreateOrderScreen
 import com.illa.cashvan.ui.orders.OrderDetailsScreen
 import com.illa.cashvan.ui.profile.PersonalProfileScreen
 import com.illa.cashvan.ui.signin.SignInScreen
+import com.illa.cashvan.ui.splash.SplashScreen
+import org.koin.androidx.compose.koinViewModel
 
 data class BottomNavItem(
     val key: Any,
@@ -27,9 +30,24 @@ data class BottomNavItem(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CashVanNavigation() {
-    val backStack = remember { mutableStateListOf<Any>(SignInKey) }
-    val currentKey = backStack.lastOrNull() ?: SignInKey
+fun CashVanNavigation(
+    authenticationViewModel: AuthenticationViewModel = koinViewModel()
+) {
+    val authState by authenticationViewModel.authState.collectAsState()
+    val backStack = remember { mutableStateListOf<Any>(SplashKey) }
+    val currentKey = backStack.lastOrNull() ?: SplashKey
+
+    // Handle authentication state changes
+    LaunchedEffect(authState) {
+        if (!authState.isLoading) {
+            backStack.clear()
+            if (authState.isLoggedIn) {
+                backStack.add(HomeKey)
+            } else {
+                backStack.add(SignInKey)
+            }
+        }
+    }
 
     val bottomNavItems = listOf(
         BottomNavItem(HomeKey, Icons.Default.Home, "الاوردرات"),
@@ -38,10 +56,11 @@ fun CashVanNavigation() {
     )
 
     val isSignInKey = currentKey == SignInKey
+    val isSplashKey = currentKey == SplashKey
 
     Scaffold(
         bottomBar = {
-            if (!isSignInKey) {
+            if (!isSignInKey && !isSplashKey) {
                 NavigationBar {
                     bottomNavItems.forEach { item ->
                         NavigationBarItem(
@@ -72,11 +91,13 @@ fun CashVanNavigation() {
             modifier = Modifier.padding(paddingValues),
             entryProvider = { key ->
                 when (key) {
+                    SplashKey -> NavEntry(key) {
+                        SplashScreen()
+                    }
                     SignInKey -> NavEntry(key) {
                         SignInScreen(
-                            onSignInClick = { _, _ ->
-                                backStack.clear()
-                                backStack.add(HomeKey)
+                            onSignInSuccess = {
+                                authenticationViewModel.refreshAuthState()
                             }
                         )
                     }
@@ -92,13 +113,8 @@ fun CashVanNavigation() {
                     }
                     ProfileKey -> NavEntry(key) {
                         PersonalProfileScreen(
-                            representativeName = "John Martinez",
-                            representativePhone = "+1 (555) 123-4567",
-                            supervisorName = "Sarah Johnson",
-                            supervisorPhone = "+1 (555) 987-6543",
                             onLogout = {
-                                backStack.clear()
-                                backStack.add(SignInKey)
+                                authenticationViewModel.logout()
                             }
                         )
                     }

@@ -55,9 +55,7 @@ fun InventoryScreen(
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
-            CashVanHeader(
-                userName = "azab"
-            )
+            CashVanHeader()
 
             Spacer(modifier = Modifier.height(16.dp))
 
