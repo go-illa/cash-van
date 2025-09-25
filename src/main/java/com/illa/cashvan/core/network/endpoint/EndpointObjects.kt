@@ -11,7 +11,7 @@ object ApiEndpoints {
             path = "auth/login",
             method = HttpMethod.Post,
             parameterEncoding = ParameterEncoding.BODY,
-            version = 1
+            version = 2
         )
 
         fun refreshToken() = RequestConfiguration(
@@ -23,8 +23,8 @@ object ApiEndpoints {
 
         fun logout() = RequestConfiguration(
             path = "auth/logout",
-            method = HttpMethod.Post,
-            version = 1
+            method = HttpMethod.Delete,
+            version = 2
         )
     }
 
@@ -33,7 +33,11 @@ object ApiEndpoints {
         fun getProfile(salesAgentId: String) = RequestConfiguration(
             path = "sales_agents/$salesAgentId",
             method = HttpMethod.Get,
-            version = 1
+            parameters = Parameters.build {
+                append("include", "supervisor")
+            },
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
         )
     }
 

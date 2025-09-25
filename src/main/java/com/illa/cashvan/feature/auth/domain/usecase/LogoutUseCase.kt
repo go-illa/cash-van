@@ -1,4 +1,4 @@
-package com.illa.cashvan.core.app_preferences.domain.use_case.auth
+package com.illa.cashvan.feature.auth.domain.usecase
 
 import com.illa.cashvan.core.app_preferences.domain.use_case.app_cache.ClearAppDataUseCase
 import com.illa.cashvan.core.network.model.ApiResult

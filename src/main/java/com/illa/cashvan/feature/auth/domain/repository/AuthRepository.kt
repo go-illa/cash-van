@@ -5,4 +5,5 @@ import com.illa.cashvan.feature.auth.data.model.LoginResponse
 
 interface AuthRepository {
     suspend fun login(phoneNumber: String, password: String): ApiResult<LoginResponse>
+    suspend fun logout(): ApiResult<Unit>
 }

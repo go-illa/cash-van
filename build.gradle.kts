@@ -31,12 +31,12 @@ android {
             dimension = "environment"
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
-            buildConfigField("String", "BASE_URL", "\"https://dsbs-api-staging.illa.blue/api/v2/\"")
+            buildConfigField("String", "BASE_URL", "\"https://dsbs-api-staging.illa.blue/api/\"")
         }
 
         create("production") {
             dimension = "environment"
-            buildConfigField("String", "BASE_URL", "\"https://dsbs-api.illa.blue/api/v2/\"")
+            buildConfigField("String", "BASE_URL", "\"https://dsbs-api.illa.blue/api/\"")
         }
     }
 

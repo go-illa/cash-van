@@ -43,7 +43,7 @@ val preferencesModule = module {
 
     // Auth Use Cases
     single { IsUserLoggedInUseCase(get(), get()) }
-    single { LogoutUseCase(get()) }
+    single { LogoutUseCase(get(),get()) }
 
     // ViewModels
     viewModel { UserViewModel(get()) }
