@@ -113,6 +113,12 @@ dependencies {
     // Security for encryption
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
+    // Location Services
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    // Permissions handling
+    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+
     // Firebase BOM
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
 
