@@ -85,8 +85,10 @@ fun provideHttpClient(
             handleResponseExceptionWithRequest { exception, request ->
                 throw when (exception) {
                     is ClientRequestException -> {
-                        if (exception.response.status == HttpStatusCode.Unauthorized) {
-                            runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
+                        when (exception.response.status) {
+                            HttpStatusCode.Unauthorized, HttpStatusCode.Forbidden -> {
+                                runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
+                            }
                         }
                         AppClientRequestException(
                             exception.response,

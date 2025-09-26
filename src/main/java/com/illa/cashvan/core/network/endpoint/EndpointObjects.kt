@@ -24,6 +24,7 @@ object ApiEndpoints {
         fun logout() = RequestConfiguration(
             path = "auth/logout",
             method = HttpMethod.Delete,
+            parameterEncoding = ParameterEncoding.BODY,
             version = 2
         )
     }
@@ -37,6 +38,26 @@ object ApiEndpoints {
                 append("include", "supervisor")
             },
             parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+    }
+
+    // Plans endpoints
+    object Plans {
+        fun getPlans() = RequestConfiguration(
+            path = "plans",
+            method = HttpMethod.Get,
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+    }
+
+    // Merchant endpoints
+    object Merchant {
+        fun createMerchant() = RequestConfiguration(
+            path = "merchants",
+            method = HttpMethod.Post,
+            parameterEncoding = ParameterEncoding.BODY,
             version = 2
         )
     }

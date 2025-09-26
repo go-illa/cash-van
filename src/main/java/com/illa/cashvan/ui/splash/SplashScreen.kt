@@ -27,41 +27,57 @@ fun SplashScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0D3773)),
-        contentAlignment = Alignment.Center
+            .background(Color(0xFF0D3773))
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(Color(0x1AFAFAFA)),
-                contentAlignment = Alignment.Center
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Outlined.LocalShipping,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(48.dp)
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Color(0x1AFAFAFA)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.LocalShipping,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 48.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
+                Text(
+                    text = "CashVan",
+                    fontSize = 28.sp,
+                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    textAlign = TextAlign.Center
                 )
             }
-
-            Text(
-                text = "CashVan",
-                fontSize = 28.sp,
-                fontFamily = FontFamily(Font(R.font.zain_regular)),
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-                textAlign = TextAlign.Center
-            )
-
-            CircularProgressIndicator(
-                color = Color.White,
-                modifier = Modifier.size(32.dp)
-            )
         }
     }
 }

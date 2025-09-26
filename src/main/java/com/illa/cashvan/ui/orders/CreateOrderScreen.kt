@@ -246,15 +246,7 @@ fun CreateOrderScreen(
         ) {
             AddMerchantBottomSheet(
                 onDismiss = { showAddMerchantBottomSheet = false },
-                onAddMerchant = { name, phone ->
-                    // Create new merchant and add to list
-                    val newMerchant = Merchant(
-                        id = "${sampleMerchants.size + 1}",
-                        name = name,
-                        phoneNumber = phone,
-                        address = ""
-                    )
-                    selectedMerchant = newMerchant
+                onMerchantCreated = {
                     showAddMerchantBottomSheet = false
                 }
             )

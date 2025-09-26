@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,6 +29,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,16 +46,38 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
+import com.illa.cashvan.core.location.LocationViewModel
+import com.illa.cashvan.feature.merchant.presentation.viewmodel.MerchantViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddMerchantBottomSheet(
     onDismiss: () -> Unit = {},
-    onAddMerchant: (String, String) -> Unit = { _, _ -> }
+    onMerchantCreated: () -> Unit = {},
+    merchantViewModel: MerchantViewModel = koinViewModel(),
+    locationViewModel: LocationViewModel = koinViewModel()
 ) {
     var merchantName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
-    val coordinates = "31.131341.141.451515"
+
+    val merchantUiState by merchantViewModel.uiState.collectAsState()
+    val locationUiState by locationViewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        locationViewModel.getCurrentLocation()
+    }
+
+    LaunchedEffect(merchantUiState.isSuccess) {
+        if (merchantUiState.isSuccess) {
+            onMerchantCreated()
+            merchantViewModel.resetState()
+        }
+    }
+
+    val displayCoordinates = locationUiState.locationData?.let {
+        "${it.latitude}, ${it.longitude}"
+    } ?: "Fetching location..."
 
     Surface(
         modifier = Modifier
@@ -160,7 +185,7 @@ fun AddMerchantBottomSheet(
                     )
 
                     Text(
-                        text = coordinates,
+                        text = displayCoordinates,
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
@@ -169,8 +194,29 @@ fun AddMerchantBottomSheet(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            merchantUiState.error?.let { error ->
+                Text(
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+
             Button(
-                onClick = { onAddMerchant(merchantName, phoneNumber) },
+                onClick = {
+                    locationUiState.locationData?.let { location ->
+                        merchantViewModel.createMerchant(
+                            name = merchantName,
+                            phoneNumber = phoneNumber,
+                            latitude = location.latitude.toString(),
+                            longitude = location.longitude.toString(),
+                            planId = merchantViewModel.getFirstPlanId() ?: "2"
+                        )
+                    }
+                },
+                enabled = merchantName.isNotBlank() && phoneNumber.isNotBlank() &&
+                         locationUiState.locationData != null && !merchantUiState.isLoading,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -179,13 +225,20 @@ fun AddMerchantBottomSheet(
                 ),
                 shape = RoundedCornerShape(8.dp)
             ) {
-                Text(
-                    text = "اضافة التاجر",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily(Font(R.font.zain_bold)),
-                    color = Color.White
-                )
+                if (merchantUiState.isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Text(
+                        text = "اضافة التاجر",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily(Font(R.font.zain_bold)),
+                        color = Color.White
+                    )
+                }
             }
         }
     }

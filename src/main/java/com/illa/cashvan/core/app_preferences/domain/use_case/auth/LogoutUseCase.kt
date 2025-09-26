@@ -9,12 +9,14 @@ class LogoutUseCase(
     private val clearAppDataUseCase: ClearAppDataUseCase
 ) {
     suspend operator fun invoke(): ApiResult<Unit> {
-        // Call the logout API first
         val apiResult = authRepository.logout()
 
-        // Regardless of API result, clear local data
         clearAppDataUseCase()
 
-        return apiResult
+        return when (apiResult) {
+            is ApiResult.Success -> ApiResult.Success(Unit)
+            is ApiResult.Error -> apiResult
+            is ApiResult.Loading -> ApiResult.Loading
+        }
     }
 }

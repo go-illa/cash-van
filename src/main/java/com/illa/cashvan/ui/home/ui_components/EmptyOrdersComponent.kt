@@ -1,5 +1,6 @@
 package com.illa.cashvan.ui.home.ui_components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -45,8 +46,8 @@ fun EmptyOrdersComponent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_vehicle),
+            Image(
+                painter = painterResource(R.drawable.ic_empty_orders_van),
                 contentDescription = "",
             )
             Spacer(modifier = Modifier.height(32.dp))
