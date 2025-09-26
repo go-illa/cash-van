@@ -50,6 +50,13 @@ object ApiEndpoints {
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2
         )
+
+        fun getPlanProducts(planId: String) = RequestConfiguration(
+            path = "plans/$planId/plan_products",
+            method = HttpMethod.Get,
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
     }
 
     // Merchant endpoints

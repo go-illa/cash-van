@@ -3,6 +3,7 @@ package com.illa.cashvan.feature.plans.data.repository
 import com.illa.cashvan.core.network.endpoint.ApiEndpoints
 import com.illa.cashvan.core.network.endpoint.request
 import com.illa.cashvan.core.network.model.ApiResult
+import com.illa.cashvan.feature.plans.data.model.PlanProductsResponse
 import com.illa.cashvan.feature.plans.data.model.PlansResponse
 import com.illa.cashvan.feature.plans.domain.repository.PlansRepository
 import io.ktor.client.HttpClient
@@ -19,6 +20,15 @@ class PlansRepositoryImpl(
             ApiResult.Success(response)
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to fetch plans")
+        }
+    }
+
+    override suspend fun getPlanProducts(planId: String): ApiResult<PlanProductsResponse> {
+        return try {
+            val response = client.request(ApiEndpoints.Plans.getPlanProducts(planId)).body<PlanProductsResponse>()
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Failed to fetch plan products")
         }
     }
 }
