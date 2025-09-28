@@ -2,6 +2,8 @@ package com.illa.cashvan.feature.plans.data.model
 
 import kotlinx.serialization.Serializable
 
+
+
 @Serializable
 data class PlanProduct(
     val id: Int,
@@ -11,5 +13,6 @@ data class PlanProduct(
     val sold_quantity: Int,
     val product_price: String,
     val plan_id: Int,
-    val product_id: Int
+    val product_id: Int,
+    val product: Product
 )

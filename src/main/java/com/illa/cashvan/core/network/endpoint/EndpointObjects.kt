@@ -54,6 +54,9 @@ object ApiEndpoints {
         fun getPlanProducts(planId: String) = RequestConfiguration(
             path = "plans/$planId/plan_products",
             method = HttpMethod.Get,
+            parameters = Parameters.build {
+                append("include", "product")
+            },
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2
         )

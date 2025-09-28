@@ -44,8 +44,8 @@ fun PlanProduct.toInventoryItem(): InventoryItem {
 
     return InventoryItem(
         id = id.toString(),
-        name = "Product $product_id",
-        code = "P$product_id",
+        name = product.name,
+        code = product.sku_code,
         totalQuantity = assigned_quantity,
         availableQuantity = availableQuantity,
         soldQuantity = sold_quantity,
