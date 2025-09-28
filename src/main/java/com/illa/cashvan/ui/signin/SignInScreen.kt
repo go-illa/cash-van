@@ -63,6 +63,10 @@ fun SignInScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     val snackBarHostState = remember { SnackbarHostState() }
 
+    LaunchedEffect(Unit) {
+        viewModel.resetLoginState()
+    }
+
     LaunchedEffect(uiState.isLoginSuccessful) {
         if (uiState.isLoginSuccessful) {
             onSignInSuccess()

@@ -38,13 +38,11 @@ fun CashVanNavigation(
     val currentKey = backStack.lastOrNull() ?: SplashKey
     var splashComplete by remember { mutableStateOf(false) }
 
-    // Start splash screen timer
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(3000) // 3 seconds
+        kotlinx.coroutines.delay(3000)
         splashComplete = true
     }
 
-    // Handle authentication state changes after splash is complete
     LaunchedEffect(authState, splashComplete) {
         if (splashComplete && !authState.isLoading) {
             backStack.clear()
