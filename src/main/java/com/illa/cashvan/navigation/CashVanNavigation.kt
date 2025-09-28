@@ -73,9 +73,6 @@ fun CashVanNavigation(
                             label = { Text(item.label) },
                             selected = currentKey == item.key,
                             onClick = {
-                                if (currentKey != HomeKey && item.key != HomeKey) {
-                                    backStack.removeLastOrNull()
-                                }
                                 if (currentKey != item.key) {
                                     backStack.add(item.key)
                                 }
