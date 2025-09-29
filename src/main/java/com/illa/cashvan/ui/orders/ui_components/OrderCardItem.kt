@@ -32,6 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
 
+data class OrderProductItem(
+    val name: String,
+    val quantity: Int
+)
+
 data class OrderItem(
     val id: String,
     val orderNumber: String,
@@ -39,7 +44,8 @@ data class OrderItem(
     val phoneNumber: String,
     val totalAmount: Double,
     val itemsCount: Int,
-    val date: String
+    val date: String,
+    val products: List<OrderProductItem> = emptyList()
 )
 
 
@@ -133,34 +139,18 @@ fun OrderCardItem(
                 }
             }
 
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                OrderItemRow(
-                    quantity = "5 كرتونة",
-                    itemName = "Coca Cola Classic 12pk"
-                )
-
-                OrderItemRow(
-                    quantity = "3 كرتونة",
-                    itemName = "Sprite 6pk Bottles"
-                )
-
-                OrderItemRow(
-                    quantity = "5 كرتونة",
-                    itemName = "Coca Cola Classic 12pk"
-                )
-
-                OrderItemRow(
-                    quantity = "5 كرتونة",
-                    itemName = "Coca Cola Classic 12pk"
-                )
-
-                OrderItemRow(
-                    quantity = "3 كرتونة",
-                    itemName = "Sprite 6pk Bottles"
-                )
+            if (order.products.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    order.products.forEach { product ->
+                        OrderItemRow(
+                            quantity = "${product.quantity} قطعة",
+                            itemName = product.name
+                        )
+                    }
+                }
             }
         }
     }

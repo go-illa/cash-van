@@ -74,15 +74,15 @@ object ApiEndpoints {
 
     // Orders endpoints
     object Orders {
-        fun getOrders(page: Int = 1, limit: Int = 20) = RequestConfiguration(
+        fun getOrders(createdAtDateEq: String = "2025-09-28") = RequestConfiguration(
             path = "orders",
             method = HttpMethod.Get,
             parameters = Parameters.build {
-                append("page", page.toString())
-                append("limit", limit.toString())
+                append("include", "order_plan_products,order_plan_products.product,merchant")
+                append("f[created_at_date_eq]", createdAtDateEq)
             },
             parameterEncoding = ParameterEncoding.QUERY,
-            version = 1
+            version = 2
         )
 
         fun getOrder(orderId: String) = RequestConfiguration(

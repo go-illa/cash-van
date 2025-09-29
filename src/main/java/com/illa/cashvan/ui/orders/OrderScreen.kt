@@ -14,10 +14,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,17 +35,28 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
-import com.illa.cashvan.data.MockData
+import com.illa.cashvan.feature.orders.presentation.mapper.toOrderItem
+import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
+import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.ui.orders.ui_components.OrderCardItem
 import com.illa.cashvan.ui.orders.ui_components.OrderItem
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun OrderScreen(
     onAddOrderClick: () -> Unit = {},
-    onOrderClick: (OrderItem) -> Unit = {}
+    onOrderClick: (OrderItem) -> Unit = {},
+    viewModel: OrderViewModel = koinViewModel()
 ) {
-    val sampleOrders = MockData.orderItems
+    val uiState by viewModel.uiState.collectAsState()
+    val orderItems = uiState.orders.map { it.toOrderItem() }
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            // Error will be shown in the UI
+        }
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -65,16 +82,75 @@ fun OrderScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(sampleOrders) { order ->
-                    OrderCardItem(
-                        order = order,
-                        onOrderClick = onOrderClick,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+            when {
+                uiState.isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color(0xFF0D3773)
+                        )
+                    }
+                }
+                uiState.error != null -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                text = "حدث خطأ في تحميل الطلبات",
+                                color = Color.Red,
+                                textAlign = TextAlign.Center
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            IconButton(
+                                onClick = { viewModel.refresh() }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "إعادة تحميل",
+                                    tint = Color(0xFF0D3773)
+                                )
+                            }
+                        }
+                    }
+                }
+                orderItems.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "لا توجد طلبات اليوم",
+                            fontSize = 18.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(orderItems) { order ->
+                            OrderCardItem(
+                                order = order,
+                                onOrderClick = onOrderClick,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
                 }
             }
         }

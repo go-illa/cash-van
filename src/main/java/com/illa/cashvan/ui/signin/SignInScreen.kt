@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
 import com.illa.cashvan.feature.auth.presentation.viewmodel.SignInViewModel
+import com.illa.cashvan.ui.common.ErrorSnackbar
 import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -61,7 +62,8 @@ fun SignInScreen(
     var deliveryRepNumber by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    val snackBarHostState = remember { SnackbarHostState() }
+    var showErrorSnackbar by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         viewModel.resetLoginState()
@@ -75,7 +77,8 @@ fun SignInScreen(
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let { error ->
-            snackBarHostState.showSnackbar(error)
+            errorMessage = error
+            showErrorSnackbar = true
             viewModel.clearError()
         }
     }
@@ -227,10 +230,13 @@ fun SignInScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
 
-        SnackbarHost(
-            hostState = snackBarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+        if (showErrorSnackbar) {
+            ErrorSnackbar(
+                message = errorMessage,
+                onDismiss = { showErrorSnackbar = false },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
     }
 }
 
