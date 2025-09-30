@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -55,6 +56,7 @@ fun ProductSelectionComponent(
     var selectedProduct by remember { mutableStateOf<PlanProduct?>(null) }
     var quantity by remember { mutableIntStateOf(1) }
     var quantityText by remember { mutableStateOf("1") }
+    var showQuantityError by remember { mutableStateOf(false) }
 
     Column(modifier = modifier) {
         Text(
@@ -190,6 +192,7 @@ fun ProductSelectionComponent(
                                 if (quantity > 1) {
                                     quantity--
                                     quantityText = quantity.toString()
+                                    showQuantityError = false
                                 }
                             },
                         contentAlignment = Alignment.Center
@@ -203,35 +206,58 @@ fun ProductSelectionComponent(
                         )
                     }
 
-                    OutlinedTextField(
-                        value = quantityText,
-                        onValueChange = { newText ->
-                            quantityText = newText
-                            val newQuantity = newText.toIntOrNull()
-                            if (newQuantity != null && newQuantity > 0 && newQuantity <= product.available_quantity) {
-                                quantity = newQuantity
-                            }
-                        },
-                        modifier = Modifier
-                            .width(70.dp)
-                            .height(48.dp),
-                        textStyle = androidx.compose.ui.text.TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily(Font(R.font.zain_regular)),
-                            color = Color(0xFF111827),
-                            textAlign = TextAlign.Center
-                        ),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF0D3773),
-                            unfocusedBorderColor = Color(0xFFD1D5DB),
-                            focusedTextColor = Color(0xFF111827),
-                            unfocusedTextColor = Color(0xFF111827)
-                        ),
-                        shape = RoundedCornerShape(8.dp)
-                    )
+                    Column {
+                        OutlinedTextField(
+                            value = quantityText,
+                            onValueChange = { newText ->
+                                quantityText = newText
+                                val newQuantity = newText.toIntOrNull()
+                                if (newQuantity != null && newQuantity > 0) {
+                                    if (newQuantity <= product.available_quantity) {
+                                        quantity = newQuantity
+                                        showQuantityError = false
+                                    } else {
+                                        showQuantityError = true
+                                    }
+                                } else {
+                                    showQuantityError = false
+                                }
+                            },
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(56.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color(0xFF111827),
+                                textAlign = TextAlign.Center
+                            ),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            singleLine = true,
+                            isError = showQuantityError,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = Color(0xFF0D3773),
+                                unfocusedBorderColor = Color(0xFFD1D5DB),
+                                errorBorderColor = Color(0xFFDC2626),
+                                focusedTextColor = Color(0xFF111827),
+                                unfocusedTextColor = Color(0xFF111827),
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+
+                        if (showQuantityError) {
+                            Text(
+                                text = "تم الوصول لحد الاقصي",
+                                fontSize = 12.sp,
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color(0xFFDC2626),
+                                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                            )
+                        }
+                    }
 
                     Box(
                         modifier = Modifier
@@ -242,6 +268,7 @@ fun ProductSelectionComponent(
                                 if (quantity < product.available_quantity) {
                                     quantity++
                                     quantityText = quantity.toString()
+                                    showQuantityError = false
                                 }
                             },
                         contentAlignment = Alignment.Center
@@ -266,6 +293,7 @@ fun ProductSelectionComponent(
                     selectedProduct = null
                     quantity = 1
                     quantityText = "1"
+                    showQuantityError = false
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -274,7 +302,7 @@ fun ProductSelectionComponent(
                     containerColor = Color(0xFF0D3773)
                 ),
                 shape = RoundedCornerShape(12.dp),
-                enabled = enabled && product.available_quantity > 0
+                enabled = enabled && product.available_quantity > 0 && !showQuantityError && quantity <= product.available_quantity
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,

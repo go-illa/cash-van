@@ -162,6 +162,11 @@ fun CreateOrderScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
+                val hasInvalidQuantity = uiState.selectedProducts.any { (planProductId, quantity) ->
+                    val product = uiState.products.find { it.id == planProductId }
+                    product == null || quantity > product.available_quantity
+                }
+
                 Button(
                     onClick = { viewModel.createOrder() },
                     modifier = Modifier
@@ -174,7 +179,8 @@ fun CreateOrderScreen(
                     shape = RoundedCornerShape(12.dp),
                     enabled = uiState.selectedMerchant != null &&
                               uiState.selectedProducts.isNotEmpty() &&
-                              !uiState.isLoading
+                              !uiState.isLoading &&
+                              !hasInvalidQuantity
                 ) {
                     if (uiState.isLoading) {
                         CircularProgressIndicator(
