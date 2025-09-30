@@ -134,9 +134,6 @@ fun CashVanNavigation(
                                     backStack.removeLastOrNull()
                                 }
                             },
-                            onCreateOrder = {
-                                backStack.add(OrderDetailsKey("${(1..999).random()}"))
-                            }
                         )
                     }
                     is OrderDetailsKey -> NavEntry(key) {

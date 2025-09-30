@@ -51,11 +51,19 @@ object ApiEndpoints {
             version = 2
         )
 
-        fun getPlanProducts(planId: String) = RequestConfiguration(
+        fun getOngoingPlan() = RequestConfiguration(
+            path = "plans/ongoing",
+            method = HttpMethod.Get,
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+
+        fun getPlanProducts(planId: String, query: String? = null) = RequestConfiguration(
             path = "plans/$planId/plan_products",
             method = HttpMethod.Get,
             parameters = Parameters.build {
                 append("include", "product")
+                query?.let { append("q", it) }
             },
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2
@@ -68,6 +76,16 @@ object ApiEndpoints {
             path = "merchants",
             method = HttpMethod.Post,
             parameterEncoding = ParameterEncoding.BODY,
+            version = 2
+        )
+
+        fun searchMerchants(query: String) = RequestConfiguration(
+            path = "merchants",
+            method = HttpMethod.Get,
+            parameters = Parameters.build {
+                append("q", query)
+            },
+            parameterEncoding = ParameterEncoding.QUERY,
             version = 2
         )
     }
@@ -99,20 +117,7 @@ object ApiEndpoints {
             path = "orders",
             method = HttpMethod.Post,
             parameterEncoding = ParameterEncoding.BODY,
-            version = 1
-        )
-
-        fun updateOrder(orderId: String) = RequestConfiguration(
-            path = "orders/$orderId",
-            method = HttpMethod.Put,
-            parameterEncoding = ParameterEncoding.BODY,
-            version = 1
-        )
-
-        fun deleteOrder(orderId: String) = RequestConfiguration(
-            path = "orders/$orderId",
-            method = HttpMethod.Delete,
-            version = 1
+            version = 2
         )
     }
 

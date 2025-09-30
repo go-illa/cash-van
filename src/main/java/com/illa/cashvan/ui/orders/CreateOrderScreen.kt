@@ -1,6 +1,7 @@
 package com.illa.cashvan.ui.orders
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,25 +12,32 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,30 +52,44 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
-import com.illa.cashvan.data.MockData
+import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
 import com.illa.cashvan.ui.orders.ui_components.AddMerchantBottomSheet
-import com.illa.cashvan.ui.orders.ui_components.AddProductComponent
-import com.illa.cashvan.ui.orders.ui_components.ChooseMerchantComponent
-import com.illa.cashvan.ui.orders.ui_components.Merchant
-import com.illa.cashvan.ui.orders.ui_components.OrderElement
-import com.illa.cashvan.ui.orders.ui_components.OrderElementsList
+import com.illa.cashvan.ui.orders.ui_components.ProductSelectionComponent
+import com.illa.cashvan.ui.orders.ui_components.SearchableDropdown
+import com.illa.cashvan.ui.orders.ui_components.SelectedProductsList
+import org.koin.androidx.compose.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateOrderScreen(
+    viewModel: CreateOrderViewModel = koinViewModel(),
     onBackClick: () -> Unit = {},
-    onCreateOrder: () -> Unit = {}
+    onOrderCreated: (Int) -> Unit = {}
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
-    var selectedMerchant by remember { mutableStateOf<Merchant?>(null) }
-    val orderElements = remember { mutableStateListOf<OrderElement>() }
-    var totalAmount by remember { mutableDoubleStateOf(0.0) }
-    var showAddMerchantBottomSheet by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    var showAddMerchantSheet by remember { mutableStateOf(false) }
+    val bottomSheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
 
-    val sampleMerchants = MockData.merchants
-    val sampleProducts = MockData.products
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
+
+    LaunchedEffect(uiState.orderCreated) {
+        uiState.orderCreated?.let {
+            onOrderCreated(it.id)
+            viewModel.resetOrderCreated()
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {
@@ -107,6 +129,11 @@ fun CreateOrderScreen(
                     .background(Color.White)
                     .padding(16.dp)
             ) {
+                val totalAmount = uiState.selectedProducts.entries.sumOf { (planProductId, quantity) ->
+                    val product = uiState.products.find { it.id == planProductId }
+                    product?.product_price?.toDoubleOrNull()?.times(quantity) ?: 0.0
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -132,7 +159,7 @@ fun CreateOrderScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Button(
-                    onClick = onCreateOrder,
+                    onClick = { viewModel.createOrder() },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -141,115 +168,192 @@ fun CreateOrderScreen(
                         disabledContainerColor = Color(0xFFE5E7EB)
                     ),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = selectedMerchant != null && orderElements.isNotEmpty()
+                    enabled = uiState.selectedMerchant != null &&
+                              uiState.selectedProducts.isNotEmpty() &&
+                              !uiState.isLoading
                 ) {
-                    Text(
-                        text = "تأكيد الطلب",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily(Font(R.font.zain_regular)),
-                        color = Color.White
-                    )
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = "تأكيد الطلب",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }
     ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFFF8F9FA))
-                .padding(paddingValues)
-                .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            ChooseMerchantComponent(
-                selectedMerchant = selectedMerchant,
-                merchants = sampleMerchants,
-                onMerchantSelected = { merchant ->
-                    selectedMerchant = merchant
-                },
-                onAddMerchantClick = {
-                    showAddMerchantBottomSheet = true
-                }
-            )
-
-            AddProductComponent(
-                products = sampleProducts,
-                onAddToOrder = { product, quantity ->
-                    val existingElementIndex = orderElements.indexOfFirst { it.id == product.id }
-                    if (existingElementIndex != -1) {
-                        val existingElement = orderElements[existingElementIndex]
-                        orderElements[existingElementIndex] = existingElement.copy(
-                            quantity = existingElement.quantity + quantity,
-                            price = (existingElement.quantity + quantity) * product.price
+        if (uiState.currentPlan == null && uiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = Color(0xFF0D3773)
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF8F9FA))
+                    .padding(paddingValues)
+                    .verticalScroll(scrollState)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Plan Info
+                uiState.currentPlan?.let { plan ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.White, RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "الخطة الحالية",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color(0xFF6B7280)
                         )
-                    } else {
-                        orderElements.add(
-                            OrderElement(
-                                id = product.id,
-                                name = product.name,
-                                description = "${product.price} جنيه/${product.unit}",
-                                price = product.price * quantity,
-                                quantity = quantity,
-                                unit = "جنيه"
-                            )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = plan.formatted_code,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color(0xFF0D3773)
                         )
                     }
-                    totalAmount = orderElements.sumOf { it.price }
                 }
-            )
 
-            if (orderElements.isNotEmpty()) {
-                OrderElementsList(
-                    orderElements = orderElements,
-                    onQuantityIncrease = { element ->
-                        val index = orderElements.indexOfFirst { it.id == element.id }
-                        if (index != -1) {
-                            val unitPrice = element.price / element.quantity
-                            orderElements[index] = element.copy(
-                                quantity = element.quantity + 1,
-                                price = (element.quantity + 1) * unitPrice
+                // Merchant Selection
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "اختيار التاجر",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color.Black
+                        )
+
+                        Button(
+                            onClick = { showAddMerchantSheet = true },
+                            modifier = Modifier
+                                .height(40.dp)
+                                .border(width = 2.dp, color = Color(0xFF0D3773), RoundedCornerShape(size = 20.dp)),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.Black
                             )
-                            totalAmount = orderElements.sumOf { it.price }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Add",
+                                modifier = Modifier.size(16.dp),
+                                tint = Color(0xFF0D3773),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "أضافة تاجر",
+                                fontSize = 14.sp,
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color(0xFF0D3773)
+                            )
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    SearchableDropdown(
+                        label = "",
+                        placeholder = "ابحث بالاسم",
+                        searchQuery = uiState.merchantSearchQuery,
+                        onSearchQueryChange = { viewModel.searchMerchants(it) },
+                        items = uiState.merchants,
+                        selectedItem = uiState.selectedMerchant,
+                        onItemSelected = { viewModel.selectMerchant(it) },
+                        itemText = { it.name },
+                        isLoading = uiState.isSearchingMerchants,
+                        enabled = !uiState.isLoading,
+                        onExpanded = {
+                            if (uiState.merchantSearchQuery.isEmpty()) {
+                                viewModel.searchMerchants("")
+                            }
+                        },
+                        onClear = { viewModel.clearMerchant() }
+                    )
+                }
+
+                // Product Selection
+                ProductSelectionComponent(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                        .padding(16.dp),
+                    searchQuery = uiState.productSearchQuery,
+                    onSearchQueryChange = { viewModel.searchProducts(it) },
+                    products = uiState.products,
+                    onProductSelected = { product, quantity ->
+                        viewModel.addProductToOrder(product.id, quantity)
                     },
-                    onQuantityDecrease = { element ->
-                        val index = orderElements.indexOfFirst { it.id == element.id }
-                        if (index != -1 && element.quantity > 1) {
-                            val unitPrice = element.price / element.quantity
-                            orderElements[index] = element.copy(
-                                quantity = element.quantity - 1,
-                                price = (element.quantity - 1) * unitPrice
-                            )
-                            totalAmount = orderElements.sumOf { it.price }
-                        } else if (index != -1 && element.quantity == 1) {
-                            orderElements.removeAt(index)
-                            totalAmount = orderElements.sumOf { it.price }
+                    isLoading = uiState.isSearchingProducts,
+                    enabled = !uiState.isLoading
+                )
+
+                // Selected Products List
+                if (uiState.selectedProducts.isNotEmpty()) {
+                    SelectedProductsList(
+                        modifier = Modifier.fillMaxWidth(),
+                        selectedProducts = uiState.selectedProducts,
+                        products = uiState.products,
+                        onQuantityChange = { planProductId, quantity ->
+                            viewModel.updateProductQuantity(planProductId, quantity)
+                        },
+                        onRemoveProduct = { planProductId ->
+                            viewModel.removeProduct(planProductId)
                         }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(100.dp))
+            }
+        }
+
+        // Add Merchant Bottom Sheet
+        if (showAddMerchantSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showAddMerchantSheet = false },
+                sheetState = bottomSheetState
+            ) {
+                AddMerchantBottomSheet(
+                    onDismiss = { showAddMerchantSheet = false },
+                    onMerchantCreated = {
+                        showAddMerchantSheet = false
+                        viewModel.searchMerchants("")
                     }
                 )
             }
-
-            Spacer(modifier = Modifier.height(100.dp))
-        }
-    }
-
-    // Bottom Sheet Overlay
-    if (showAddMerchantBottomSheet) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0x80000000))
-                .padding(bottom = 0.dp),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            AddMerchantBottomSheet(
-                onDismiss = { showAddMerchantBottomSheet = false },
-                onMerchantCreated = {
-                    showAddMerchantBottomSheet = false
-                }
-            )
         }
     }
 }
