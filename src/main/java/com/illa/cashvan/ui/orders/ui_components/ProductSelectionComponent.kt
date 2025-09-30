@@ -14,11 +14,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -32,6 +35,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
@@ -49,6 +54,7 @@ fun ProductSelectionComponent(
 ) {
     var selectedProduct by remember { mutableStateOf<PlanProduct?>(null) }
     var quantity by remember { mutableIntStateOf(1) }
+    var quantityText by remember { mutableStateOf("1") }
 
     Column(modifier = modifier) {
         Text(
@@ -130,6 +136,29 @@ fun ProductSelectionComponent(
                         color = if (product.available_quantity > 0) Color(0xFF059669) else Color(0xFFDC2626)
                     )
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "الإجمالي:",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color(0xFF6B7280)
+                    )
+                    val totalPrice = (product.product_price.toDoubleOrNull() ?: 0.0) * quantity
+                    Text(
+                        text = "${String.format("%.2f", totalPrice)} جنيه",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color(0xFF0D3773)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -158,7 +187,10 @@ fun ProductSelectionComponent(
                             .background(Color(0xFFF3F4F6), RoundedCornerShape(8.dp))
                             .border(1.dp, Color(0xFFD1D5DB), RoundedCornerShape(8.dp))
                             .clickable(enabled = quantity > 1) {
-                                if (quantity > 1) quantity--
+                                if (quantity > 1) {
+                                    quantity--
+                                    quantityText = quantity.toString()
+                                }
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -171,14 +203,34 @@ fun ProductSelectionComponent(
                         )
                     }
 
-                    Text(
-                        text = quantity.toString(),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily(Font(R.font.zain_regular)),
-                        color = Color(0xFF111827),
-                        modifier = Modifier.width(40.dp),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    OutlinedTextField(
+                        value = quantityText,
+                        onValueChange = { newText ->
+                            quantityText = newText
+                            val newQuantity = newText.toIntOrNull()
+                            if (newQuantity != null && newQuantity > 0 && newQuantity <= product.available_quantity) {
+                                quantity = newQuantity
+                            }
+                        },
+                        modifier = Modifier
+                            .width(70.dp)
+                            .height(48.dp),
+                        textStyle = androidx.compose.ui.text.TextStyle(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color(0xFF111827),
+                            textAlign = TextAlign.Center
+                        ),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF0D3773),
+                            unfocusedBorderColor = Color(0xFFD1D5DB),
+                            focusedTextColor = Color(0xFF111827),
+                            unfocusedTextColor = Color(0xFF111827)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
                     )
 
                     Box(
@@ -187,7 +239,10 @@ fun ProductSelectionComponent(
                             .background(Color(0xFFF3F4F6), RoundedCornerShape(8.dp))
                             .border(1.dp, Color(0xFFD1D5DB), RoundedCornerShape(8.dp))
                             .clickable(enabled = quantity < product.available_quantity) {
-                                if (quantity < product.available_quantity) quantity++
+                                if (quantity < product.available_quantity) {
+                                    quantity++
+                                    quantityText = quantity.toString()
+                                }
                             },
                         contentAlignment = Alignment.Center
                     ) {
@@ -210,6 +265,7 @@ fun ProductSelectionComponent(
                     onProductSelected(product, quantity)
                     selectedProduct = null
                     quantity = 1
+                    quantityText = "1"
                 },
                 modifier = Modifier
                     .fillMaxWidth()
