@@ -188,9 +188,14 @@ class CreateOrderViewModel(
     }
 
     fun addProductToOrder(planProductId: Int, quantity: Int) {
-        val currentProducts = _uiState.value.selectedProducts.toMutableMap()
-        val currentQuantity = currentProducts[planProductId] ?: 0
+        val currentProducts = linkedMapOf<Int, Int>()
+        val currentQuantity = _uiState.value.selectedProducts[planProductId] ?: 0
         currentProducts[planProductId] = currentQuantity + quantity
+        _uiState.value.selectedProducts.forEach { (id, qty) ->
+            if (id != planProductId) {
+                currentProducts[id] = qty
+            }
+        }
 
         _uiState.value = _uiState.value.copy(selectedProducts = currentProducts)
     }
