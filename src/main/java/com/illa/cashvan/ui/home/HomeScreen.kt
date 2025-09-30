@@ -34,7 +34,7 @@ fun HomeScreen(
         OrderScreen(
             onAddOrderClick = onCreateOrderClick,
             onOrderClick = { order ->
-                onOrderDetailsClick(order.orderNumber)
+                onOrderDetailsClick(order.id)
             }
         )
     }

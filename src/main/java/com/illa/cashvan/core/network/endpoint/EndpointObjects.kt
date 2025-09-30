@@ -88,7 +88,11 @@ object ApiEndpoints {
         fun getOrder(orderId: String) = RequestConfiguration(
             path = "orders/$orderId",
             method = HttpMethod.Get,
-            version = 1
+            parameters = Parameters.build {
+                append("include", "order_plan_products,order_plan_products.product,merchant")
+            },
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
         )
 
         fun createOrder() = RequestConfiguration(

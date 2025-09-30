@@ -13,6 +13,7 @@ import androidx.navigation3.*
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.illa.cashvan.core.auth.presentation.viewmodel.AuthenticationViewModel
+import com.illa.cashvan.navigation.*
 import com.illa.cashvan.ui.home.HomeScreen
 import com.illa.cashvan.ui.inventory.InventoryScreen
 import com.illa.cashvan.ui.orders.CreateOrderScreen
@@ -123,7 +124,7 @@ fun CashVanNavigation(
                     InventoryKey -> NavEntry(key) {
                         InventoryScreen(
                             onAddOrderClick = {
-                                backStack.add(OrderDetailsKey("ORD-2024-${(100..999).random()}"))
+                                backStack.add(OrderDetailsKey("${(1..999).random()}"))
                             },
                         )
                     }
@@ -135,7 +136,7 @@ fun CashVanNavigation(
                                 }
                             },
                             onCreateOrder = {
-                                backStack.add(OrderDetailsKey("ORD-2024-${(100..999).random()}"))
+                                backStack.add(OrderDetailsKey("${(1..999).random()}"))
                             }
                         )
                     }

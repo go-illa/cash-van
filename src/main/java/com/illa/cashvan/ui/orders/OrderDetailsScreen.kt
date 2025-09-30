@@ -2,6 +2,7 @@ package com.illa.cashvan.ui.orders
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +12,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -33,26 +39,112 @@ import com.illa.cashvan.ui.orders.ui_components.OrderSpecsComponentCompact
 import com.illa.cashvan.ui.orders.ui_components.PaymentSummaryCard
 import com.illa.cashvan.ui.orders.ui_components.ProductDetails
 import com.illa.cashvan.ui.orders.ui_components.ProductsDetailsComponent
+import com.illa.cashvan.feature.orders.data.model.Order
+import com.illa.cashvan.feature.orders.presentation.mapper.*
 
 @Composable
 fun OrderDetailsScreen(
     modifier: Modifier = Modifier,
-    orderId: String = "ORD-2024-001",
+    orderId: String,
     onBackClick: () -> Unit = {},
     onConfirmOrder: () -> Unit = {},
+    orderViewModel: com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel = org.koin.androidx.compose.koinViewModel()
 ) {
-    // Get mock data for the order
-    val orderData = MockData.getSampleCompleteOrder()
-    val randomProduct = MockData.getRandomProduct()
-    val productDetailsList = listOf(
-        ProductDetails(
-            productName = randomProduct.name,
-            sku = "SKU-${randomProduct.id.padStart(3, '0')}",
-            price = randomProduct.price * 3,
-            unitPrice = randomProduct.price,
-            quantity = 3
-        )
-    )
+    val orderDetailsState by orderViewModel.orderDetailsUiState.collectAsState()
+
+    LaunchedEffect(orderId) {
+        orderViewModel.loadOrderById(orderId)
+    }
+
+    when {
+        orderDetailsState.isLoading -> {
+            LoadingContent(modifier = modifier)
+        }
+        orderDetailsState.error != null -> {
+            ErrorContent(
+                modifier = modifier,
+                error = orderDetailsState.error ?: "حدث خطأ غير متوقع"
+            )
+        }
+        orderDetailsState.order != null -> {
+            OrderDetailsContent(
+                modifier = modifier,
+                order = orderDetailsState.order!!,
+                onBackClick = onBackClick,
+                onConfirmOrder = onConfirmOrder
+            )
+        }
+        else -> {
+            ErrorContent(
+                modifier = modifier,
+                error = "لم يتم العثور على الطلب"
+            )
+        }
+    }
+}
+
+@Composable
+private fun LoadingContent(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F5)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            CircularProgressIndicator(
+                color = Color(0xFF0D3773)
+            )
+            Text(
+                text = "جاري تحميل تفاصيل الطلب...",
+                fontSize = 16.sp,
+                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                color = Color(0xFF1F252E),
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ErrorContent(modifier: Modifier = Modifier, error: String) {
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color(0xFFF5F5F5)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "خطأ في تحميل تفاصيل الطلب",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                color = Color(0xFFDC2626)
+            )
+            Text(
+                text = error,
+                fontSize = 14.sp,
+                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                color = Color(0xFF6B7280),
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun OrderDetailsContent(
+    modifier: Modifier = Modifier,
+    order: Order,
+    onBackClick: () -> Unit,
+    onConfirmOrder: () -> Unit
+) {
+    // Map the order data to UI models
+    val orderSpecs = order.toOrderSpecs()
+    val merchant = order.toUIMerchant()
+    val paymentSummary = order.toPaymentSummary()
+    val productDetailsList = order.toProductDetailsList()
 
     Column(
         modifier = modifier
@@ -73,7 +165,7 @@ fun OrderDetailsScreen(
 
             // Order Specs Card
             OrderSpecsComponentCompact(
-                orderSpecs = orderData.orderSpecs.copy(orderNumber = orderId)
+                orderSpecs = orderSpecs
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -81,9 +173,9 @@ fun OrderDetailsScreen(
             // Section Title - Merchant Info
             SectionTitle(title = "معلومات التاجر")
 
-            // Merchant Details (you'll need to create a compact version)
+            // Merchant Details
             MerchantDetailsComponent(
-                merchant = orderData.merchant
+                merchant = merchant
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -102,7 +194,7 @@ fun OrderDetailsScreen(
 
             // Payment Summary Card
             PaymentSummaryCard(
-                paymentSummary = orderData.paymentSummary
+                paymentSummary = paymentSummary
             )
 
             Spacer(modifier = Modifier.height(80.dp)) // Space for button
@@ -155,10 +247,59 @@ private fun SectionTitle(
 
 @Preview(showBackground = true, locale = "ar")
 @Composable
-fun OrderDetailsScreenPreview() {
+fun OrderDetailsContentPreview() {
+    // Create sample order data for preview
+    val sampleOrder = Order(
+        id = 4,
+        created_at = "2025-09-28T21:52:48.528Z",
+        updated_at = "2025-09-28T21:52:48.528Z",
+        plan_id = 1,
+        formatted_code = "ORD-000000004",
+        creator_id = 1,
+        creator_type = "SalesAgent",
+        total_sold_quantity = 3,
+        total_income = "149.97",
+        order_plan_products = listOf(
+            com.illa.cashvan.feature.orders.data.model.OrderPlanProduct(
+                id = 4,
+                created_at = "2025-09-28T21:52:48.533Z",
+                updated_at = "2025-09-28T21:52:48.533Z",
+                sold_quantity = 3,
+                plan_product_id = 2,
+                order_id = 4,
+                total_income = "149.97",
+                product = com.illa.cashvan.feature.orders.data.model.OrderProduct(
+                    id = 2,
+                    created_at = "2025-09-28T21:52:47.890Z",
+                    updated_at = "2025-09-28T21:52:47.890Z",
+                    sku_code = "PROD002",
+                    fd_sku_code = "FD002",
+                    price = "49.99",
+                    name = "Bluetooth Speaker",
+                    description = "Portable Bluetooth speaker with waterproof design and superior sound quality."
+                )
+            )
+        ),
+        merchant = com.illa.cashvan.feature.orders.data.model.Merchant(
+            id = 2,
+            created_at = "2025-09-28T21:52:48.202Z",
+            updated_at = "2025-09-28T21:52:48.202Z",
+            name = "Electronics Hub",
+            address = "456 Pyramids Road, Giza",
+            google_link = null,
+            phone_number = "+201555000002",
+            latitude = null,
+            longitude = null,
+            governorate_id = 2,
+            creator_id = 1,
+            creator_type = "Supervisor",
+            plan_id = 1
+        )
+    )
+
     MaterialTheme {
-        OrderDetailsScreen(
-            orderId = "ORD-2024-003",
+        OrderDetailsContent(
+            order = sampleOrder,
             onBackClick = { /* Handle back */ },
             onConfirmOrder = { /* Handle confirm */ }
         )
