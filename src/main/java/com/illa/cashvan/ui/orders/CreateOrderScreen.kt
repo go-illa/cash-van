@@ -40,7 +40,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -53,6 +55,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
+import com.illa.cashvan.ui.common.ErrorSnackbar
+import com.illa.cashvan.ui.common.SuccessSnackbar
 import com.illa.cashvan.ui.orders.ui_components.AddMerchantBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.ProductSelectionComponent
 import com.illa.cashvan.ui.orders.ui_components.SearchableDropdown
@@ -69,6 +73,7 @@ fun CreateOrderScreen(
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     var showAddMerchantSheet by remember { mutableStateOf(false) }
     val bottomSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
@@ -87,13 +92,28 @@ fun CreateOrderScreen(
 
     LaunchedEffect(uiState.orderCreated) {
         uiState.orderCreated?.let {
+            snackbarHostState.showSnackbar("تم إنشاء الطلب بنجاح")
             onOrderCreated(it.id)
             viewModel.resetOrderCreated()
         }
     }
 
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                if (data.visuals.message.contains("بنجاح")) {
+                    SuccessSnackbar(
+                        message = data.visuals.message,
+                        onDismiss = { snackbarHostState.currentSnackbarData?.dismiss() }
+                    )
+                } else {
+                    ErrorSnackbar(
+                        message = data.visuals.message,
+                        onDismiss = { snackbarHostState.currentSnackbarData?.dismiss() }
+                    )
+                }
+            }
+        },
         topBar = {
             TopAppBar(
                 title = {
@@ -361,6 +381,9 @@ fun CreateOrderScreen(
                     onMerchantCreated = {
                         showAddMerchantSheet = false
                         viewModel.searchMerchants("")
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("تم إضافة التاجر بنجاح")
+                        }
                     }
                 )
             }
