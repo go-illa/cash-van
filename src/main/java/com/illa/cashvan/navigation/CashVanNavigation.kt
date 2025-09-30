@@ -74,9 +74,8 @@ fun CashVanNavigation(
                             label = { Text(item.label) },
                             selected = currentKey == item.key,
                             onClick = {
-                                if (currentKey != item.key) {
-                                    backStack.add(item.key)
-                                }
+                                backStack.removeAll { it == item.key }
+                                backStack.add(item.key)
                             }
                         )
                     }
@@ -124,7 +123,7 @@ fun CashVanNavigation(
                     InventoryKey -> NavEntry(key) {
                         InventoryScreen(
                             onAddOrderClick = {
-                                backStack.add(OrderDetailsKey("${(1..999).random()}"))
+                                backStack.add(CreateOrderKey)
                             },
                         )
                     }
