@@ -266,4 +266,16 @@ class CreateOrderViewModel(
     fun resetOrderCreated() {
         _uiState.value = _uiState.value.copy(orderCreated = null)
     }
+
+    fun resetState() {
+        _uiState.value = _uiState.value.copy(
+            merchants = emptyList(),
+            products = _uiState.value.products, // Keep products as they are loaded with plan
+            selectedMerchant = null,
+            selectedProducts = emptyMap(),
+            merchantSearchQuery = "",
+            productSearchQuery = "",
+            error = null
+        )
+    }
 }

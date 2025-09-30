@@ -74,6 +74,10 @@ fun CreateOrderScreen(
         skipPartiallyExpanded = true
     )
 
+    LaunchedEffect(Unit) {
+        viewModel.resetState()
+    }
+
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
             snackbarHostState.showSnackbar(it)
