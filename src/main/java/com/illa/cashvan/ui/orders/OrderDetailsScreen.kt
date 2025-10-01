@@ -32,15 +32,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
-import com.illa.cashvan.data.MockData
 import com.illa.cashvan.ui.common.CashVanHeader
 import com.illa.cashvan.ui.orders.ui_components.MerchantDetailsComponent
 import com.illa.cashvan.ui.orders.ui_components.OrderSpecsComponentCompact
 import com.illa.cashvan.ui.orders.ui_components.PaymentSummaryCard
-import com.illa.cashvan.ui.orders.ui_components.ProductDetails
 import com.illa.cashvan.ui.orders.ui_components.ProductsDetailsComponent
 import com.illa.cashvan.feature.orders.data.model.Order
 import com.illa.cashvan.feature.orders.presentation.mapper.*
+import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun OrderDetailsScreen(
@@ -48,7 +48,7 @@ fun OrderDetailsScreen(
     orderId: String,
     onBackClick: () -> Unit = {},
     onConfirmOrder: () -> Unit = {},
-    orderViewModel: com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel = org.koin.androidx.compose.koinViewModel()
+    orderViewModel: OrderViewModel = koinViewModel()
 ) {
     val orderDetailsState by orderViewModel.orderDetailsUiState.collectAsState()
 
@@ -140,7 +140,6 @@ private fun OrderDetailsContent(
     onBackClick: () -> Unit,
     onConfirmOrder: () -> Unit
 ) {
-    // Map the order data to UI models
     val orderSpecs = order.toOrderSpecs()
     val merchant = order.toUIMerchant()
     val paymentSummary = order.toPaymentSummary()
@@ -163,27 +162,22 @@ private fun OrderDetailsContent(
 
             SectionTitle(title = "تفاصيل الطلب")
 
-            // Order Specs Card
             OrderSpecsComponentCompact(
                 orderSpecs = orderSpecs
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Section Title - Merchant Info
             SectionTitle(title = "معلومات التاجر")
 
-            // Merchant Details
             MerchantDetailsComponent(
                 merchant = merchant
             )
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Section Title - Order Items
             SectionTitle(title = "عناصر الطلب")
 
-            // Product Details Cards
             productDetailsList.forEach { product ->
                 ProductsDetailsComponent(
                     productDetails = product
@@ -192,7 +186,6 @@ private fun OrderDetailsContent(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Payment Summary Card
             PaymentSummaryCard(
                 paymentSummary = paymentSummary
             )
@@ -200,7 +193,6 @@ private fun OrderDetailsContent(
             Spacer(modifier = Modifier.height(80.dp)) // Space for button
         }
 
-        // Bottom Button Container
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color.White,
@@ -248,7 +240,6 @@ private fun SectionTitle(
 @Preview(showBackground = true, locale = "ar")
 @Composable
 fun OrderDetailsContentPreview() {
-    // Create sample order data for preview
     val sampleOrder = Order(
         id = 4,
         created_at = "2025-09-28T21:52:48.528Z",

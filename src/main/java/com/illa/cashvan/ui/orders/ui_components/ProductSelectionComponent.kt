@@ -206,7 +206,7 @@ fun ProductSelectionComponent(
                         )
                     }
 
-                    Column {
+                    Box {
                         OutlinedTextField(
                             value = quantityText,
                             onValueChange = { newText ->
@@ -251,10 +251,12 @@ fun ProductSelectionComponent(
                         if (showQuantityError) {
                             Text(
                                 text = "تم الوصول لحد الاقصي",
-                                fontSize = 12.sp,
+                                fontSize = 10.sp,
                                 fontFamily = FontFamily(Font(R.font.zain_regular)),
                                 color = Color(0xFFDC2626),
-                                modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                                modifier = Modifier
+                                    .align(Alignment.BottomCenter)
+                                    .padding(bottom = (-16).dp)
                             )
                         }
                     }
