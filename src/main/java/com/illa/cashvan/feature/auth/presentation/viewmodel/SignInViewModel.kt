@@ -2,6 +2,7 @@ package com.illa.cashvan.feature.auth.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.SaveAccessTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.SaveRefreshTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.user.SaveUserUseCase
@@ -16,7 +17,8 @@ class SignInViewModel(
     private val loginUseCase: LoginUseCase,
     private val saveAccessTokenUseCase: SaveAccessTokenUseCase,
     private val saveRefreshTokenUseCase: SaveRefreshTokenUseCase,
-    private val saveUserUseCase: SaveUserUseCase
+    private val saveUserUseCase: SaveUserUseCase,
+    private val analyticsHelper: CashVanAnalyticsHelper
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SignInUiState())
@@ -36,6 +38,18 @@ class SignInViewModel(
                     }
                     result.data.user?.let {
                         saveUserUseCase(it)
+                    }
+
+                    // Identify user in analytics
+                    result.data.user?.phone_number?.let { phone ->
+                        analyticsHelper.identify(phone)
+                        analyticsHelper.logEvent(
+                            "user_login",
+                            mapOf(
+                                "phone_number" to phone,
+                                "user_id" to (result.data.user.id)
+                            )
+                        )
                     }
 
                     _uiState.value = _uiState.value.copy(

@@ -22,9 +22,12 @@ class OrderRepositoryImpl(
     private val httpClient: HttpClient
 ) : OrderRepository {
 
-    override suspend fun getOrders(createdAtDateEq: String?): ApiResult<OrdersResponse> {
+    override suspend fun getOrders(
+        planId: String?,
+        createdAtDateEq: String?
+    ): ApiResult<OrdersResponse> {
         return try {
-            val config = ApiEndpoints.Orders.getOrders(createdAtDateEq ?: "2025-09-28")
+            val config = ApiEndpoints.Orders.getOrders(planId, createdAtDateEq)
             val versionedPath = "v${config.version}/${config.path}"
 
             val response = httpClient.request(versionedPath) {

@@ -24,7 +24,6 @@ fun HomeScreen(
             locationViewModel.onPermissionDenied()
         }
     ) { requestPermission, isPermissionGranted ->
-        // Request permission automatically when HomeScreen is first shown
         LaunchedEffect(Unit) {
             if (!isPermissionGranted) {
                 requestPermission()

@@ -92,12 +92,16 @@ object ApiEndpoints {
 
     // Orders endpoints
     object Orders {
-        fun getOrders(createdAtDateEq: String = "2025-09-28") = RequestConfiguration(
+        fun getOrders(
+            planId: String? = null,
+            createdAtDateEq: String? = null
+        ) = RequestConfiguration(
             path = "orders",
             method = HttpMethod.Get,
             parameters = Parameters.build {
                 append("include", "order_plan_products,order_plan_products.product,merchant")
-                append("f[created_at_date_eq]", createdAtDateEq)
+                planId?.let { append("f[plan_id_eq]", it) }
+                createdAtDateEq?.let { append("f[created_at_day_eq]", it) }
             },
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2

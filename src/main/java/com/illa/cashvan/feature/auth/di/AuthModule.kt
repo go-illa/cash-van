@@ -1,6 +1,7 @@
 
 package com.illa.cashvan.feature.auth.di
 
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.core.app_preferences.domain.use_case.auth.LogoutUseCase
 import com.illa.cashvan.feature.auth.data.repository.AuthRepositoryImpl
 import com.illa.cashvan.feature.auth.domain.repository.AuthRepository
@@ -13,5 +14,13 @@ val authModule = module {
     single<AuthRepository> { AuthRepositoryImpl(get(), get(), get()) }
     single { LoginUseCase(get()) }
     single { LogoutUseCase(get(), get()) }
-    viewModel { SignInViewModel(get(), get(), get(), get()) }
+    viewModel {
+        SignInViewModel(
+            loginUseCase = get(),
+            saveAccessTokenUseCase = get(),
+            saveRefreshTokenUseCase = get(),
+            saveUserUseCase = get(),
+            analyticsHelper = get<CashVanAnalyticsHelper>()
+        )
+    }
 }

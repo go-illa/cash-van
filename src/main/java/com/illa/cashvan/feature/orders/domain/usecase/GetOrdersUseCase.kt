@@ -6,9 +6,17 @@ import com.illa.cashvan.feature.orders.domain.repository.OrderRepository
 import javax.inject.Inject
 
 class GetOrdersUseCase @Inject constructor(
-    private val orderRepository: OrderRepository
+    private val orderRepository: OrderRepository,
+    private val getOngoingPlanUseCase: GetOngoingPlanUseCase
 ) {
     suspend operator fun invoke(createdAtDateEq: String? = null): ApiResult<OrdersResponse> {
-        return orderRepository.getOrders(createdAtDateEq)
+        // First get the ongoing plan to retrieve the plan_id
+        val planResult = getOngoingPlanUseCase()
+        val planId = when (planResult) {
+            is ApiResult.Success -> planResult.data.id.toString()
+            else -> null
+        }
+
+        return orderRepository.getOrders(planId, createdAtDateEq)
     }
 }

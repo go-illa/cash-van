@@ -39,6 +39,7 @@ import com.illa.cashvan.feature.orders.presentation.mapper.toOrderItem
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
 import com.illa.cashvan.ui.common.ErrorSnackbar
+import com.illa.cashvan.ui.home.ui_components.EmptyOrdersComponent
 import com.illa.cashvan.ui.orders.ui_components.OrderCardItem
 import com.illa.cashvan.ui.orders.ui_components.OrderItem
 import org.koin.androidx.compose.koinViewModel
@@ -124,19 +125,10 @@ fun OrderScreen(
                     }
                 }
                 orderItems.isEmpty() -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "لا توجد طلبات اليوم",
-                            fontSize = 18.sp,
-                            color = Color.Gray,
-                            textAlign = TextAlign.Center
-                        )
-                    }
+                    EmptyOrdersComponent(
+                        modifier = Modifier.weight(1f),
+                        onCreateOrderClick = onAddOrderClick
+                    )
                 }
                 else -> {
                     LazyColumn(
@@ -155,21 +147,24 @@ fun OrderScreen(
             }
         }
 
-        FloatingActionButton(
-            onClick = onAddOrderClick,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
-                .size(64.dp),
-            containerColor = Color(0xFF0D3773),
-            shape = CircleShape,
-            contentColor = Color.White
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "إضافة طلب جديد",
-                modifier = Modifier.size(32.dp)
-            )
+        // Only show FAB if there are orders
+        if (orderItems.isNotEmpty() && !uiState.isLoading && uiState.error == null) {
+            FloatingActionButton(
+                onClick = onAddOrderClick,
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+                    .size(64.dp),
+                containerColor = Color(0xFF0D3773),
+                shape = CircleShape,
+                contentColor = Color.White
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "إضافة طلب جديد",
+                    modifier = Modifier.size(32.dp)
+                )
+            }
         }
     }
 }

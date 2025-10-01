@@ -32,11 +32,13 @@ android {
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
             buildConfigField("String", "BASE_URL", "\"https://dsbs-api-staging.illa.blue/api/\"")
+            buildConfigField("String", "MIXPANEL_TOKEN", "\"6d02d1dca65e73bd04392f0febacbdb9\"")
         }
 
         create("production") {
             dimension = "environment"
             buildConfigField("String", "BASE_URL", "\"https://dsbs-api.illa.blue/api/\"")
+            buildConfigField("String", "MIXPANEL_TOKEN", "\"09e23c835bbc75a1eac63a9fa79e533d\"")
         }
     }
 
@@ -129,6 +131,12 @@ dependencies {
     implementation("com.google.firebase:firebase-crashlytics-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // MixPanel Analytics
+    implementation("com.mixpanel.android:mixpanel-android:7.5.2")
+
+    // Timber Logging
+    implementation("com.jakewharton.timber:timber:5.0.1")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

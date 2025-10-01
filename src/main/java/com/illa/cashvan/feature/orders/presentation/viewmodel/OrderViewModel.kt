@@ -2,6 +2,7 @@ package com.illa.cashvan.feature.orders.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.illa.cashvan.core.getCurrentDateApiFormat
 import com.illa.cashvan.core.network.model.ApiResult
 import com.illa.cashvan.feature.orders.data.model.Order
 import com.illa.cashvan.feature.orders.domain.usecase.GetOrdersUseCase
@@ -38,11 +39,14 @@ class OrderViewModel(
         loadOrders()
     }
 
-    fun loadOrders(date: String = "2025-09-28") {
+    fun loadOrders(date: String? = null) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            when (val result = getOrdersUseCase(date)) {
+            // Always use today's date
+            val dateToUse = getCurrentDateApiFormat()
+
+            when (val result = getOrdersUseCase(dateToUse)) {
                 is ApiResult.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,

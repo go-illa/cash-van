@@ -8,3 +8,9 @@ fun getCurrentDate(): String {
     val sdf = SimpleDateFormat("yyyy/MM/dd", ENGLISH)
     return sdf.format(Date(System.currentTimeMillis()))
 }
+
+
+fun getCurrentDateApiFormat(): String {
+    val sdf = SimpleDateFormat("yyyy-MM-dd", ENGLISH)
+    return sdf.format(Date(System.currentTimeMillis()))
+}

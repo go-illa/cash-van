@@ -55,7 +55,7 @@ data class Merchant(
     val governorate_id: Int? = null,
     val creator_id: Int,
     val creator_type: String,
-    val plan_id: Int
+    val plan_id: Int? = null
 )
 
 @Serializable

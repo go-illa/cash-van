@@ -18,7 +18,7 @@ val orderModule = module {
     single<OrderRepository> { OrderRepositoryImpl(get()) }
 
     // Use Cases
-    factory { GetOrdersUseCase(get()) }
+    factory { GetOrdersUseCase(get(),get()) }
     factory { GetOrderByIdUseCase(get()) }
     factory { CreateOrderUseCase(get()) }
     factory { GetOngoingPlanUseCase(get()) }

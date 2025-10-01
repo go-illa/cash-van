@@ -10,7 +10,10 @@ import com.illa.cashvan.feature.orders.data.model.OrdersResponse
 import com.illa.cashvan.feature.orders.data.model.PlanProductsResponse
 
 interface OrderRepository {
-    suspend fun getOrders(createdAtDateEq: String? = null): ApiResult<OrdersResponse>
+    suspend fun getOrders(
+        planId: String? = null,
+        createdAtDateEq: String? = null
+    ): ApiResult<OrdersResponse>
     suspend fun getOrderById(orderId: String): ApiResult<Order>
     suspend fun getOngoingPlan(): ApiResult<OngoingPlanResponse>
     suspend fun searchMerchants(query: String): ApiResult<MerchantSearchResponse>
