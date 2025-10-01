@@ -11,7 +11,6 @@ import org.koin.androidx.compose.koinViewModel
 
 @Composable
 fun HomeScreen(
-    modifier: Modifier = Modifier,
     onCreateOrderClick: () -> Unit = {},
     onOrderDetailsClick: (String) -> Unit = {},
     locationViewModel: LocationViewModel = koinViewModel()
