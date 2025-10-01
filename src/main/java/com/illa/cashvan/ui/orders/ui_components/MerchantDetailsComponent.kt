@@ -34,13 +34,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.data.MockData
+import org.koin.compose.koinInject
+import androidx.compose.foundation.clickable
 
 @Composable
 fun MerchantDetailsComponent(
     modifier: Modifier = Modifier,
     merchant: Merchant,
-    showLocation: Boolean = true
+    showLocation: Boolean = true,
+    analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -95,7 +99,13 @@ fun MerchantDetailsComponent(
                     MerchantDetailItem(
                         icon = Icons.Default.Phone,
                         text = merchant.phoneNumber,
-                        iconTint = Color(0xFF0D3773)
+                        iconTint = Color(0xFF0D3773),
+                        onClick = {
+                            analyticsHelper.logEvent(
+                                "contact_merchnant",
+                                mapOf("merchant_phone" to merchant.phoneNumber)
+                            )
+                        }
                     )
                 }
             }
@@ -108,11 +118,15 @@ fun MerchantDetailsComponent(
 private fun MerchantDetailItem(
     icon: ImageVector,
     text: String,
-    iconTint: Color = Color(0xFF6B7280)
+    iconTint: Color = Color(0xFF6B7280),
+    onClick: (() -> Unit)? = null
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.then(
+            if (onClick != null) Modifier.clickable { onClick() } else Modifier
+        )
     ) {
         Icon(
             imageVector = icon,

@@ -46,9 +46,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.core.location.LocationViewModel
 import com.illa.cashvan.feature.merchant.presentation.viewmodel.MerchantViewModel
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +58,8 @@ fun AddMerchantBottomSheet(
     onDismiss: () -> Unit = {},
     onMerchantCreated: () -> Unit = {},
     merchantViewModel: MerchantViewModel = koinViewModel(),
-    locationViewModel: LocationViewModel = koinViewModel()
+    locationViewModel: LocationViewModel = koinViewModel(),
+    analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     var merchantName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
@@ -199,6 +202,13 @@ fun AddMerchantBottomSheet(
         Button(
             onClick = {
                 locationUiState.locationData?.let { location ->
+                    analyticsHelper.logEvent(
+                        "add_merchant",
+                        mapOf(
+                            "merchant_name" to merchantName,
+                            "merchant_phone" to phoneNumber
+                        )
+                    )
                     merchantViewModel.createMerchant(
                         name = merchantName,
                         phoneNumber = phoneNumber,

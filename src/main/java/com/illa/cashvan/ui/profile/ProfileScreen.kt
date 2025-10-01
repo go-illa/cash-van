@@ -44,14 +44,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.feature.profile.presentation.viewmodel.ProfileViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 @Composable
 fun PersonalProfileScreen(
     onLogout: () -> Unit = {},
-    profileViewModel: ProfileViewModel = koinViewModel()
+    profileViewModel: ProfileViewModel = koinViewModel(),
+    analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     val uiState by profileViewModel.uiState.collectAsState()
     Column(
@@ -132,7 +135,15 @@ fun PersonalProfileScreen(
                     Spacer(modifier = Modifier.height(32.dp))
 
                     Button(
-                        onClick = onLogout,
+                        onClick = {
+                            uiState.profileData?.sales_agent_phone?.let { phone ->
+                                analyticsHelper.logEvent(
+                                    "user_logout",
+                                    mapOf("phone" to phone)
+                                )
+                            }
+                            onLogout()
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),

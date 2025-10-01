@@ -44,9 +44,9 @@ class SignInViewModel(
                     result.data.user?.phone_number?.let { phone ->
                         analyticsHelper.identify(phone)
                         analyticsHelper.logEvent(
-                            "user_login",
+                            "sign_in",
                             mapOf(
-                                "phone_number" to phone,
+                                "phone" to phone,
                                 "user_id" to (result.data.user.id)
                             )
                         )

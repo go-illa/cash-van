@@ -29,11 +29,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import com.illa.cashvan.R
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
+import org.koin.compose.koinInject
 
 @Composable
 fun EmptyOrdersComponent(
     modifier: Modifier = Modifier,
-    onCreateOrderClick: () -> Unit = {}
+    onCreateOrderClick: () -> Unit = {},
+    analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     Column(
         modifier = modifier
@@ -73,7 +76,10 @@ fun EmptyOrdersComponent(
         }
 
         Button(
-            onClick = onCreateOrderClick,
+            onClick = {
+                analyticsHelper.logEvent("first_order_placed")
+                onCreateOrderClick()
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),

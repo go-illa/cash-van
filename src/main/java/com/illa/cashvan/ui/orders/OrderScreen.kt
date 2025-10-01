@@ -39,16 +39,19 @@ import com.illa.cashvan.feature.orders.presentation.mapper.toOrderItem
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
 import com.illa.cashvan.ui.common.ErrorSnackbar
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.ui.home.ui_components.EmptyOrdersComponent
 import com.illa.cashvan.ui.orders.ui_components.OrderCardItem
 import com.illa.cashvan.ui.orders.ui_components.OrderItem
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 @Composable
 fun OrderScreen(
     onAddOrderClick: () -> Unit = {},
     onOrderClick: (OrderItem) -> Unit = {},
-    viewModel: OrderViewModel = koinViewModel()
+    viewModel: OrderViewModel = koinViewModel(),
+    analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val orderItems = uiState.orders.map { it.toOrderItem() }
@@ -150,7 +153,10 @@ fun OrderScreen(
         // Only show FAB if there are orders
         if (orderItems.isNotEmpty() && !uiState.isLoading && uiState.error == null) {
             FloatingActionButton(
-                onClick = onAddOrderClick,
+                onClick = {
+                    analyticsHelper.logEvent("plus_icon")
+                    onAddOrderClick()
+                },
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .padding(16.dp)

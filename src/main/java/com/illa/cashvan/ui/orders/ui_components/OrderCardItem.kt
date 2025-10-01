@@ -31,6 +31,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
+import org.koin.compose.koinInject
 
 data class OrderProductItem(
     val name: String,
@@ -54,7 +56,8 @@ data class OrderItem(
 fun OrderCardItem(
     order: OrderItem,
     modifier: Modifier = Modifier,
-    onOrderClick: (OrderItem) -> Unit = {}
+    onOrderClick: (OrderItem) -> Unit = {},
+    analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     Card(
         modifier = modifier
@@ -63,7 +66,10 @@ fun OrderCardItem(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        onClick = { onOrderClick(order) }
+        onClick = {
+            analyticsHelper.logEvent("order_clicked")
+            onOrderClick(order)
+        }
     ) {
         Column(
             modifier = Modifier

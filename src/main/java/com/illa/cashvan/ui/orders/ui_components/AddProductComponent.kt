@@ -52,7 +52,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.data.MockData
+import org.koin.compose.koinInject
 
 data class Product(
     val id: String,
@@ -65,7 +67,8 @@ data class Product(
 fun AddProductComponent(
     modifier: Modifier = Modifier,
     products: List<Product> = emptyList(),
-    onAddToOrder: (Product, Int) -> Unit = { _, _ -> }
+    onAddToOrder: (Product, Int) -> Unit = { _, _ -> },
+    analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     var selectedProduct by remember { mutableStateOf<Product?>(null) }
     var quantity by remember { mutableIntStateOf(1) }
@@ -161,6 +164,10 @@ fun AddProductComponent(
                                     }
                                 },
                                 onClick = {
+                                    analyticsHelper.logEvent(
+                                        "select_product",
+                                        mapOf("product_name" to product.name)
+                                    )
                                     selectedProduct = product
                                     isDropdownExpanded = false
                                 }
@@ -288,6 +295,10 @@ fun AddProductComponent(
                 Button(
                     onClick = {
                         selectedProduct?.let { product ->
+                            analyticsHelper.logEvent(
+                                "add_to_order",
+                                mapOf("skus" to product.id)
+                            )
                             onAddToOrder(product, quantity)
                         }
                     },

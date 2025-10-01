@@ -42,7 +42,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import com.illa.cashvan.R
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.data.MockData
+import org.koin.compose.koinInject
 
 data class Merchant(
     val id: String,
@@ -57,7 +59,8 @@ fun MerchantDropdownField(
     selectedMerchant: Merchant?,
     merchants: List<Merchant>,
     onMerchantSelected: (Merchant) -> Unit = {},
-    placeholder: String = "ابحث بالاسم او رقم الهاتف"
+    placeholder: String = "ابحث بالاسم او رقم الهاتف",
+    analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -118,6 +121,10 @@ fun MerchantDropdownField(
                         )
                     },
                     onClick = {
+                        analyticsHelper.logEvent(
+                            "select_merchant",
+                            mapOf("merchant_name" to merchant.name)
+                        )
                         onMerchantSelected(merchant)
                         expanded = false
                     }

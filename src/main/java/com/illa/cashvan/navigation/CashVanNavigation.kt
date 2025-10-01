@@ -18,21 +18,25 @@ import com.illa.cashvan.ui.home.HomeScreen
 import com.illa.cashvan.ui.inventory.InventoryScreen
 import com.illa.cashvan.ui.orders.CreateOrderScreen
 import com.illa.cashvan.ui.orders.OrderDetailsScreen
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.ui.profile.PersonalProfileScreen
 import com.illa.cashvan.ui.signin.SignInScreen
 import com.illa.cashvan.ui.splash.SplashScreen
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 
 data class BottomNavItem(
     val key: Any,
     val icon: ImageVector,
-    val label: String
+    val label: String,
+    val analyticsEvent: String
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CashVanNavigation(
-    authenticationViewModel: AuthenticationViewModel = koinViewModel()
+    authenticationViewModel: AuthenticationViewModel = koinViewModel(),
+    analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     val authState by authenticationViewModel.authState.collectAsState()
     val backStack = remember { mutableStateListOf<Any>(SplashKey) }
@@ -56,9 +60,9 @@ fun CashVanNavigation(
     }
 
     val bottomNavItems = listOf(
-        BottomNavItem(HomeKey, Icons.Default.Home, "الاوردرات"),
-        BottomNavItem(InventoryKey, Icons.Default.Inventory, "مخزون"),
-        BottomNavItem(ProfileKey, Icons.Default.Person, "الملف الشخصي"),
+        BottomNavItem(HomeKey, Icons.Default.Home, "الاوردرات", "orders_tab"),
+        BottomNavItem(InventoryKey, Icons.Default.Inventory, "مخزون", "stock_tab"),
+        BottomNavItem(ProfileKey, Icons.Default.Person, "الملف الشخصي", "profile_tab"),
     )
 
     val isSignInKey = currentKey == SignInKey
@@ -74,6 +78,7 @@ fun CashVanNavigation(
                             label = { Text(item.label) },
                             selected = currentKey == item.key,
                             onClick = {
+                                analyticsHelper.logEvent(item.analyticsEvent)
                                 backStack.removeAll { it == item.key }
                                 backStack.add(item.key)
                             }
