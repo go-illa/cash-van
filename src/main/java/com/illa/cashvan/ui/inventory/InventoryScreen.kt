@@ -37,6 +37,7 @@ import com.illa.cashvan.data.MockData
 import com.illa.cashvan.feature.plans.data.model.PlanProduct
 import com.illa.cashvan.feature.plans.presentation.viewmodel.InventoryViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
+import com.illa.cashvan.ui.inventory.ui_components.EmptyInventoryComponent
 import com.illa.cashvan.ui.inventory.ui_components.InventoryCard
 import com.illa.cashvan.ui.inventory.ui_components.InventoryItem
 import org.koin.androidx.compose.koinViewModel
@@ -66,6 +67,10 @@ fun InventoryScreen(
     onAddOrderClick: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -134,14 +139,20 @@ fun InventoryScreen(
                 else -> {
                     val inventoryItems = uiState.planProducts.map { it.toInventoryItem() }
 
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        items(inventoryItems.size) { index ->
-                            InventoryCard(
-                                item = inventoryItems[index],
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                    if (inventoryItems.isEmpty()) {
+                        EmptyInventoryComponent(
+                            modifier = Modifier.weight(1f)
+                        )
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            items(inventoryItems.size) { index ->
+                                InventoryCard(
+                                    item = inventoryItems[index],
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
                         }
                     }
                 }

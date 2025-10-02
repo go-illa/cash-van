@@ -68,7 +68,7 @@ import org.koin.androidx.compose.koinViewModel
 fun CreateOrderScreen(
     viewModel: CreateOrderViewModel = koinViewModel(),
     onBackClick: () -> Unit = {},
-    onOrderCreated: (Int) -> Unit = {}
+    onOrderCreated: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollState = rememberScrollState()
@@ -91,10 +91,10 @@ fun CreateOrderScreen(
     }
 
     LaunchedEffect(uiState.orderCreated) {
-        uiState.orderCreated?.let {
+        if (uiState.orderCreated) {
             snackbarHostState.showSnackbar("تم إنشاء الطلب بنجاح")
-            onOrderCreated(it.id)
             viewModel.resetOrderCreated()
+            onOrderCreated()
         }
     }
 

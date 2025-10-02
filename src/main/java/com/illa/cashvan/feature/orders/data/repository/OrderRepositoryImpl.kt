@@ -112,18 +112,18 @@ class OrderRepositoryImpl(
         }
     }
 
-    override suspend fun createOrder(request: CreateOrderRequest): ApiResult<CreateOrderResponse> {
+    override suspend fun createOrder(request: CreateOrderRequest): ApiResult<Unit> {
         return try {
             val config = ApiEndpoints.Orders.createOrder()
             val versionedPath = "v${config.version}/${config.path}"
 
-            val response = httpClient.request(versionedPath) {
+            httpClient.request(versionedPath) {
                 method = HttpMethod.Post
                 contentType(ContentType.Application.Json)
                 setBody(request)
-            }.body<CreateOrderResponse>()
+            }
 
-            ApiResult.Success(response)
+            ApiResult.Success(Unit)
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to create order")
         }

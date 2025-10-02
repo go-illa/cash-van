@@ -8,7 +8,7 @@ import com.illa.cashvan.feature.orders.domain.repository.OrderRepository
 class CreateOrderUseCase(
     private val orderRepository: OrderRepository
 ) {
-    suspend operator fun invoke(request: CreateOrderRequest): ApiResult<CreateOrderResponse> {
+    suspend operator fun invoke(request: CreateOrderRequest): ApiResult<Unit> {
         return orderRepository.createOrder(request)
     }
 }

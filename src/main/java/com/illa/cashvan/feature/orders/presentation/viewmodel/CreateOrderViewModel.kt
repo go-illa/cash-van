@@ -33,7 +33,7 @@ data class CreateOrderUiState(
     val isSearchingMerchants: Boolean = false,
     val isSearchingProducts: Boolean = false,
     val error: String? = null,
-    val orderCreated: CreateOrderResponse? = null
+    val orderCreated: Boolean = false
 )
 
 class CreateOrderViewModel(
@@ -248,7 +248,7 @@ class CreateOrderViewModel(
                 is ApiResult.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        orderCreated = result.data
+                        orderCreated = true
                     )
                 }
                 is ApiResult.Error -> {
@@ -269,7 +269,7 @@ class CreateOrderViewModel(
     }
 
     fun resetOrderCreated() {
-        _uiState.value = _uiState.value.copy(orderCreated = null)
+        _uiState.value = _uiState.value.copy(orderCreated = false)
     }
 
     fun resetState() {

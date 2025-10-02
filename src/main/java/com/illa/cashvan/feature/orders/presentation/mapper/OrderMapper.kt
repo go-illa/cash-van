@@ -6,7 +6,6 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 
 fun Order.toOrderItem(): OrderItem {
-    // Format the created_at date
     val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
     val outputFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
@@ -14,10 +13,9 @@ fun Order.toOrderItem(): OrderItem {
         val date = inputFormat.parse(created_at)
         outputFormat.format(date ?: "")
     } catch (e: Exception) {
-        created_at.substring(11, 16) // fallback to extract time
+        created_at.substring(11, 16)
     }
 
-    // Map order_plan_products to OrderProductItem
     val products = order_plan_products?.map { orderPlanProduct ->
         OrderProductItem(
             name = orderPlanProduct.product?.name ?: "منتج غير محدد",
@@ -37,7 +35,6 @@ fun Order.toOrderItem(): OrderItem {
     )
 }
 
-// Map Order to OrderSpecs for OrderDetailsScreen
 fun Order.toOrderSpecs(): OrderSpecs {
     val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -50,7 +47,6 @@ fun Order.toOrderSpecs(): OrderSpecs {
             timeFormat.format(date ?: "")
         )
     } catch (e: Exception) {
-        // Fallback to extract date and time from string
         Pair(
             created_at.substring(0, 10),
             created_at.substring(11, 16)
@@ -64,7 +60,6 @@ fun Order.toOrderSpecs(): OrderSpecs {
     )
 }
 
-// Map Order to Merchant for UI components
 fun Order.toUIMerchant(): Merchant {
     return Merchant(
         id = merchant?.id?.toString() ?: "",
@@ -74,7 +69,6 @@ fun Order.toUIMerchant(): Merchant {
     )
 }
 
-// Map Order to PaymentSummary
 fun Order.toPaymentSummary(): PaymentSummary {
     val totalAmount = total_income.toDoubleOrNull() ?: 0.0
     val taxPercentage = 10.0
@@ -89,7 +83,6 @@ fun Order.toPaymentSummary(): PaymentSummary {
     )
 }
 
-// Map OrderPlanProduct to ProductDetails
 fun Order.toProductDetailsList(): List<ProductDetails> {
     return order_plan_products?.mapNotNull { orderPlanProduct ->
         orderPlanProduct.product?.let { product ->

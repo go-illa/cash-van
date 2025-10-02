@@ -56,6 +56,10 @@ fun OrderScreen(
     val uiState by viewModel.uiState.collectAsState()
     val orderItems = uiState.orders.map { it.toOrderItem() }
 
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
 
     Box(
         modifier = Modifier.fillMaxSize()

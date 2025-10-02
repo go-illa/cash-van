@@ -139,6 +139,11 @@ fun CashVanNavigation(
                                     backStack.removeLastOrNull()
                                 }
                             },
+                            onOrderCreated = {
+                                if (backStack.size > 1) {
+                                    backStack.removeLastOrNull()
+                                }
+                            }
                         )
                     }
                     is OrderDetailsKey -> NavEntry(key) {
