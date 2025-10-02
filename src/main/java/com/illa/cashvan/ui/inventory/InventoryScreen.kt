@@ -33,7 +33,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
-import com.illa.cashvan.data.MockData
 import com.illa.cashvan.feature.plans.data.model.PlanProduct
 import com.illa.cashvan.feature.plans.presentation.viewmodel.InventoryViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
@@ -79,6 +78,8 @@ fun InventoryScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             CashVanHeader()
+
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
                 text = "المخزون الحالي",
