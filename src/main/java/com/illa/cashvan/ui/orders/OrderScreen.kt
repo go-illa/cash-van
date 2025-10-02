@@ -56,11 +56,6 @@ fun OrderScreen(
     val uiState by viewModel.uiState.collectAsState()
     val orderItems = uiState.orders.map { it.toOrderItem() }
 
-    LaunchedEffect(uiState.error) {
-        uiState.error?.let {
-            // Error will be shown in the UI
-        }
-    }
 
     Box(
         modifier = Modifier.fillMaxSize()

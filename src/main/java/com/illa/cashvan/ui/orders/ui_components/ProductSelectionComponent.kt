@@ -256,7 +256,7 @@ fun ProductSelectionComponent(
                                 color = Color(0xFFDC2626),
                                 modifier = Modifier
                                     .align(Alignment.BottomCenter)
-                                    .padding(bottom = (-16).dp)
+                                    .padding(top = 60.dp)
                             )
                         }
                     }

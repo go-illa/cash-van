@@ -40,4 +40,8 @@
     <string name="available_label">Available</string>
     <string name="sold_label">Sold</string>
     <string name="add_item">Add Item</string>
+
+    <!-- Empty Inventory Strings -->
+    <string name="empty_inventory_title">No inventory in the van right now</string>
+    <string name="empty_inventory_subtitle">Once you add products to the trip, items will be displayed here</string>
 </resources>

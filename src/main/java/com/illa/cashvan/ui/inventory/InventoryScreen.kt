@@ -24,9 +24,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.illa.cashvan.R
+import com.illa.cashvan.data.MockData
 import com.illa.cashvan.feature.plans.data.model.PlanProduct
 import com.illa.cashvan.feature.plans.presentation.viewmodel.InventoryViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
@@ -67,6 +74,18 @@ fun InventoryScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             CashVanHeader()
+
+            Text(
+                text = "المخزون الحالي",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                color = Color(0xFF1F252E),
+                textAlign = TextAlign.Start,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -148,3 +167,90 @@ fun InventoryScreen(
     }
 }
 
+@Preview(showBackground = true, locale = "ar")
+@Composable
+fun InventoryScreenPreview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                CashVanHeader()
+
+                Text(
+                    text = "المخزون الحالي",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                    color = Color(0xFF1F252E),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                val sampleInventoryItems = listOf(
+                    InventoryItem(
+                        id = "1",
+                        name = "كولا 1.5 لتر",
+                        code = "SKU001",
+                        totalQuantity = 100,
+                        availableQuantity = 60,
+                        soldQuantity = 40,
+                        progressPercentage = 40f
+                    ),
+                    InventoryItem(
+                        id = "2",
+                        name = "بيبسي 2 لتر",
+                        code = "SKU002",
+                        totalQuantity = 80,
+                        availableQuantity = 20,
+                        soldQuantity = 60,
+                        progressPercentage = 75f
+                    ),
+                    InventoryItem(
+                        id = "3",
+                        name = "ماء معدني 500 مل",
+                        code = "SKU003",
+                        totalQuantity = 200,
+                        availableQuantity = 150,
+                        soldQuantity = 50,
+                        progressPercentage = 25f
+                    )
+                )
+
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                ) {
+                    items(sampleInventoryItems.size) { index ->
+                        InventoryCard(
+                            item = sampleInventoryItems[index],
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+
+            FloatingActionButton(
+                onClick = { },
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+                    .size(64.dp),
+                containerColor = Color(0xFF0D3773),
+                shape = CircleShape,
+                contentColor = Color.White
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "إضافة طلب جديد",
+                    modifier = Modifier.size(32.dp)
+                )
+            }
+        }
+    }
+}

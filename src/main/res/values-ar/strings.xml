@@ -40,4 +40,8 @@
     <string name="sold_label">مُباع</string>
     <string name="add_item">إضافة عنصر</string>
 
+    <!-- Empty Inventory Strings -->
+    <string name="empty_inventory_title">لا يوجد مخزون بالعربة الآن</string>
+    <string name="empty_inventory_subtitle">بمجرد إضافة طلبات للرحلة سيتم إظهار الأصناف هنا</string>
+
 </resources>

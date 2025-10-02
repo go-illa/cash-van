@@ -121,12 +121,16 @@ private fun MerchantDetailItem(
     iconTint: Color = Color(0xFF6B7280),
     onClick: (() -> Unit)? = null
 ) {
+    val modifier = if (onClick != null) {
+        Modifier.clickable { onClick() }
+    } else {
+        Modifier
+    }
+
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.then(
-            if (onClick != null) Modifier.clickable { onClick() } else Modifier
-        )
+        modifier = modifier
     ) {
         Icon(
             imageVector = icon,

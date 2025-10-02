@@ -106,7 +106,7 @@ fun AddProductComponent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .border(width = 1.dp, color = Color(0x2400335D), shape = RoundedCornerShape(size = 10.dp))
-                        .clickable { isDropdownExpanded = true },
+                            .clickable { isDropdownExpanded = true },
                         shape = RoundedCornerShape(8.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = Color.White
