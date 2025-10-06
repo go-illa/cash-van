@@ -28,7 +28,10 @@ class SignInViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            when (val result = loginUseCase(phoneNumber, password)) {
+            // Add "2" prefix to phone number
+            val formattedPhoneNumber = "2$phoneNumber"
+
+            when (val result = loginUseCase(formattedPhoneNumber, password)) {
                 is ApiResult.Success -> {
                     result.data.access_token?.let {
                         saveAccessTokenUseCase(it)
