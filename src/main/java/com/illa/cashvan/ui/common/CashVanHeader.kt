@@ -67,15 +67,6 @@ fun CashVanHeader(
                         modifier = Modifier.size(24.dp)
                     )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-
-                Text(
-                    text = stringResource(R.string.header_start),
-                    fontSize = 18.sp,
-                    fontFamily = FontFamily(Font(R.font.zain_regular)),
-                    fontWeight = FontWeight.Normal,
-                    color = Color.White
-                )
             }
 
             Spacer(modifier = Modifier.height(20.dp))

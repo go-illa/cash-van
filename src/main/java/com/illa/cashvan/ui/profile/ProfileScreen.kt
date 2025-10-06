@@ -1,6 +1,7 @@
 package com.illa.cashvan.ui.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.outlined.Person
@@ -45,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
+import com.illa.cashvan.core.utils.makePhoneCall
 import com.illa.cashvan.feature.profile.presentation.viewmodel.ProfileViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
 import org.koin.androidx.compose.koinViewModel
@@ -186,6 +189,8 @@ fun InfoSection(
     name: String,
     phone: String
 ) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -240,7 +245,10 @@ fun InfoSection(
             InfoRow(
                 icon = Icons.Outlined.Phone,
                 label = "رقم التليفون",
-                value = phone
+                value = phone,
+                onClick = {
+                    makePhoneCall(context, phone)
+                }
             )
         }
     }
@@ -250,11 +258,20 @@ fun InfoSection(
 fun InfoRow(
     icon: ImageVector,
     label: String,
-    value: String
+    value: String,
+    onClick: (() -> Unit)? = null
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable { onClick() }
+                } else {
+                    Modifier
+                }
+            )
     ) {
         Icon(
             imageVector = icon,

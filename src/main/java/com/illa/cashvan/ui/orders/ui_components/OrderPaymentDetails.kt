@@ -26,9 +26,6 @@ import com.illa.cashvan.R
 import com.illa.cashvan.data.MockData
 
 data class PaymentSummary(
-    val subtotal: Double,
-    val tax: Double,
-    val taxPercentage: Double = 10.0,
     val total: Double
 )
 
@@ -62,49 +59,6 @@ fun PaymentSummaryCard(
                 color = Color(0xFF1F252E),
                 modifier = Modifier.align(Alignment.Start)
             )
-
-            // Subtotal
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-                Text(
-                    text = "المجموع الفرعي",
-                    fontSize = 15.sp,
-                    fontFamily = FontFamily(Font(R.font.zain_regular)),
-                    color = Color(0xFF4B5563)
-                )
-
-                Text(
-                    text = " ${String.format("%.2f", paymentSummary.subtotal)} جنيه",
-                    fontSize = 15.sp,
-                    fontFamily = FontFamily(Font(R.font.zain_regular)),
-                    color = Color(0xFF4B5563)
-                )
-
-            }
-
-            // Tax
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "الضريبة (%${paymentSummary.taxPercentage.toInt()})",
-                    fontSize = 15.sp,
-                    fontFamily = FontFamily(Font(R.font.zain_regular)),
-                    color = Color(0xFF4B5563)
-                )
-                Text(
-                    text = "${String.format("%.2f", paymentSummary.tax)} جنيه",
-                    fontSize = 15.sp,
-                    fontFamily = FontFamily(Font(R.font.zain_regular)),
-                    color = Color(0xFF4B5563)
-                )
-            }
             HorizontalDivider(
                 color = Color(0xFFE1E7EF),
                 thickness = 1.dp,

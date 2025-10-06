@@ -71,7 +71,6 @@ fun OrderDetailsScreen(
                 modifier = modifier,
                 order = orderDetailsState.order!!,
                 onBackClick = onBackClick,
-                onConfirmOrder = onConfirmOrder
             )
         }
         else -> {
@@ -138,7 +137,6 @@ private fun OrderDetailsContent(
     modifier: Modifier = Modifier,
     order: Order,
     onBackClick: () -> Unit,
-    onConfirmOrder: () -> Unit
 ) {
     val orderSpecs = order.toOrderSpecs()
     val merchant = order.toUIMerchant()
@@ -190,32 +188,7 @@ private fun OrderDetailsContent(
                 paymentSummary = paymentSummary
             )
 
-            Spacer(modifier = Modifier.height(80.dp)) // Space for button
-        }
-
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = Color.White,
-            shadowElevation = 8.dp
-        ) {
-            Button(
-                onClick = onConfirmOrder,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF0D3773)
-                ),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text(
-                    text = "إطبع الفاتورة",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Medium,
-                    fontFamily = FontFamily(Font(R.font.zain_regular)),
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-            }
+            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }
@@ -292,7 +265,6 @@ fun OrderDetailsContentPreview() {
         OrderDetailsContent(
             order = sampleOrder,
             onBackClick = { /* Handle back */ },
-            onConfirmOrder = { /* Handle confirm */ }
         )
     }
 }

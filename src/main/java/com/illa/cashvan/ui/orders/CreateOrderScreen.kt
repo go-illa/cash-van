@@ -210,7 +210,7 @@ fun CreateOrderScreen(
                         )
                     } else {
                         Text(
-                            text = "تأكيد الطلب",
+                            text = "إتمام الطلب",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily(Font(R.font.zain_regular)),
@@ -317,7 +317,7 @@ fun CreateOrderScreen(
 
                     SearchableDropdown(
                         label = "",
-                        placeholder = "ابحث بالاسم",
+                        placeholder = "ابحث بالاسم او التليفون",
                         searchQuery = uiState.merchantSearchQuery,
                         onSearchQueryChange = { viewModel.searchMerchants(it) },
                         items = uiState.merchants,

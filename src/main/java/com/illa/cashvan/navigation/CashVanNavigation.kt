@@ -36,7 +36,8 @@ data class BottomNavItem(
 @Composable
 fun CashVanNavigation(
     authenticationViewModel: AuthenticationViewModel = koinViewModel(),
-    analyticsHelper: CashVanAnalyticsHelper = koinInject()
+    analyticsHelper: CashVanAnalyticsHelper = koinInject(),
+    onLogout: () -> Unit = {}
 ) {
     val authState by authenticationViewModel.authState.collectAsState()
     val backStack = remember { mutableStateListOf<Any>(SplashKey) }
@@ -122,6 +123,7 @@ fun CashVanNavigation(
                         PersonalProfileScreen(
                             onLogout = {
                                 authenticationViewModel.logout()
+                                onLogout()
                             }
                         )
                     }

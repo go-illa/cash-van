@@ -71,14 +71,8 @@ fun Order.toUIMerchant(): Merchant {
 
 fun Order.toPaymentSummary(): PaymentSummary {
     val totalAmount = total_income.toDoubleOrNull() ?: 0.0
-    val taxPercentage = 10.0
-    val subtotal = totalAmount / (1 + taxPercentage / 100)
-    val tax = totalAmount - subtotal
 
     return PaymentSummary(
-        subtotal = subtotal,
-        tax = tax,
-        taxPercentage = taxPercentage,
         total = totalAmount
     )
 }

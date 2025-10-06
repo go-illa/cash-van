@@ -58,7 +58,7 @@ suspend fun HttpClient.request(config: RequestConfiguration): HttpResponse {
                 }
             }
 
-            else -> Unit // Do nothing for QUERY and PATH
+            else -> Unit
         }
     }
 }

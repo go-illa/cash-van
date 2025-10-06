@@ -187,35 +187,8 @@ object MockData {
     // Mock Payment Summary
     val paymentSummaries = listOf(
         PaymentSummary(
-            subtotal = 762.00,
-            tax = 76.20,
-            taxPercentage = 10.0,
             total = 838.20
         ),
-        PaymentSummary(
-            subtotal = 450.00,
-            tax = 45.00,
-            taxPercentage = 10.0,
-            total = 495.00
-        ),
-        PaymentSummary(
-            subtotal = 320.75,
-            tax = 32.08,
-            taxPercentage = 10.0,
-            total = 352.83
-        ),
-        PaymentSummary(
-            subtotal = 180.50,
-            tax = 18.05,
-            taxPercentage = 10.0,
-            total = 198.55
-        ),
-        PaymentSummary(
-            subtotal = 650.25,
-            tax = 65.03,
-            taxPercentage = 10.0,
-            total = 715.28
-        )
     )
 
     // Helper functions to get random data
