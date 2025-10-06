@@ -3,12 +3,14 @@ package com.illa.cashvan.feature.auth.data.repository
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetRefreshTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetTokenUseCase
 import com.illa.cashvan.core.network.endpoint.ApiEndpoints
-import com.illa.cashvan.core.network.endpoint.request
 import com.illa.cashvan.core.network.model.ApiResult
 import com.illa.cashvan.feature.auth.data.model.LoginRequest
 import com.illa.cashvan.feature.auth.data.model.LoginResponse
 import com.illa.cashvan.feature.auth.data.model.LogoutRequest
 import com.illa.cashvan.feature.auth.data.model.LogoutResponse
+import com.illa.cashvan.feature.auth.data.model.RefreshTokenData
+import com.illa.cashvan.feature.auth.data.model.RefreshTokenRequest
+import com.illa.cashvan.feature.auth.data.model.RefreshTokenResponse
 import com.illa.cashvan.feature.auth.data.model.SalesAgent
 import com.illa.cashvan.feature.auth.data.model.TokenData
 import com.illa.cashvan.feature.auth.domain.repository.AuthRepository
@@ -73,6 +75,30 @@ class AuthRepositoryImpl(
             ApiResult.Success(response)
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Logout failed")
+        }
+    }
+
+    override suspend fun refreshToken(): ApiResult<RefreshTokenResponse> {
+        return try {
+            val refreshToken = getRefreshTokenUseCase().first()
+
+            val refreshRequest = RefreshTokenRequest(
+                tokens = RefreshTokenData(
+                    refresh_token = refreshToken
+                )
+            )
+
+            val config = ApiEndpoints.Auth.refreshToken()
+            val versionedPath = "v${config.version}/${config.path}"
+            val response = httpClient.request(versionedPath) {
+                method = HttpMethod.Post
+                contentType(ContentType.Application.Json)
+                setBody(refreshRequest)
+            }.body<RefreshTokenResponse>()
+
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Token refresh failed")
         }
     }
 }
