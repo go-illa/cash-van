@@ -331,7 +331,8 @@ fun CreateOrderScreen(
                                 viewModel.searchMerchants("")
                             }
                         },
-                        onClear = { viewModel.clearMerchant() }
+                        onClear = { viewModel.clearMerchant() },
+                        analyticsEventName = "select_merchant"
                     )
                 }
 

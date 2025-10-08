@@ -41,7 +41,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.feature.orders.data.model.PlanProduct
+import org.koin.compose.koinInject
 
 @Composable
 fun ProductSelectionComponent(
@@ -51,7 +53,8 @@ fun ProductSelectionComponent(
     products: List<PlanProduct>,
     onProductSelected: (PlanProduct, Int) -> Unit,
     isLoading: Boolean = false,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     var selectedProduct by remember { mutableStateOf<PlanProduct?>(null) }
     var quantity by remember { mutableIntStateOf(1) }
@@ -86,7 +89,9 @@ fun ProductSelectionComponent(
                 if (searchQuery.isEmpty()) {
                     onSearchQueryChange("")
                 }
-            }
+            },
+            analyticsEventName = "select_product",
+            analyticsHelper = analyticsHelper
         )
 
         // Product Details & Quantity

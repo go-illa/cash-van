@@ -41,6 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
+import org.koin.compose.koinInject
 
 @Composable
 fun <T> SearchableDropdown(
@@ -56,7 +58,9 @@ fun <T> SearchableDropdown(
     isLoading: Boolean = false,
     enabled: Boolean = true,
     onExpanded: () -> Unit = {},
-    onClear: () -> Unit = {}
+    onClear: () -> Unit = {},
+    analyticsEventName: String? = null,
+    analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -171,6 +175,12 @@ fun <T> SearchableDropdown(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
+                                        analyticsEventName?.let { eventName ->
+                                            analyticsHelper.logEvent(
+                                                eventName,
+                                                mapOf("item_name" to itemText(item))
+                                            )
+                                        }
                                         onItemSelected(item)
                                         expanded = false
                                     }
