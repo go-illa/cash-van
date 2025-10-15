@@ -15,7 +15,7 @@ interface OrderRepository {
         createdAtDateEq: String? = null
     ): ApiResult<OrdersResponse>
     suspend fun getOrderById(orderId: String): ApiResult<Order>
-    suspend fun getOngoingPlan(): ApiResult<OngoingPlanResponse>
+    suspend fun getOngoingPlan(): ApiResult<OngoingPlanResponse?>
     suspend fun searchMerchants(query: String): ApiResult<MerchantSearchResponse>
     suspend fun getPlanProducts(planId: String, query: String? = null): ApiResult<PlanProductsResponse>
     suspend fun createOrder(request: CreateOrderRequest): ApiResult<Unit>

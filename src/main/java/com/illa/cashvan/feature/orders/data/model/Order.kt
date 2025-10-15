@@ -80,17 +80,17 @@ data class Plan(
 
 @Serializable
 data class OngoingPlanResponse(
-    val id: Int,
-    val created_at: String,
-    val updated_at: String,
-    val code: Int,
-    val year: Int,
-    val formatted_code: String,
-    val infor_code: String,
-    val status: String,
-    val creator_id: Int,
-    val creator_type: String,
-    val sales_agent_id: Int
+    val id: Int? = null,
+    val created_at: String? = null,
+    val updated_at: String? = null,
+    val code: Int? = null,
+    val year: Int? = null,
+    val formatted_code: String? = null,
+    val infor_code: String? = null,
+    val status: String? = null,
+    val creator_id: Int? = null,
+    val creator_type: String? = null,
+    val sales_agent_id: Int? = null
 )
 
 @Serializable

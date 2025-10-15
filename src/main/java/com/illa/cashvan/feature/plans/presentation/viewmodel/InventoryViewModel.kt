@@ -3,6 +3,8 @@ package com.illa.cashvan.feature.plans.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.illa.cashvan.core.network.model.ApiResult
+import com.illa.cashvan.feature.orders.data.model.OngoingPlanResponse
+import com.illa.cashvan.feature.orders.domain.usecase.GetOngoingPlanUseCase
 import com.illa.cashvan.feature.plans.data.model.Plan
 import com.illa.cashvan.feature.plans.data.model.PlanProduct
 import com.illa.cashvan.feature.plans.domain.usecase.GetPlanProductsUseCase
@@ -15,14 +17,14 @@ import kotlinx.coroutines.launch
 data class InventoryUiState(
     val isLoading: Boolean = false,
     val planProducts: List<PlanProduct> = emptyList(),
-    val plans: List<Plan> = emptyList(),
+    val plan: OngoingPlanResponse?=null,
     val selectedPlan: Plan? = null,
     val error: String? = null
 )
 
 class InventoryViewModel(
     private val getPlanProductsUseCase: GetPlanProductsUseCase,
-    private val getPlansUseCase: GetPlansUseCase
+    private val getOngoingPlanUseCase: GetOngoingPlanUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(InventoryUiState())
@@ -39,26 +41,30 @@ class InventoryViewModel(
                 error = null
             )
 
-            when (val result = getPlansUseCase()) {
+            when (val result = getOngoingPlanUseCase()) {
                 is ApiResult.Success -> {
-                    val plans = result.data.plans
-                    val selectedPlan = plans.firstOrNull()
+                    val plan: OngoingPlanResponse? = result.data
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        plans = plans,
-                        selectedPlan = selectedPlan,
+                        plan = plan,
                         error = null
                     )
-
-                    // Auto-load products for the first plan
-                    selectedPlan?.let { plan ->
+                    if (plan != null && plan.id != null) {
                         loadPlanProducts(plan.id.toString())
+                    }
+                    else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            planProducts = emptyList(),
+                            error = null
+                        )
                     }
                 }
                 is ApiResult.Error -> {
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = result.message
+                        error = result.message,
+                        planProducts = emptyList()
                     )
                 }
                 is ApiResult.Loading -> {
@@ -68,10 +74,6 @@ class InventoryViewModel(
         }
     }
 
-    fun selectPlan(plan: Plan) {
-        _uiState.value = _uiState.value.copy(selectedPlan = plan)
-        loadPlanProducts(plan.id.toString())
-    }
 
     fun loadPlanProducts(planId: String) {
         viewModelScope.launch {

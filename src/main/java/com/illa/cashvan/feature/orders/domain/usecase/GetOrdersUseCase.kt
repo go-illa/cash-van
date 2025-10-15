@@ -13,7 +13,7 @@ class GetOrdersUseCase @Inject constructor(
         // First get the ongoing plan to retrieve the plan_id
         val planResult = getOngoingPlanUseCase()
         val planId = when (planResult) {
-            is ApiResult.Success -> planResult.data.id.toString()
+            is ApiResult.Success -> planResult.data?.id.toString()
             else -> null
         }
 

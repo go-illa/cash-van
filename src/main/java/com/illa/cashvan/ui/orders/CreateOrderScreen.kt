@@ -258,13 +258,15 @@ fun CreateOrderScreen(
                             color = Color(0xFF6B7280)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = plan.formatted_code,
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily(Font(R.font.zain_regular)),
-                            color = Color(0xFF0D3773)
-                        )
+                        plan.formatted_code?.let {
+                            Text(
+                                text = it,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color(0xFF0D3773)
+                            )
+                        }
                     }
                 }
 
