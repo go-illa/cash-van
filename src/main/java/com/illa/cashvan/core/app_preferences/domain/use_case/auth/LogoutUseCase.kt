@@ -9,11 +9,11 @@ class LogoutUseCase(
     private val clearAppDataUseCase: ClearAppDataUseCase
 ) {
     suspend operator fun invoke(): ApiResult<Unit> {
-        // Clear app data first to ensure all cached data is removed
-        clearAppDataUseCase()
-
-        // Then make the logout API call
+        // First make the logout API call while we still have tokens
         val apiResult = authRepository.logout()
+
+        // Then clear app data to remove all cached data
+        clearAppDataUseCase()
 
         return when (apiResult) {
             is ApiResult.Success -> ApiResult.Success(Unit)
