@@ -15,17 +15,13 @@ import com.illa.cashvan.feature.orders.domain.usecase.CreateOrderUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOngoingPlanUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetPlanProductsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.SearchMerchantsUseCase
-import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
 import com.illa.cashvan.feature.printer.HoneywellPrinterManager
-import com.illa.cashvan.feature.printer.InvoiceFormatter
-import com.illa.cashvan.feature.printer.EscPosInvoiceFormatter
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import timber.log.Timber
 import android.util.Log
 import java.nio.charset.Charset
 
@@ -192,7 +188,7 @@ class CreateOrderViewModel(
     fun selectMerchant(merchant: MerchantItem) {
         _uiState.value = _uiState.value.copy(
             selectedMerchant = merchant,
-            merchantSearchQuery = merchant.name?:""
+            merchantSearchQuery = merchant.name
         )
     }
 
@@ -412,214 +408,11 @@ class CreateOrderViewModel(
         }
     }
 
-    /**
-     * STEP 1: Test simple Arabic printing
-     * Run this FIRST to see if printer can print Arabic at all
-     */
-    fun testStep1() {
-        viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Running STEP 1: Simple Arabic Test..."
-                )
 
-                val invoiceBytes = EscPosInvoiceFormatter.step1_testSimpleArabic(context)
-                val printResult = printerManager.printInvoiceEscPos(invoiceBytes)
 
-                if (printResult.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "STEP 1 completed. Check printed output for Arabic text."
-                    )
-                    Timber.d("STEP 1 test completed")
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "Error: ${e.message}"
-                )
-            }
-        }
-    }
 
-    /**
-     * STEP 2: Test all code pages
-     * Run this if STEP 1 shows no Arabic
-     */
-    fun testStep2() {
-        viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Running STEP 2: Testing all code pages..."
-                )
 
-                val invoiceBytes = EscPosInvoiceFormatter.step2_testAllCodePages(context)
-                val printResult = printerManager.printInvoiceEscPos(invoiceBytes)
 
-                if (printResult.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "STEP 2 completed. Find which CP shows Arabic correctly."
-                    )
-                    Timber.d("STEP 2 test completed")
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "Error: ${e.message}"
-                )
-            }
-        }
-    }
-
-    /**
-     * STEP 3: Test Honeywell-specific commands
-     */
-    fun testStep3() {
-        viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Running STEP 3: Honeywell specific test..."
-                )
-
-                val invoiceBytes = EscPosInvoiceFormatter.step3_testHoneywellSpecific(context)
-                val printResult = printerManager.printInvoiceEscPos(invoiceBytes)
-
-                if (printResult.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "STEP 3 completed."
-                    )
-                    Timber.d("STEP 3 test completed")
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "Error: ${e.message}"
-                )
-            }
-        }
-    }
-
-    /**
-     * STEP 4: Test raw bytes
-     */
-    fun testStep4() {
-        viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Running STEP 4: Raw bytes test..."
-                )
-
-                val invoiceBytes = EscPosInvoiceFormatter.step4_testRawBytes(context)
-                val printResult = printerManager.printInvoiceEscPos(invoiceBytes)
-
-                if (printResult.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "STEP 4 completed."
-                    )
-                    Timber.d("STEP 4 test completed")
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "Error: ${e.message}"
-                )
-            }
-        }
-    }
-
-    /**
-     * STEP 5: Test character by character with hex
-     */
-    fun testStep5() {
-        viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Running STEP 5: Character test..."
-                )
-
-                val invoiceBytes = EscPosInvoiceFormatter.step5_testCharacterByCharacter(context)
-                val printResult = printerManager.printInvoiceEscPos(invoiceBytes)
-
-                if (printResult.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "STEP 5 completed."
-                    )
-                    Timber.d("STEP 5 test completed")
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "Error: ${e.message}"
-                )
-            }
-        }
-    }
-
-    /**
-     * Print invoice with static data for testing
-     */
-    fun printTestInvoice() {
-        viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Generating test invoice..."
-                )
-
-                // Generate static invoice with plain text (instead of ESC/POS)
-                val invoiceText = InvoiceFormatter.generateStaticInvoice()
-
-                // Display the invoice text instead of printing
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "Test invoice generated successfully",
-                    invoiceText = invoiceText
-                )
-                Timber.d("Test invoice generated successfully")
-                Timber.d("Invoice text:\n$invoiceText")
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "Error generating test invoice: ${e.message}"
-                )
-                Timber.e(e, "Error generating test invoice")
-            }
-        }
-    }
 
     /**
      * Clear print status message
@@ -628,145 +421,9 @@ class CreateOrderViewModel(
         _uiState.value = _uiState.value.copy(printStatus = null)
     }
 
-    /**
-     * CPCL STEP 1: Test simple Arabic with CPCL
-     */
-    fun testCpclStep1() {
-        viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Running CPCL STEP 1: Simple Arabic Test..."
-                )
 
-                val invoiceBytes = CpclInvoiceFormatter.step1_testSimpleArabicCPCL(context)
-                val printResult = printerManager.printBytes(invoiceBytes)
 
-                if (printResult.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "CPCL STEP 1 completed. Check output for Arabic."
-                    )
-                    Timber.d("CPCL STEP 1 completed")
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "Error: ${e.message}"
-                )
-            }
-        }
-    }
 
-    /**
-     * CPCL STEP 2: Test different encodings
-     */
-    fun testCpclStep2() {
-        viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Running CPCL STEP 2: Encoding tests..."
-                )
-
-                val invoiceBytes = CpclInvoiceFormatter.step2_testCPCLEncodings(context)
-                val printResult = printerManager.printBytes(invoiceBytes)
-
-                if (printResult.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "CPCL STEP 2 completed."
-                    )
-                    Timber.d("CPCL STEP 2 completed")
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "Error: ${e.message}"
-                )
-            }
-        }
-    }
-
-    /**
-     * CPCL STEP 3: Test different fonts
-     */
-    fun testCpclStep3() {
-        viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Running CPCL STEP 3: Font tests..."
-                )
-
-                val invoiceBytes = CpclInvoiceFormatter.step3_testCPCLFonts(context)
-                val printResult = printerManager.printBytes(invoiceBytes)
-
-                if (printResult.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "CPCL STEP 3 completed."
-                    )
-                    Timber.d("CPCL STEP 3 completed")
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "Error: ${e.message}"
-                )
-            }
-        }
-    }
-
-    /**
-     * CPCL STEP 4: Test full invoice with CPCL
-     */
-    fun testCpclStep4() {
-        viewModelScope.launch {
-            try {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Running CPCL STEP 4: Full invoice..."
-                )
-
-                val invoiceBytes = CpclInvoiceFormatter.step4_testFullInvoiceCPCL(context)
-                val printResult = printerManager.printBytes(invoiceBytes)
-
-                if (printResult.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "CPCL STEP 4 completed."
-                    )
-                    Timber.d("CPCL STEP 4 completed")
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "Error: ${e.message}"
-                )
-            }
-        }
-    }
 
     /**
      * Cleanup resources
