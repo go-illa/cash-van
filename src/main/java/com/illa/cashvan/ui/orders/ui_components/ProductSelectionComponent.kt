@@ -82,7 +82,7 @@ fun ProductSelectionComponent(
             onItemSelected = {
                 selectedProduct = it
             },
-            itemText = { "${it.product.name} (${it.product.fd_sku_code})" },
+            itemText = { "${it.product.name} (${it.product.frontdoor_code})" },
             isLoading = isLoading,
             enabled = enabled,
             onExpanded = {

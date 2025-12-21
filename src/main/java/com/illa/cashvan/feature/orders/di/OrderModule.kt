@@ -27,5 +27,5 @@ val orderModule = module {
 
     // ViewModels
     viewModel { OrderViewModel(get(), get()) }
-    viewModel { CreateOrderViewModel(get(), get(), get(), get()) }
+    viewModel { CreateOrderViewModel(get(), get(), get(), get(), get()) }
 }

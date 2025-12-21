@@ -45,10 +45,10 @@ import com.illa.cashvan.feature.orders.data.model.PlanProduct
 @Composable
 fun SelectedProductsList(
     modifier: Modifier = Modifier,
-    selectedProducts: Map<Int, Int>,
+    selectedProducts: Map<String, Int>,
     products: List<PlanProduct>,
-    onQuantityChange: (Int, Int) -> Unit,
-    onRemoveProduct: (Int) -> Unit
+    onQuantityChange: (String, Int) -> Unit,
+    onRemoveProduct: (String) -> Unit
 ) {
     Column(
         modifier = modifier
@@ -114,7 +114,7 @@ private fun SelectedProductItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = product.product.fd_sku_code,
+                    text = product.product.frontdoor_code,
                     fontSize = 12.sp,
                     fontFamily = FontFamily(Font(R.font.zain_regular)),
                     color = Color(0xFF6B7280)

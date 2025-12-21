@@ -139,6 +139,9 @@ dependencies {
     // Timber Logging
     implementation("com.jakewharton.timber:timber:5.0.1")
 
+    // Honeywell Printer SDK - Multiple Command Languages
+    implementation(files("libs/printer_library.jar"))
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

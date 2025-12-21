@@ -50,7 +50,7 @@ class InventoryViewModel(
                         error = null
                     )
                     if (plan != null && plan.id != null) {
-                        loadPlanProducts(plan.id.toString())
+                        loadPlanProducts(plan.id)
                     }
                     else {
                         _uiState.value = _uiState.value.copy(
@@ -105,7 +105,7 @@ class InventoryViewModel(
     fun refresh() {
         val currentPlan = _uiState.value.selectedPlan
         if (currentPlan != null) {
-            loadPlanProducts(currentPlan.id.toString())
+            loadPlanProducts(currentPlan.id)
         } else {
             loadPlans()
         }

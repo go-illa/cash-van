@@ -24,7 +24,7 @@ fun Order.toOrderItem(): OrderItem {
     } ?: emptyList()
 
     return OrderItem(
-        id = id.toString(),
+        id = id,
         orderNumber = formatted_code,
         merchantName = merchant?.name ?: "غير محدد",
         phoneNumber = merchant?.phone_number ?: "",
@@ -62,7 +62,7 @@ fun Order.toOrderSpecs(): OrderSpecs {
 
 fun Order.toUIMerchant(): Merchant {
     return Merchant(
-        id = merchant?.id?.toString() ?: "",
+        id = merchant?.id ?: "",
         name = merchant?.name ?: "غير محدد",
         phoneNumber = merchant?.phone_number ?: "",
         address = merchant?.address ?: ""
@@ -86,7 +86,7 @@ fun Order.toProductDetailsList(): List<ProductDetails> {
 
             ProductDetails(
                 productName = product.name,
-                sku = product.sku_code,
+                sku = product.sku,
                 price = totalPrice,
                 unitPrice = unitPrice,
                 quantity = quantity

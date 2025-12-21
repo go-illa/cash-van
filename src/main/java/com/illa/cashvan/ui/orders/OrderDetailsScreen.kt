@@ -6,23 +6,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
@@ -32,14 +27,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
+import com.illa.cashvan.feature.orders.data.model.Order
+import com.illa.cashvan.feature.orders.presentation.mapper.toOrderSpecs
+import com.illa.cashvan.feature.orders.presentation.mapper.toPaymentSummary
+import com.illa.cashvan.feature.orders.presentation.mapper.toProductDetailsList
+import com.illa.cashvan.feature.orders.presentation.mapper.toUIMerchant
+import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
 import com.illa.cashvan.ui.orders.ui_components.MerchantDetailsComponent
 import com.illa.cashvan.ui.orders.ui_components.OrderSpecsComponentCompact
 import com.illa.cashvan.ui.orders.ui_components.PaymentSummaryCard
 import com.illa.cashvan.ui.orders.ui_components.ProductsDetailsComponent
-import com.illa.cashvan.feature.orders.data.model.Order
-import com.illa.cashvan.feature.orders.presentation.mapper.*
-import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -214,30 +212,30 @@ private fun SectionTitle(
 @Composable
 fun OrderDetailsContentPreview() {
     val sampleOrder = Order(
-        id = 4,
+        id = "4",
         created_at = "2025-09-28T21:52:48.528Z",
         updated_at = "2025-09-28T21:52:48.528Z",
-        plan_id = 1,
+        plan_id = "1",
         formatted_code = "ORD-000000004",
-        creator_id = 1,
+        creator_id = "1",
         creator_type = "SalesAgent",
         total_sold_quantity = 3,
         total_income = "149.97",
         order_plan_products = listOf(
             com.illa.cashvan.feature.orders.data.model.OrderPlanProduct(
-                id = 4,
+                id = "4",
                 created_at = "2025-09-28T21:52:48.533Z",
                 updated_at = "2025-09-28T21:52:48.533Z",
                 sold_quantity = 3,
-                plan_product_id = 2,
-                order_id = 4,
+                plan_product_id = "2",
+                order_id = "4",
                 total_income = "149.97",
                 product = com.illa.cashvan.feature.orders.data.model.OrderProduct(
-                    id = 2,
+                    id = "2",
                     created_at = "2025-09-28T21:52:47.890Z",
                     updated_at = "2025-09-28T21:52:47.890Z",
-                    sku_code = "PROD002",
-                    fd_sku_code = "FD002",
+                    sku = "PROD002",
+                    frontdoor_code = "FD002",
                     price = "49.99",
                     name = "Bluetooth Speaker",
                     description = "Portable Bluetooth speaker with waterproof design and superior sound quality."
@@ -245,7 +243,7 @@ fun OrderDetailsContentPreview() {
             )
         ),
         merchant = com.illa.cashvan.feature.orders.data.model.Merchant(
-            id = 2,
+            id = "2",
             created_at = "2025-09-28T21:52:48.202Z",
             updated_at = "2025-09-28T21:52:48.202Z",
             name = "Electronics Hub",
@@ -254,10 +252,10 @@ fun OrderDetailsContentPreview() {
             phone_number = "+201555000002",
             latitude = null,
             longitude = null,
-            governorate_id = 2,
-            creator_id = 1,
+            governorate_id = "2",
+            creator_id = "1",
             creator_type = "Supervisor",
-            plan_id = 1
+            plan_id = "1"
         )
     )
 

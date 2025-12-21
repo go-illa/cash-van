@@ -50,9 +50,9 @@ fun PlanProduct.toInventoryItem(): InventoryItem {
     val availableQuantity = assigned_quantity - sold_quantity
 
     return InventoryItem(
-        id = id.toString(),
+        id = id,
         name = product.name,
-        code = product.sku_code,
+        code = product.sku,
         totalQuantity = assigned_quantity,
         availableQuantity = availableQuantity,
         soldQuantity = sold_quantity,
