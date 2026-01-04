@@ -37,6 +37,8 @@
     <string name="product_code">رمز المنتج</string>
     <string name="total_label">الإجمالي</string>
     <string name="available_label">متاح</string>
+    <string name="cash_van_available_label">متاح بيع</string>
+    <string name="pre_sell_available_label">متاح تسليم</string>
     <string name="sold_label">مُباع</string>
     <string name="add_item">إضافة عنصر</string>
 

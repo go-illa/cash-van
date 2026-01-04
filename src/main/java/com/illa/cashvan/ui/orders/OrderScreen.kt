@@ -16,14 +16,24 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,18 +44,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import com.illa.cashvan.R
 import com.illa.cashvan.feature.orders.presentation.mapper.toOrderItem
+import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderType
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
 import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.ui.home.ui_components.EmptyOrdersComponent
+import com.illa.cashvan.ui.orders.ui_components.CancelOrderBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.OrderCardItem
 import com.illa.cashvan.ui.orders.ui_components.OrderItem
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderScreen(
     onAddOrderClick: () -> Unit = {},
@@ -56,9 +70,13 @@ fun OrderScreen(
     val uiState by viewModel.uiState.collectAsState()
     val orderItems = uiState.orders.map { it.toOrderItem() }
 
-    LaunchedEffect(Unit) {
-        viewModel.refresh()
-    }
+    // Bottom sheet state
+    var showCancelBottomSheet by remember { mutableStateOf(false) }
+    var selectedOrderForCancel by remember { mutableStateOf<OrderItem?>(null) }
+    val cancelBottomSheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+    val scope = rememberCoroutineScope()
 
 
     Box(
@@ -82,6 +100,44 @@ fun OrderScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            val tabs = listOf(OrderType.PRE_SELL, OrderType.CASH_VAN)
+            val selectedTabIndex = tabs.indexOf(uiState.selectedTab)
+
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                containerColor = Color.Transparent,
+                indicator = { tabPositions ->
+                    if (selectedTabIndex < tabPositions.size) {
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                            color = Color(0xFF0D3773)
+                        )
+                    }
+                },
+                divider = {}
+            ) {
+                tabs.forEachIndexed { index, orderType ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { viewModel.selectTab(orderType) },
+                        text = {
+                            Text(
+                                text = orderType.displayName,
+                                fontSize = 16.sp,
+                                fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal,
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = if (selectedTabIndex == index) Color(0xFF0D3773) else Color(0xFF9E9E9E)
+                            )
+                        }
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -141,6 +197,15 @@ fun OrderScreen(
                             OrderCardItem(
                                 order = order,
                                 onOrderClick = onOrderClick,
+                                onCancelClick = { orderItem ->
+                                    selectedOrderForCancel = orderItem
+                                    showCancelBottomSheet = true
+                                },
+                                onSubmitClick = { orderItem ->
+                                    // Find the full order object from uiState
+                                    val fullOrder = uiState.orders.find { it.id == orderItem.id }
+                                    fullOrder?.let { viewModel.submitOrder(it) }
+                                },
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -170,6 +235,39 @@ fun OrderScreen(
                     modifier = Modifier.size(32.dp)
                 )
             }
+        }
+
+        // Cancel order bottom sheet
+        if (showCancelBottomSheet && selectedOrderForCancel != null) {
+            CancelOrderBottomSheet(
+                sheetState = cancelBottomSheetState,
+                onDismiss = {
+                    scope.launch {
+                        cancelBottomSheetState.hide()
+                    }.invokeOnCompletion {
+                        showCancelBottomSheet = false
+                        selectedOrderForCancel = null
+                    }
+                },
+                onConfirm = { reason, note ->
+                    selectedOrderForCancel?.let { order ->
+                        viewModel.cancelOrder(
+                            orderId = order.id,
+                            reason = reason,
+                            note = note,
+                            onSuccess = {
+                                scope.launch {
+                                    cancelBottomSheetState.hide()
+                                }.invokeOnCompletion {
+                                    showCancelBottomSheet = false
+                                    selectedOrderForCancel = null
+                                }
+                            }
+                        )
+                    }
+                },
+                orderNumber = selectedOrderForCancel?.orderNumber ?: ""
+            )
         }
     }
 }

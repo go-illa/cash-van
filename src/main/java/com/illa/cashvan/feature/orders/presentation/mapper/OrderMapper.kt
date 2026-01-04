@@ -31,7 +31,9 @@ fun Order.toOrderItem(): OrderItem {
         totalAmount = total_income.toDoubleOrNull() ?: 0.0,
         itemsCount = total_sold_quantity,
         date = formattedTime.toString(),
-        products = products
+        products = products,
+        status = status,
+        orderType = order_type
     )
 }
 

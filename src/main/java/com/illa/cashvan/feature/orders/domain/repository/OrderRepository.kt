@@ -8,15 +8,18 @@ import com.illa.cashvan.feature.orders.data.model.OngoingPlanResponse
 import com.illa.cashvan.feature.orders.data.model.Order
 import com.illa.cashvan.feature.orders.data.model.OrdersResponse
 import com.illa.cashvan.feature.orders.data.model.PlanProductsResponse
+import com.illa.cashvan.feature.orders.data.model.UpdateOrderRequest
 
 interface OrderRepository {
     suspend fun getOrders(
         planId: String? = null,
-        createdAtDateEq: String? = null
+        createdAtDateEq: String? = null,
+        orderTypeEq: String? = null
     ): ApiResult<OrdersResponse>
     suspend fun getOrderById(orderId: String): ApiResult<Order>
     suspend fun getOngoingPlan(): ApiResult<OngoingPlanResponse?>
     suspend fun searchMerchants(query: String): ApiResult<MerchantSearchResponse>
     suspend fun getPlanProducts(planId: String, query: String? = null): ApiResult<PlanProductsResponse>
     suspend fun createOrder(request: CreateOrderRequest): ApiResult<CreateOrderResponse>
+    suspend fun updateOrder(orderId: String, request: UpdateOrderRequest): ApiResult<Order>
 }

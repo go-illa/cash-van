@@ -177,7 +177,7 @@ private fun SelectedProductItem(
                             quantityText = newText
                             val newQuantity = newText.toIntOrNull()
                             if (newQuantity != null && newQuantity > 0) {
-                                if (newQuantity <= product.available_quantity) {
+                                if (newQuantity <= product.calculatedAvailableQuantity) {
                                     onQuantityChange(newQuantity)
                                     showQuantityError = false
                                 } else {
@@ -230,8 +230,8 @@ private fun SelectedProductItem(
                         .size(32.dp)
                         .background(Color.White, RoundedCornerShape(8.dp))
                         .border(1.dp, Color(0xFFD1D5DB), RoundedCornerShape(8.dp))
-                        .clickable(enabled = quantity < product.available_quantity) {
-                            if (quantity < product.available_quantity) {
+                        .clickable(enabled = quantity < product.calculatedAvailableQuantity) {
+                            if (quantity < product.calculatedAvailableQuantity) {
                                 val newQuantity = quantity + 1
                                 quantityText = newQuantity.toString()
                                 onQuantityChange(newQuantity)
@@ -245,7 +245,7 @@ private fun SelectedProductItem(
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily(Font(R.font.zain_regular)),
-                        color = if (quantity < product.available_quantity) Color(0xFF111827) else Color(0xFF9CA3AF)
+                        color = if (quantity < product.calculatedAvailableQuantity) Color(0xFF111827) else Color(0xFF9CA3AF)
                     )
                 }
             }

@@ -13,6 +13,8 @@ data class Order(
     val creator_type: String? = null,
     val total_sold_quantity: Int,
     val total_income: String,
+    val status: String? = null,
+    val order_type: String? = null,
     val order_plan_products: List<OrderPlanProduct>? = null,
     val merchant: Merchant? = null
 )
@@ -109,16 +111,19 @@ data class PlanProduct(
     val id: String,
     val created_at: String,
     val updated_at: String,
-    val assigned_quantity: Int,
-    val sold_quantity: Int,
+    val assigned_quantity: Int? = 0,
+    val sold_quantity: Int? = 0,
     val product_price: String,
     val total_income: String,
     val total_price: String,
-    val available_quantity: Int,
+    val cash_van_available_quantity: Int? = 0,
     val plan_id: String? = null,
     val product_id: String? = null,
     val product: Product
-)
+) {
+    val calculatedAvailableQuantity: Int
+        get() = cash_van_available_quantity ?: ((assigned_quantity ?: 0) - (sold_quantity ?: 0)).coerceAtLeast(0)
+}
 
 @Serializable
 data class Product(
@@ -162,4 +167,23 @@ data class CreateOrderResponse(
     val creator_type: String? = null,
     val total_sold_quantity: Int,
     val total_income: String
+)
+
+@Serializable
+data class UpdateOrderRequest(
+    val order: UpdateOrderData
+)
+
+@Serializable
+data class UpdateOrderData(
+    val status: String? = null,
+    val cancellation_reason: String? = null,
+    val cancellation_note: String? = null,
+    val order_items: List<SubmitOrderItem>? = null
+)
+
+@Serializable
+data class SubmitOrderItem(
+    val plan_product_id: String,
+    val sold_quantity: Int
 )

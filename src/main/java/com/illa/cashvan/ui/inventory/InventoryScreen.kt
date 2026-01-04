@@ -42,20 +42,23 @@ import com.illa.cashvan.ui.inventory.ui_components.InventoryItem
 import org.koin.androidx.compose.koinViewModel
 
 fun PlanProduct.toInventoryItem(): InventoryItem {
-    val soldPercentage = if (assigned_quantity > 0) {
-        (sold_quantity.toFloat() / assigned_quantity.toFloat()) * 100f
+    val assignedQty = assigned_quantity ?: 0
+    val soldQty = sold_quantity ?: 0
+
+    val soldPercentage = if (assignedQty > 0) {
+        (soldQty.toFloat() / assignedQty.toFloat()) * 100f
     } else {
         0f
     }
-    val availableQuantity = assigned_quantity - sold_quantity
 
     return InventoryItem(
         id = id,
         name = product.name,
         code = product.sku,
-        totalQuantity = assigned_quantity,
-        availableQuantity = availableQuantity,
-        soldQuantity = sold_quantity,
+        totalQuantity = assignedQty,
+        preSellAvailableQuantity = calculatedPreSellAvailable,
+        cashVanAvailableQuantity = calculatedCashVanAvailable,
+        soldQuantity = soldQty,
         progressPercentage = soldPercentage
     )
 }
@@ -211,7 +214,8 @@ fun InventoryScreenPreview() {
                         name = "كولا 1.5 لتر",
                         code = "SKU001",
                         totalQuantity = 100,
-                        availableQuantity = 60,
+                        preSellAvailableQuantity = 35,
+                        cashVanAvailableQuantity = 25,
                         soldQuantity = 40,
                         progressPercentage = 40f
                     ),
@@ -220,7 +224,8 @@ fun InventoryScreenPreview() {
                         name = "بيبسي 2 لتر",
                         code = "SKU002",
                         totalQuantity = 80,
-                        availableQuantity = 20,
+                        preSellAvailableQuantity = 12,
+                        cashVanAvailableQuantity = 8,
                         soldQuantity = 60,
                         progressPercentage = 75f
                     ),
@@ -229,7 +234,8 @@ fun InventoryScreenPreview() {
                         name = "ماء معدني 500 مل",
                         code = "SKU003",
                         totalQuantity = 200,
-                        availableQuantity = 150,
+                        preSellAvailableQuantity = 90,
+                        cashVanAvailableQuantity = 60,
                         soldQuantity = 50,
                         progressPercentage = 25f
                     )

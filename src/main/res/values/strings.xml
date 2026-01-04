@@ -38,6 +38,8 @@
     <string name="product_code">Product Code</string>
     <string name="total_label">Total</string>
     <string name="available_label">Available</string>
+    <string name="cash_van_available_label">Available for Cashvan</string>
+    <string name="pre_sell_available_label">Available for Presell</string>
     <string name="sold_label">Sold</string>
     <string name="add_item">Add Item</string>
 

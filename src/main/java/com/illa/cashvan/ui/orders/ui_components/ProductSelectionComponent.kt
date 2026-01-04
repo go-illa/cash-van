@@ -1,12 +1,12 @@
 package com.illa.cashvan.ui.orders.ui_components
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -45,6 +45,7 @@ import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.feature.orders.data.model.PlanProduct
 import org.koin.compose.koinInject
 
+@SuppressLint("DefaultLocale")
 @Composable
 fun ProductSelectionComponent(
     modifier: Modifier = Modifier,
@@ -136,11 +137,11 @@ fun ProductSelectionComponent(
                         color = Color(0xFF6B7280)
                     )
                     Text(
-                        text = "${product.available_quantity} وحدة",
+                        text = "${product.calculatedAvailableQuantity} وحدة",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily(Font(R.font.zain_regular)),
-                        color = if (product.available_quantity > 0) Color(0xFF059669) else Color(0xFFDC2626)
+                        color = if (product.calculatedAvailableQuantity > 0) Color(0xFF059669) else Color(0xFFDC2626)
                     )
                 }
 
@@ -218,7 +219,7 @@ fun ProductSelectionComponent(
                                 quantityText = newText
                                 val newQuantity = newText.toIntOrNull()
                                 if (newQuantity != null && newQuantity > 0) {
-                                    if (newQuantity <= product.available_quantity) {
+                                    if (newQuantity <= product.calculatedAvailableQuantity) {
                                         quantity = newQuantity
                                         showQuantityError = false
                                     } else {
@@ -271,8 +272,8 @@ fun ProductSelectionComponent(
                             .size(36.dp)
                             .background(Color(0xFFF3F4F6), RoundedCornerShape(8.dp))
                             .border(1.dp, Color(0xFFD1D5DB), RoundedCornerShape(8.dp))
-                            .clickable(enabled = quantity < product.available_quantity) {
-                                if (quantity < product.available_quantity) {
+                            .clickable(enabled = quantity < product.calculatedAvailableQuantity) {
+                                if (quantity < product.calculatedAvailableQuantity) {
                                     quantity++
                                     quantityText = quantity.toString()
                                     showQuantityError = false
@@ -285,7 +286,7 @@ fun ProductSelectionComponent(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily(Font(R.font.zain_regular)),
-                            color = if (quantity < product.available_quantity) Color(0xFF111827) else Color(0xFF9CA3AF)
+                            color = if (quantity < product.calculatedAvailableQuantity) Color(0xFF111827) else Color(0xFF9CA3AF)
                         )
                     }
                 }
@@ -309,7 +310,7 @@ fun ProductSelectionComponent(
                     containerColor = Color(0xFF0D3773)
                 ),
                 shape = RoundedCornerShape(12.dp),
-                enabled = enabled && product.available_quantity > 0 && !showQuantityError && quantity <= product.available_quantity
+                enabled = enabled && product.calculatedAvailableQuantity > 0 && !showQuantityError && quantity <= product.calculatedAvailableQuantity
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,

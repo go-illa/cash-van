@@ -184,7 +184,7 @@ fun CreateOrderScreen(
 
                 val hasInvalidQuantity = uiState.selectedProducts.any { (planProductId, quantity) ->
                     val product = uiState.products.find { it.id == planProductId }
-                    product == null || quantity > product.available_quantity
+                    product == null || quantity > (product.cash_van_available_quantity ?: 0)
                 }
 
                 Button(

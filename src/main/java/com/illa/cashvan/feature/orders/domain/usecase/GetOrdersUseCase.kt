@@ -9,7 +9,10 @@ class GetOrdersUseCase @Inject constructor(
     private val orderRepository: OrderRepository,
     private val getOngoingPlanUseCase: GetOngoingPlanUseCase
 ) {
-    suspend operator fun invoke(createdAtDateEq: String? = null): ApiResult<OrdersResponse> {
+    suspend operator fun invoke(
+        createdAtDateEq: String? = null,
+        orderTypeEq: String? = null
+    ): ApiResult<OrdersResponse> {
         // First get the ongoing plan to retrieve the plan_id
         val planResult = getOngoingPlanUseCase()
         val planId = when (planResult) {
@@ -17,6 +20,6 @@ class GetOrdersUseCase @Inject constructor(
             else -> null
         }
 
-        return orderRepository.getOrders(planId, createdAtDateEq)
+        return orderRepository.getOrders(planId, createdAtDateEq, orderTypeEq)
     }
 }
