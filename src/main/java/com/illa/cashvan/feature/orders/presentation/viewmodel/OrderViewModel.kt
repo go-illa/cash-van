@@ -1,5 +1,7 @@
 package com.illa.cashvan.feature.orders.presentation.viewmodel
 
+import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.illa.cashvan.core.getCurrentDateApiFormat
@@ -10,6 +12,9 @@ import com.illa.cashvan.feature.orders.data.model.UpdateOrderRequest
 import com.illa.cashvan.feature.orders.domain.usecase.GetOrdersUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOrderByIdUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.UpdateOrderUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
+import com.illa.cashvan.feature.printer.HoneywellPrinterManager
+import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,7 +29,9 @@ data class OrderUiState(
     val isLoading: Boolean = false,
     val orders: List<Order> = emptyList(),
     val error: String? = null,
-    val selectedTab: OrderType = OrderType.PRE_SELL
+    val selectedTab: OrderType = OrderType.PRE_SELL,
+    val isPrinting: Boolean = false,
+    val printStatus: String? = null
 )
 
 data class OrderDetailsUiState(
@@ -34,9 +41,11 @@ data class OrderDetailsUiState(
 )
 
 class OrderViewModel(
+    private val context: Context,
     private val getOrdersUseCase: GetOrdersUseCase,
     private val getOrderByIdUseCase: GetOrderByIdUseCase,
-    private val updateOrderUseCase: UpdateOrderUseCase
+    private val updateOrderUseCase: UpdateOrderUseCase,
+    private val getInvoiceContentUseCase: GetInvoiceContentUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OrderUiState())
@@ -44,6 +53,10 @@ class OrderViewModel(
 
     private val _orderDetailsUiState = MutableStateFlow(OrderDetailsUiState())
     val orderDetailsUiState: StateFlow<OrderDetailsUiState> = _orderDetailsUiState.asStateFlow()
+
+    private val printerManager: HoneywellPrinterManager by lazy {
+        HoneywellPrinterManager(context)
+    }
 
     init {
         loadOrders(orderType = OrderType.PRE_SELL)
@@ -165,6 +178,8 @@ class OrderViewModel(
             when (val result = updateOrderUseCase(order.id, request)) {
                 is ApiResult.Success -> {
                     onSuccess()
+                    // Print invoice after successful submission
+                    printInvoice(order.id)
                     // Refresh the orders list
                     loadOrders()
                 }
@@ -176,5 +191,110 @@ class OrderViewModel(
                 }
             }
         }
+    }
+
+    fun printInvoice(orderId: String) {
+        viewModelScope.launch {
+            try {
+                Log.d("OrderViewModel", "========================================")
+                Log.d("OrderViewModel", "Starting print process for order $orderId")
+                Log.d("OrderViewModel", "========================================")
+
+                _uiState.value = _uiState.value.copy(
+                    isPrinting = true,
+                    printStatus = "Fetching invoice..."
+                )
+
+                // Fetch the order with invoice_attachment
+                Log.d("OrderViewModel", "Fetching order details with invoice attachment")
+                val orderResult = getOrderByIdUseCase(orderId)
+
+                if (orderResult !is ApiResult.Success) {
+                    Log.e("OrderViewModel", "Failed to fetch order details: ${(orderResult as? ApiResult.Error)?.message}")
+                    _uiState.value = _uiState.value.copy(
+                        isPrinting = false,
+                        printStatus = "Failed to fetch invoice: ${(orderResult as? ApiResult.Error)?.message}"
+                    )
+                    return@launch
+                }
+
+                val invoiceAttachment = orderResult.data.invoice_attachment
+                if (invoiceAttachment == null) {
+                    Log.e("OrderViewModel", "No invoice attachment found for order $orderId")
+                    _uiState.value = _uiState.value.copy(
+                        isPrinting = false,
+                        printStatus = "No invoice available for this order"
+                    )
+                    return@launch
+                }
+
+                val invoiceUrl = invoiceAttachment.url
+                Log.d("OrderViewModel", "Invoice URL: $invoiceUrl")
+                Log.d("OrderViewModel", "Invoice filename: ${invoiceAttachment.filename}")
+                Log.d("OrderViewModel", "Invoice content type: ${invoiceAttachment.content_type}")
+
+                _uiState.value = _uiState.value.copy(printStatus = "Downloading invoice...")
+
+                // Download the invoice content directly from S3 URL
+                Log.d("OrderViewModel", "Calling getInvoiceContentUseCase with URL: $invoiceUrl")
+                val invoiceResult = getInvoiceContentUseCase(invoiceUrl)
+
+                if (invoiceResult !is ApiResult.Success) {
+                    Log.e("OrderViewModel", "Failed to download invoice: ${(invoiceResult as? ApiResult.Error)?.message}")
+                    _uiState.value = _uiState.value.copy(
+                        isPrinting = false,
+                        printStatus = "Failed to download invoice: ${(invoiceResult as? ApiResult.Error)?.message}"
+                    )
+                    return@launch
+                }
+
+                val invoiceText = invoiceResult.data
+                Log.d("OrderViewModel", "Invoice downloaded successfully")
+                Log.d("OrderViewModel", "Loaded invoice, length: ${invoiceText.length} characters")
+                Log.d("OrderViewModel", "Invoice preview: ${invoiceText.take(100)}")
+
+                _uiState.value = _uiState.value.copy(printStatus = "Formatting invoice...")
+
+                // Format the plain text invoice as CPCL commands for Honeywell printer
+                val cpclFormattedInvoice = CpclInvoiceFormatter.formatInvoiceTextAsCpcl(invoiceText)
+                Log.d("OrderViewModel", "Formatted invoice as CPCL, length: ${cpclFormattedInvoice.length} characters")
+
+                _uiState.value = _uiState.value.copy(printStatus = "Printing invoice...")
+
+                // Send CPCL formatted invoice to printer
+                Log.d("OrderViewModel", "Sending CPCL formatted invoice to printer...")
+
+                val printResult = printerManager.printInvoice(cpclFormattedInvoice)
+
+                if (printResult.isSuccess) {
+                    _uiState.value = _uiState.value.copy(
+                        isPrinting = false,
+                        printStatus = "Invoice printed successfully!"
+                    )
+                    Log.d("OrderViewModel", "Invoice printed successfully!")
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isPrinting = false,
+                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
+                    )
+                    Log.e("OrderViewModel", "Print failed: ${printResult.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isPrinting = false,
+                    printStatus = "Error: ${e.message}"
+                )
+                Log.e("OrderViewModel", "Exception during print process", e)
+            }
+        }
+    }
+
+    fun clearPrintStatus() {
+        _uiState.value = _uiState.value.copy(printStatus = null)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        printerManager.disconnect()
     }
 }

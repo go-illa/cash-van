@@ -79,6 +79,15 @@ fun OrderScreen(
     val scope = rememberCoroutineScope()
 
 
+    // Show print status snackbar
+    LaunchedEffect(uiState.printStatus) {
+        uiState.printStatus?.let {
+            // Print status will be shown, then cleared after a delay
+            kotlinx.coroutines.delay(3000)
+            viewModel.clearPrintStatus()
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -206,6 +215,10 @@ fun OrderScreen(
                                     val fullOrder = uiState.orders.find { it.id == orderItem.id }
                                     fullOrder?.let { viewModel.submitOrder(it) }
                                 },
+                                onPrintClick = { orderItem ->
+                                    analyticsHelper.logEvent("order_print_invoice_clicked")
+                                    viewModel.printInvoice(orderItem.id)
+                                },
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -267,6 +280,17 @@ fun OrderScreen(
                     }
                 },
                 orderNumber = selectedOrderForCancel?.orderNumber ?: ""
+            )
+        }
+
+        // Show print status message
+        if (uiState.printStatus != null) {
+            ErrorSnackbar(
+                message = uiState.printStatus ?: "",
+                onDismiss = { viewModel.clearPrintStatus() },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
             )
         }
     }

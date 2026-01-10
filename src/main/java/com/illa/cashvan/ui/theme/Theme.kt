@@ -1,21 +1,8 @@
 package com.illa.cashvan.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
 
 private val LightColorScheme = lightColorScheme(
     primary = Purple40,
@@ -35,19 +22,13 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun CashVanTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false, // Always false - force light mode
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false, // Always false - disable dynamic colors
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            dynamicLightColorScheme(context)
-        }
-
-        else -> LightColorScheme
-    }
+    // Always use light color scheme
+    val colorScheme = LightColorScheme
 
     MaterialTheme(
         colorScheme = colorScheme,

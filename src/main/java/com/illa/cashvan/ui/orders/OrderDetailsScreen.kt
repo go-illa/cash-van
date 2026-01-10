@@ -4,19 +4,32 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,7 +47,9 @@ import com.illa.cashvan.feature.orders.presentation.mapper.toProductDetailsList
 import com.illa.cashvan.feature.orders.presentation.mapper.toUIMerchant
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
+import com.illa.cashvan.ui.orders.ui_components.CancelOrderBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.MerchantDetailsComponent
+import com.illa.cashvan.ui.orders.ui_components.OrderConfirmationBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.OrderSpecsComponentCompact
 import com.illa.cashvan.ui.orders.ui_components.PaymentSummaryCard
 import com.illa.cashvan.ui.orders.ui_components.ProductsDetailsComponent
@@ -69,6 +84,7 @@ fun OrderDetailsScreen(
                 modifier = modifier,
                 order = orderDetailsState.order!!,
                 onBackClick = onBackClick,
+                orderViewModel = orderViewModel
             )
         }
         else -> {
@@ -130,16 +146,27 @@ private fun ErrorContent(modifier: Modifier = Modifier, error: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun OrderDetailsContent(
     modifier: Modifier = Modifier,
     order: Order,
     onBackClick: () -> Unit,
+    orderViewModel: OrderViewModel = koinViewModel()
 ) {
     val orderSpecs = order.toOrderSpecs()
     val merchant = order.toUIMerchant()
     val paymentSummary = order.toPaymentSummary()
     val productDetailsList = order.toProductDetailsList()
+
+    var showCancelBottomSheet by remember { mutableStateOf(false) }
+    var showConfirmationBottomSheet by remember { mutableStateOf(false) }
+    val cancelSheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+    val confirmationSheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
 
     Column(
         modifier = modifier
@@ -147,6 +174,8 @@ private fun OrderDetailsContent(
             .background(Color(0xFFF5F5F5))
     ) {
         CashVanHeader()
+
+        // Scrollable content
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -186,8 +215,109 @@ private fun OrderDetailsContent(
                 paymentSummary = paymentSummary
             )
 
-            Spacer(modifier = Modifier.height(80.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
+
+        // Fixed action buttons at bottom - shown only for ongoing pre_sell orders
+        if (order.status == "ongoing" && order.order_type == "pre_sell") {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(2.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Cancel button
+                    OutlinedButton(
+                        onClick = { showCancelBottomSheet = true },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFFDC3545)
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            Color(0xFFDC3545)
+                        )
+                    ) {
+                        Text(
+                            text = "إلغاء الأوردر",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily(Font(R.font.zain_regular))
+                        )
+                    }
+
+                    // Submit button
+                    Button(
+                        onClick = {
+                            orderViewModel.submitOrder(order) {
+                                showConfirmationBottomSheet = true
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(40.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF0D3773)
+                        )
+                    ) {
+                        Text(
+                            text = "تسليم الاوردر",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily(Font(R.font.zain_regular))
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // Cancel order bottom sheet
+    if (showCancelBottomSheet) {
+        CancelOrderBottomSheet(
+            sheetState = cancelSheetState,
+            onDismiss = {
+                showCancelBottomSheet = false
+            },
+            onConfirm = { reason, note ->
+                orderViewModel.cancelOrder(
+                    orderId = order.id,
+                    reason = reason,
+                    note = note
+                ) {
+                    showCancelBottomSheet = false
+                    onBackClick()
+                }
+            },
+            orderNumber = order.formatted_code
+        )
+    }
+
+    // Order confirmation bottom sheet
+    if (showConfirmationBottomSheet) {
+        OrderConfirmationBottomSheet(
+            sheetState = confirmationSheetState,
+            onDismiss = {
+                showConfirmationBottomSheet = false
+                onBackClick()
+            },
+            onBackToHome = {
+                showConfirmationBottomSheet = false
+                onBackClick()
+            }
+        )
     }
 }
 
@@ -221,6 +351,8 @@ fun OrderDetailsContentPreview() {
         creator_type = "SalesAgent",
         total_sold_quantity = 3,
         total_income = "149.97",
+        status = "fulfilled",
+        order_type = "pre_sell",
         order_plan_products = listOf(
             com.illa.cashvan.feature.orders.data.model.OrderPlanProduct(
                 id = "4",
@@ -262,7 +394,7 @@ fun OrderDetailsContentPreview() {
     MaterialTheme {
         OrderDetailsContent(
             order = sampleOrder,
-            onBackClick = { /* Handle back */ },
+            onBackClick = { /* Handle back */ }
         )
     }
 }

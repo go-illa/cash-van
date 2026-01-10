@@ -2,6 +2,7 @@ package com.illa.cashvan.ui.orders.ui_components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.CheckBox
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -66,19 +68,17 @@ fun OrderCardItem(
     onOrderClick: (OrderItem) -> Unit = {},
     onCancelClick: (OrderItem) -> Unit = {},
     onSubmitClick: (OrderItem) -> Unit = {},
+    onPrintClick: (OrderItem) -> Unit = {},
     analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable { onOrderClick(order) },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        onClick = {
-            analyticsHelper.logEvent("order_clicked")
-            onOrderClick(order)
-        }
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -206,11 +206,11 @@ fun OrderCardItem(
                         )
                     }
 
-                    // Submit button
+                    // Submit button - opens order details
                     Button(
                         onClick = {
                             analyticsHelper.logEvent("order_submit_clicked")
-                            onSubmitClick(order)
+                            onOrderClick(order)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -227,6 +227,39 @@ fun OrderCardItem(
                             fontFamily = FontFamily(Font(R.font.zain_regular))
                         )
                     }
+                }
+            }
+
+            // Show print button for partially fulfilled or fulfilled orders
+            if (order.status == "partially_fulfilled" || order.status == "fulfilled") {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = {
+                        analyticsHelper.logEvent("order_print_clicked")
+                        onPrintClick(order)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF0D3773)
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Print,
+                        contentDescription = "طباعة الفاتورة",
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "إطبع الفاتورة",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily(Font(R.font.zain_regular))
+                    )
                 }
             }
         }

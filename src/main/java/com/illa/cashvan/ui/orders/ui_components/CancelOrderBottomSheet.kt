@@ -3,6 +3,8 @@ package com.illa.cashvan.ui.orders.ui_components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -70,9 +72,12 @@ fun CancelOrderBottomSheet(
         containerColor = Color.White,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
+        val scrollState = rememberScrollState()
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(scrollState)
                 .padding(24.dp)
         ) {
             // Title
@@ -281,7 +286,7 @@ fun CancelOrderBottomSheet(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }

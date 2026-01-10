@@ -15,7 +15,10 @@ import com.illa.cashvan.feature.orders.domain.usecase.CreateOrderUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOngoingPlanUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetPlanProductsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.SearchMerchantsUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetOrderByIdUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
 import com.illa.cashvan.feature.printer.HoneywellPrinterManager
+import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,7 +51,9 @@ class CreateOrderViewModel(
     private val getOngoingPlanUseCase: GetOngoingPlanUseCase,
     private val searchMerchantsUseCase: SearchMerchantsUseCase,
     private val getPlanProductsUseCase: GetPlanProductsUseCase,
-    private val createOrderUseCase: CreateOrderUseCase
+    private val createOrderUseCase: CreateOrderUseCase,
+    private val getOrderByIdUseCase: GetOrderByIdUseCase,
+    private val getInvoiceContentUseCase: GetInvoiceContentUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateOrderUiState())
@@ -300,7 +305,7 @@ class CreateOrderViewModel(
 
     /**
      * Print invoice after order creation
-     * Prints the SAMPLE_INVOICE.txt file
+     * Fetches the invoice from the API and prints it
      */
     private fun printInvoice(order: CreateOrderResponse) {
         viewModelScope.launch {
@@ -311,79 +316,69 @@ class CreateOrderViewModel(
 
                 _uiState.value = _uiState.value.copy(
                     isPrinting = true,
-                    printStatus = "Connecting to printer..."
+                    printStatus = "Fetching invoice..."
                 )
 
-                // First, test simple print (using printInvoice which handles connection)
-                Log.d("CreateOrderVM", "Attempting simple test print")
-                val testPrint = printerManager.printInvoice("TEST PRINT - Order ${order.id}\n\n")
+                // Fetch the order with invoice_attachment
+                Log.d("CreateOrderVM", "Fetching order details with invoice attachment")
+                val orderResult = getOrderByIdUseCase(order.id)
 
-                if (testPrint.isFailure) {
-                    Log.e("CreateOrderVM", "Test print failed: ${testPrint.exceptionOrNull()?.message}")
+                if (orderResult !is ApiResult.Success) {
+                    Log.e("CreateOrderVM", "Failed to fetch order details: ${(orderResult as? ApiResult.Error)?.message}")
                     _uiState.value = _uiState.value.copy(
                         isPrinting = false,
-                        printStatus = "Printer connection failed: ${testPrint.exceptionOrNull()?.message}"
+                        printStatus = "Failed to fetch invoice: ${(orderResult as? ApiResult.Error)?.message}"
                     )
                     return@launch
                 }
 
-                Log.d("CreateOrderVM", "Test print successful, loading sample invoice")
-
-                // Load sample invoice text from assets
-                val invoiceText = try {
-                    context.assets.open("SAMPLE_INVOICE.txt")
-                        .bufferedReader(Charset.forName("UTF-8"))
-                        .use { it.readText() }
-                } catch (e: Exception) {
-                    Log.e("CreateOrderVM", "Failed to load SAMPLE_INVOICE.txt", e)
-                    "=== ERROR ===\nFailed to load invoice file\n${e.message}\n============\n"
+                val invoiceAttachment = orderResult.data.invoice_attachment
+                if (invoiceAttachment == null) {
+                    Log.e("CreateOrderVM", "No invoice attachment found for order ${order.id}")
+                    _uiState.value = _uiState.value.copy(
+                        isPrinting = false,
+                        printStatus = "No invoice available for this order"
+                    )
+                    return@launch
                 }
 
+                val invoiceUrl = invoiceAttachment.url
+                Log.d("CreateOrderVM", "Invoice URL: $invoiceUrl")
+                Log.d("CreateOrderVM", "Invoice filename: ${invoiceAttachment.filename}")
+                Log.d("CreateOrderVM", "Invoice content type: ${invoiceAttachment.content_type}")
+
+                _uiState.value = _uiState.value.copy(printStatus = "Downloading invoice...")
+
+                // Download the invoice content directly from S3 URL
+                Log.d("CreateOrderVM", "Calling getInvoiceContentUseCase with URL: $invoiceUrl")
+                val invoiceResult = getInvoiceContentUseCase(invoiceUrl)
+
+                if (invoiceResult !is ApiResult.Success) {
+                    Log.e("CreateOrderVM", "Failed to download invoice: ${(invoiceResult as? ApiResult.Error)?.message}")
+                    _uiState.value = _uiState.value.copy(
+                        isPrinting = false,
+                        printStatus = "Failed to download invoice: ${(invoiceResult as? ApiResult.Error)?.message}"
+                    )
+                    return@launch
+                }
+
+                val invoiceText = invoiceResult.data
+                Log.d("CreateOrderVM", "Invoice downloaded successfully")
                 Log.d("CreateOrderVM", "Loaded invoice, length: ${invoiceText.length} characters")
                 Log.d("CreateOrderVM", "Invoice preview: ${invoiceText.take(100)}")
 
-                // Use CPCL with CENTER alignment - force each line to be separate
-                Log.d("CreateOrderVM", "Generating CPCL with centered separate lines...")
+                _uiState.value = _uiState.value.copy(printStatus = "Formatting invoice...")
 
-                val lines = invoiceText.lines() // Keep ALL lines including blank ones
-                val labelHeight = lines.size * 35 + 200 // Height for spacing
+                // Format the plain text invoice as CPCL commands for Honeywell printer
+                val cpclFormattedInvoice = CpclInvoiceFormatter.formatInvoiceTextAsCpcl(invoiceText)
+                Log.d("CreateOrderVM", "Formatted invoice as CPCL, length: ${cpclFormattedInvoice.length} characters")
 
-                val cpclCommands = buildString {
-                    // CPCL Header
-                    append("! 0 200 200 $labelHeight 1\r\n")
+                _uiState.value = _uiState.value.copy(printStatus = "Printing invoice...")
 
-                    // Set encoding for Arabic
-                    append("ENCODING UTF-8\r\n")
+                // Send CPCL formatted invoice to printer
+                Log.d("CreateOrderVM", "Sending CPCL formatted invoice to printer...")
 
-                    // Set magnification to 0 0 (normal size)
-                    append("SETMAG 0 0\r\n")
-
-                    var yPos = 15
-                    for ((index, line) in lines.withIndex()) {
-                        // CENTER each line individually
-                        append("CENTER\r\n")
-
-                        // Use font 7 (monospace) to preserve spacing
-                        append("TEXT 7 0 0 $yPos $line\r\n")
-
-                        // Reset to LEFT after each centered line
-                        // This forces the printer to process each line separately
-                        append("LEFT\r\n")
-
-                        yPos += 30  // Spacing between lines
-
-                        Log.d("CreateOrderVM", "Line $index (yPos=$yPos): ${line.take(50)}")
-                    }
-
-                    // Print command
-                    append("PRINT\r\n")
-                }
-
-                Log.d("CreateOrderVM", "CPCL length: ${cpclCommands.length}")
-                Log.d("CreateOrderVM", "Total lines: ${lines.size}")
-                Log.d("CreateOrderVM", "Label height: $labelHeight")
-
-                val printResult = printerManager.printInvoice(cpclCommands)
+                val printResult = printerManager.printInvoice(cpclFormattedInvoice)
 
                 if (printResult.isSuccess) {
                     _uiState.value = _uiState.value.copy(

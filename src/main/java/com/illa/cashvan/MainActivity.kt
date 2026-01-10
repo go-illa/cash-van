@@ -7,8 +7,17 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import com.illa.cashvan.core.connectivity.ConnectivityStatus
+import com.illa.cashvan.core.connectivity.ConnectivityViewModel
 import com.illa.cashvan.navigation.CashVanNavigation
+import com.illa.cashvan.ui.common.NoInternetScreen
 import com.illa.cashvan.ui.theme.CashVanTheme
+import org.koin.androidx.compose.koinViewModel
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
@@ -17,11 +26,27 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             CashVanTheme {
-                CashVanNavigation(
-                    onLogout = {
-                        restartApp()
+                // Inject ConnectivityViewModel
+                val connectivityViewModel: ConnectivityViewModel = koinViewModel()
+                val connectivityState by connectivityViewModel.connectivityStatus.collectAsState()
+                val isRetrying by connectivityViewModel.isRetrying.collectAsState()
+
+                // Wrap navigation with connectivity overlay
+                Box(modifier = Modifier.fillMaxSize()) {
+                    CashVanNavigation(
+                        onLogout = {
+                            restartApp()
+                        }
+                    )
+
+                    // Show overlay when disconnected
+                    if (connectivityState is ConnectivityStatus.Disconnected) {
+                        NoInternetScreen(
+                            isRetrying = isRetrying,
+                            onRetry = { connectivityViewModel.checkConnectivity() }
+                        )
                     }
-                )
+                }
             }
         }
     }

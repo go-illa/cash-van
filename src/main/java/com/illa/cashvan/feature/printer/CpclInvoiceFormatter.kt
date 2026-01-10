@@ -1,6 +1,7 @@
 package com.illa.cashvan.feature.printer
 
 import android.content.Context
+import android.util.Log
 import com.illa.cashvan.feature.orders.data.model.CreateOrderResponse
 import java.io.ByteArrayOutputStream
 import java.nio.charset.Charset
@@ -10,6 +11,105 @@ import java.nio.charset.Charset
  * CPCL is Honeywell's preferred printing language
  */
 object CpclInvoiceFormatter {
+
+    /**
+     * Format plain text invoice as CPCL commands for Honeywell printer
+     * @param invoiceText Plain text invoice content
+     * @return CPCL formatted string ready to send to printer
+     */
+    fun formatInvoiceTextAsCpcl(invoiceText: String): String {
+        val lines = invoiceText.lines()
+
+        Log.d("CpclFormatter", "Formatting invoice with ${lines.size} lines")
+
+        // Maximum characters per line for Font 1 on thermal paper
+        val maxCharsPerLine = 48  // Safe limit for 58mm paper
+
+        // Wrap long lines and count total output lines
+        val wrappedLines = mutableListOf<String>()
+        for (line in lines) {
+            val trimmedLine = line.trim()
+            if (trimmedLine.isEmpty()) {
+                wrappedLines.add("")  // Keep empty lines
+            } else if (trimmedLine.length <= maxCharsPerLine) {
+                wrappedLines.add(trimmedLine)
+            } else {
+                // Wrap long lines into multiple lines
+                wrappedLines.addAll(wrapLine(trimmedLine, maxCharsPerLine))
+            }
+        }
+
+        Log.d("CpclFormatter", "Original lines: ${lines.size}, After wrapping: ${wrappedLines.size}")
+
+        // Calculate label height
+        val lineSpacing = 16
+        val labelHeight = (wrappedLines.size * lineSpacing) + 100
+
+        val cpclCommands = buildString {
+            // CPCL Header
+            append("! 0 200 200 $labelHeight 1\r\n")
+            append("ENCODING UTF-8\r\n")
+
+            var yPos = 10
+            for ((index, line) in wrappedLines.withIndex()) {
+                // Skip empty lines
+                if (line.isEmpty()) {
+                    yPos += (lineSpacing / 2)
+                    continue
+                }
+
+                // Set CENTER before EACH line
+                append("CENTER\r\n")
+
+                // Use Font 1 (smallest readable font)
+                append("TEXT 1 0 0 $yPos $line\r\n")
+
+                // Log sample lines
+                if (index < 15 || index >= wrappedLines.size - 5) {
+                    val preview = if (line.length > 45) line.take(45) + "..." else line
+                    Log.d("CpclFormatter", "Line $index (y=$yPos, len=${line.length}): $preview")
+                }
+
+                yPos += lineSpacing
+            }
+
+            append("FORM\r\n")
+            append("PRINT\r\n")
+        }
+
+        Log.d("CpclFormatter", "Generated CPCL, length: ${cpclCommands.length}")
+        Log.d("CpclFormatter", "Max line length after wrap: ${wrappedLines.maxOfOrNull { it.length } ?: 0}")
+
+        return cpclCommands
+    }
+
+    /**
+     * Wrap a long line into multiple lines
+     */
+    private fun wrapLine(line: String, maxLength: Int): List<String> {
+        if (line.length <= maxLength) return listOf(line)
+
+        val result = mutableListOf<String>()
+        var remaining = line
+
+        while (remaining.length > maxLength) {
+            // Find last space before maxLength
+            var breakPoint = remaining.lastIndexOf(' ', maxLength)
+            if (breakPoint == -1 || breakPoint == 0) {
+                // No space found, hard break at maxLength
+                breakPoint = maxLength
+            }
+
+            result.add(remaining.substring(0, breakPoint).trim())
+            remaining = remaining.substring(breakPoint).trim()
+        }
+
+        if (remaining.isNotEmpty()) {
+            result.add(remaining)
+        }
+
+        return result
+    }
 
     /**
      * Load and format sample invoice from assets using CPCL commands

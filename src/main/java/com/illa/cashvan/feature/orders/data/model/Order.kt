@@ -16,7 +16,24 @@ data class Order(
     val status: String? = null,
     val order_type: String? = null,
     val order_plan_products: List<OrderPlanProduct>? = null,
-    val merchant: Merchant? = null
+    val merchant: Merchant? = null,
+    val invoice_attachment: InvoiceAttachment? = null
+)
+
+@Serializable
+data class InvoiceAttachment(
+    val id: String,
+    val name: String,
+    val document_type: String,
+    val document_type_name: String,
+    val url: String,
+    val thumbnail_url: String? = null,
+    val large_url: String? = null,
+    val file_size: String,
+    val content_type: String,
+    val filename: String,
+    val created_at: String,
+    val updated_at: String
 )
 
 @Serializable

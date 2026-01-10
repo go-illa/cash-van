@@ -113,7 +113,7 @@ object ApiEndpoints {
             path = "orders/$orderId",
             method = HttpMethod.Get,
             parameters = Parameters.build {
-                append("include", "order_plan_products,order_plan_products.product,merchant")
+                append("include", "order_plan_products,order_plan_products.product,merchant,invoice_attachment")
             },
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2
