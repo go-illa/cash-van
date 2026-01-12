@@ -34,9 +34,9 @@ import com.illa.cashvan.R
 
 @Composable
 fun NoInternetScreen(
+    modifier: Modifier = Modifier,
     isRetrying: Boolean = false,
     onRetry: () -> Unit,
-    modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
