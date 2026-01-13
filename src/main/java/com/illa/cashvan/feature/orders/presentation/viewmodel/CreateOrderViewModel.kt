@@ -18,7 +18,6 @@ import com.illa.cashvan.feature.orders.domain.usecase.SearchMerchantsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOrderByIdUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
 import com.illa.cashvan.feature.printer.HoneywellPrinterManager
-import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.util.Log
+import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
 import java.nio.charset.Charset
 
 data class CreateOrderUiState(
@@ -310,99 +310,55 @@ class CreateOrderViewModel(
     private fun printInvoice(order: CreateOrderResponse) {
         viewModelScope.launch {
             try {
-                Log.d("CreateOrderVM", "========================================")
-                Log.d("CreateOrderVM", "Starting print process for order ${order.id}")
-                Log.d("CreateOrderVM", "========================================")
+                _uiState.value = _uiState.value.copy(isPrinting = true, printStatus = "جاري جلب الفاتورة...")
 
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Fetching invoice..."
-                )
-
-                // Fetch the order with invoice_attachment
-                Log.d("CreateOrderVM", "Fetching order details with invoice attachment")
                 val orderResult = getOrderByIdUseCase(order.id)
-
                 if (orderResult !is ApiResult.Success) {
-                    Log.e("CreateOrderVM", "Failed to fetch order details: ${(orderResult as? ApiResult.Error)?.message}")
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Failed to fetch invoice: ${(orderResult as? ApiResult.Error)?.message}"
-                    )
-                    return@launch
+                    throw Exception("فشل جلب تفاصيل الطلب: ")
                 }
 
-                val invoiceAttachment = orderResult.data.invoice_attachment
-                if (invoiceAttachment == null) {
-                    Log.e("CreateOrderVM", "No invoice attachment found for order ${order.id}")
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "No invoice available for this order"
-                    )
-                    return@launch
-                }
+                val attachment = orderResult.data.invoice_attachment
+                    ?: throw Exception("لم يتم العثور على مرفق فاتورة")
 
-                val invoiceUrl = invoiceAttachment.url
-                Log.d("CreateOrderVM", "Invoice URL: $invoiceUrl")
-                Log.d("CreateOrderVM", "Invoice filename: ${invoiceAttachment.filename}")
-                Log.d("CreateOrderVM", "Invoice content type: ${invoiceAttachment.content_type}")
+                val invoiceUrl = attachment.url
 
-                _uiState.value = _uiState.value.copy(printStatus = "Downloading invoice...")
+                _uiState.value = _uiState.value.copy(printStatus = "جاري تحميل الفاتورة...")
 
-                // Download the invoice content directly from S3 URL
-                Log.d("CreateOrderVM", "Calling getInvoiceContentUseCase with URL: $invoiceUrl")
                 val invoiceResult = getInvoiceContentUseCase(invoiceUrl)
-
                 if (invoiceResult !is ApiResult.Success) {
-                    Log.e("CreateOrderVM", "Failed to download invoice: ${(invoiceResult as? ApiResult.Error)?.message}")
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Failed to download invoice: ${(invoiceResult as? ApiResult.Error)?.message}"
-                    )
-                    return@launch
+                    throw Exception("فشل تحميل الفاتورة: ")
                 }
 
                 val invoiceText = invoiceResult.data
-                Log.d("CreateOrderVM", "Invoice downloaded successfully")
-                Log.d("CreateOrderVM", "Loaded invoice, length: ${invoiceText.length} characters")
-                Log.d("CreateOrderVM", "Invoice preview: ${invoiceText.take(100)}")
 
-                _uiState.value = _uiState.value.copy(printStatus = "Formatting invoice...")
+                _uiState.value = _uiState.value.copy(printStatus = "جاري تهيئة الفاتورة للطباعة...")
 
-                // Format the plain text invoice as CPCL commands for Honeywell printer
-                val cpclFormattedInvoice = CpclInvoiceFormatter.formatInvoiceTextAsCpcl(invoiceText)
-                Log.d("CreateOrderVM", "Formatted invoice as CPCL, length: ${cpclFormattedInvoice.length} characters")
+                val cpclBytes = CpclInvoiceFormatter.formatInvoiceAsCpclBytes(invoiceText)
 
-                _uiState.value = _uiState.value.copy(printStatus = "Printing invoice...")
+                Log.d("CreateOrderVM", "CPCL prepared – ${cpclBytes.size} bytes")
 
-                // Send CPCL formatted invoice to printer
-                Log.d("CreateOrderVM", "Sending CPCL formatted invoice to printer...")
+                _uiState.value = _uiState.value.copy(printStatus = "جاري الطباعة...")
 
-                val printResult = printerManager.printInvoice(cpclFormattedInvoice)
+                val printResult = printerManager.printInvoice(cpclBytes)
 
                 if (printResult.isSuccess) {
                     _uiState.value = _uiState.value.copy(
                         isPrinting = false,
-                        printStatus = "Invoice printed successfully!"
+                        printStatus = "تمت طباعة الفاتورة بنجاح ✓"
                     )
-                    Log.d("CreateOrderVM", "Invoice printed successfully!")
                 } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
-                    )
-                    Log.e("CreateOrderVM", "Print failed: ${printResult.exceptionOrNull()?.message}")
+                    throw printResult.exceptionOrNull() ?: Exception("فشل الطباعة – سبب غير معروف")
                 }
+
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isPrinting = false,
-                    printStatus = "Error: ${e.message}"
+                    printStatus = "خطأ أثناء الطباعة: ${e.message}"
                 )
-                Log.e("CreateOrderVM", "Exception during print process", e)
+                Log.e("CreateOrderVM", "Printing failed", e)
             }
         }
     }
-
 
 
 

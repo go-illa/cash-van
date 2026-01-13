@@ -13,102 +13,168 @@ import java.nio.charset.Charset
 object CpclInvoiceFormatter {
 
     /**
-     * Format plain text invoice as CPCL commands for Honeywell printer
-     * @param invoiceText Plain text invoice content
-     * @return CPCL formatted string ready to send to printer
+     * Format invoice as CPCL commands with proper encoding
+     * CPCL commands = ASCII bytes, Text content = UTF-8 bytes
+     * Optimized for 80mm thermal paper width (640 dots at 203 DPI)
+     * @param invoiceText Plain text invoice content from S3
+     * @return ByteArray with properly encoded CPCL commands and content
      */
+    fun formatInvoiceAsCpclBytes(invoiceText: String): ByteArray {
+        val lines = invoiceText.lines()
+        val output = ByteArrayOutputStream()
+
+        Log.d("CpclFormatter", "========================================")
+        Log.d("CpclFormatter", "FIX v6: Multiple PRINT jobs, force separation")
+        Log.d("CpclFormatter", "========================================")
+
+        // Separate logo lines (contain █) from content lines
+        val allLines = lines.map { it.trimStart() }.filter { it.isNotBlank() }
+        val logoLines = allLines.filter { it.contains('█') }
+        val contentLines = allLines.filter { !it.contains('█') }
+
+        Log.d("CpclFormatter", "Logo lines: ${logoLines.size}, Content lines: ${contentLines.size}")
+
+        // === SECTION 1: LOGO ===
+        val logoHeight = (logoLines.size * 12) + 30
+        output.write("! 0 200 200 $logoHeight 1\r\n".toByteArray(Charsets.US_ASCII))
+        output.write("PAGE-WIDTH 640\r\n".toByteArray(Charsets.US_ASCII))
+        output.write("ENCODING UTF-8\r\n".toByteArray(Charsets.US_ASCII))
+
+        var currentY = 5
+        for ((index, line) in logoLines.withIndex()) {
+            // Full logo - X=0 for maximum width, no truncation
+            output.write("TEXT 0 0 0 $currentY ".toByteArray(Charsets.US_ASCII))
+            output.write(line.toByteArray(Charset.forName("UTF-8")))
+            output.write("\r\n".toByteArray(Charsets.US_ASCII))
+            Log.d("CpclFormatter", "Logo $index (y=$currentY, len=${line.length})")
+            currentY += 12
+        }
+        output.write("FORM\r\n".toByteArray(Charsets.US_ASCII))
+        output.write("PRINT\r\n".toByteArray(Charsets.US_ASCII))
+
+        // === SECTION 2: CONTENT (each line separate label) ===
+        for ((index, line) in contentLines.withIndex()) {
+            // Each line gets its own mini-label
+            output.write("! 0 200 200 40 1\r\n".toByteArray(Charsets.US_ASCII))
+            output.write("PAGE-WIDTH 640\r\n".toByteArray(Charsets.US_ASCII))
+            output.write("ENCODING UTF-8\r\n".toByteArray(Charsets.US_ASCII))
+            output.write("TEXT 0 0 20 5 ".toByteArray(Charsets.US_ASCII))
+            output.write(line.toByteArray(Charset.forName("UTF-8")))
+            output.write("\r\n".toByteArray(Charsets.US_ASCII))
+            output.write("FORM\r\n".toByteArray(Charsets.US_ASCII))
+            output.write("PRINT\r\n".toByteArray(Charsets.US_ASCII))
+
+            Log.d("CpclFormatter", "Content $index: '${line.take(40)}...'")
+        }
+
+        Log.d("CpclFormatter", "========================================")
+        Log.d("CpclFormatter", "Total content lines printed: ${contentLines.size}")
+        Log.d("CpclFormatter", "========================================")
+
+        return output.toByteArray()
+    }
+
+    /**
+     * SAVED WORKING STATE - Logo Font 0, Content Font 2, 35px spacing
+     * Use this as fallback if new changes don't work
+     */
+    fun formatInvoiceAsCpclBytes_SAVED(invoiceText: String): ByteArray {
+        val lines = invoiceText.lines()
+        val output = ByteArrayOutputStream()
+
+        val allLines = lines.map { it.trim() }.filter { it.isNotBlank() }
+        val logoLines = allLines.filter { it.contains('█') }
+        val contentLines = allLines.filter { !it.contains('█') }
+
+        val logoLineHeight = 12
+        val contentLineHeight = 35
+        val labelHeight = (logoLines.size * logoLineHeight) + (contentLines.size * contentLineHeight) + 100
+
+        output.write("! 0 200 200 $labelHeight 1\r\n".toByteArray(Charsets.US_ASCII))
+        output.write("ENCODING UTF-8\r\n".toByteArray(Charsets.US_ASCII))
+
+        var currentY = 5
+
+        for ((index, line) in logoLines.withIndex()) {
+            output.write("CENTER\r\n".toByteArray(Charsets.US_ASCII))
+            output.write("TEXT 0 0 0 $currentY ".toByteArray(Charsets.US_ASCII))
+            output.write(line.toByteArray(Charset.forName("UTF-8")))
+            output.write("\r\n".toByteArray(Charsets.US_ASCII))
+            currentY += logoLineHeight
+        }
+
+        currentY += 20
+
+        for ((index, line) in contentLines.withIndex()) {
+            output.write("CENTER\r\n".toByteArray(Charsets.US_ASCII))
+            output.write("TEXT 2 0 0 $currentY ".toByteArray(Charsets.US_ASCII))
+            output.write(line.toByteArray(Charset.forName("UTF-8")))
+            output.write("\r\n".toByteArray(Charsets.US_ASCII))
+            currentY += contentLineHeight
+        }
+
+        output.write("FORM\r\n".toByteArray(Charsets.US_ASCII))
+        output.write("PRINT\r\n".toByteArray(Charsets.US_ASCII))
+
+        return output.toByteArray()
+    }
+
+    /**
+     * DEPRECATED: Old String-based formatter
+     * Use formatInvoiceAsCpclBytes() instead for proper encoding
+     */
+    @Deprecated("Use formatInvoiceAsCpclBytes() for proper CPCL encoding")
     fun formatInvoiceTextAsCpcl(invoiceText: String): String {
         val lines = invoiceText.lines()
 
         Log.d("CpclFormatter", "Formatting invoice with ${lines.size} lines")
 
-        // Maximum characters per line for Font 1 on thermal paper
-        val maxCharsPerLine = 48  // Safe limit for 58mm paper
-
-        // Wrap long lines and count total output lines
-        val wrappedLines = mutableListOf<String>()
-        for (line in lines) {
-            val trimmedLine = line.trim()
-            if (trimmedLine.isEmpty()) {
-                wrappedLines.add("")  // Keep empty lines
-            } else if (trimmedLine.length <= maxCharsPerLine) {
-                wrappedLines.add(trimmedLine)
-            } else {
-                // Wrap long lines into multiple lines
-                wrappedLines.addAll(wrapLine(trimmedLine, maxCharsPerLine))
-            }
-        }
-
-        Log.d("CpclFormatter", "Original lines: ${lines.size}, After wrapping: ${wrappedLines.size}")
-
-        // Calculate label height
-        val lineSpacing = 16
-        val labelHeight = (wrappedLines.size * lineSpacing) + 100
+        // Calculate label height with plenty of room
+        val lineSpacing = 16  // Very tight spacing for very small font
+        val labelHeight = (lines.size * lineSpacing) + 100
 
         val cpclCommands = buildString {
-            // CPCL Header
+            // CPCL Header - Initialize label
+            // Format: ! offset horizontal-resolution vertical-resolution height quantity
             append("! 0 200 200 $labelHeight 1\r\n")
+
+            // Set encoding for UTF-8 to support Arabic and Unicode
             append("ENCODING UTF-8\r\n")
 
             var yPos = 10
-            for ((index, line) in wrappedLines.withIndex()) {
-                // Skip empty lines
-                if (line.isEmpty()) {
-                    yPos += (lineSpacing / 2)
-                    continue
-                }
-
-                // Set CENTER before EACH line
+            for ((index, line) in lines.withIndex()) {
+                // Set CENTER before EACH line for proper centering
                 append("CENTER\r\n")
 
-                // Use Font 1 (smallest readable font)
+                // TEXT command format: TEXT font rotation magnification x-pos y-pos text
+                // Font 1 is the smallest readable font - can fit 60+ chars on thermal paper
+                // X position 0 when CENTER is active
                 append("TEXT 1 0 0 $yPos $line\r\n")
 
-                // Log sample lines
-                if (index < 15 || index >= wrappedLines.size - 5) {
-                    val preview = if (line.length > 45) line.take(45) + "..." else line
-                    Log.d("CpclFormatter", "Line $index (y=$yPos, len=${line.length}): $preview")
+                if (index < 10) {
+                    // Log first 10 lines for debugging
+                    val linePreview = if (line.length > 60) line.take(60) + "..." else line
+                    Log.d("CpclFormatter", "Line $index (y=$yPos, len=${line.length}): $linePreview")
                 }
 
-                yPos += lineSpacing
+                yPos += lineSpacing  // Move to next line position
             }
 
+            // Form feed to finish printing
             append("FORM\r\n")
+
+            // Print command - execute the print job
             append("PRINT\r\n")
         }
 
-        Log.d("CpclFormatter", "Generated CPCL, length: ${cpclCommands.length}")
-        Log.d("CpclFormatter", "Max line length after wrap: ${wrappedLines.maxOfOrNull { it.length } ?: 0}")
+        Log.d("CpclFormatter", "Generated CPCL commands, length: ${cpclCommands.length}")
+        Log.d("CpclFormatter", "Total lines: ${lines.size}, Label height: $labelHeight")
+        Log.d("CpclFormatter", "Using Font 1 (very small) with CENTER before each line")
+        Log.d("CpclFormatter", "Max line length: ${lines.maxOfOrNull { it.length } ?: 0} characters")
+        Log.d("CpclFormatter", "CPCL preview:")
+        Log.d("CpclFormatter", cpclCommands.take(450))
 
         return cpclCommands
-    }
-
-    /**
-     * Wrap a long line into multiple lines
-     */
-    private fun wrapLine(line: String, maxLength: Int): List<String> {
-        if (line.length <= maxLength) return listOf(line)
-
-        val result = mutableListOf<String>()
-        var remaining = line
-
-        while (remaining.length > maxLength) {
-            // Find last space before maxLength
-            var breakPoint = remaining.lastIndexOf(' ', maxLength)
-            if (breakPoint == -1 || breakPoint == 0) {
-                // No space found, hard break at maxLength
-                breakPoint = maxLength
-            }
-
-            result.add(remaining.substring(0, breakPoint).trim())
-            remaining = remaining.substring(breakPoint).trim()
-        }
-
-        if (remaining.isNotEmpty()) {
-            result.add(remaining)
-        }
-
-        return result
     }
 
     /**

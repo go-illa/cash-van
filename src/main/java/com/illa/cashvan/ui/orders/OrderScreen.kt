@@ -1,5 +1,6 @@
 package com.illa.cashvan.ui.orders
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,11 +10,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -109,6 +114,36 @@ fun OrderScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // TEST PRINT BUTTON (for testing while backend engineer creates invoice API)
+            OutlinedButton(
+                onClick = {
+                    analyticsHelper.logEvent("test_print_invoice_clicked")
+                    viewModel.testPrintInvoice()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color(0xFF0D3773)
+                ),
+                border = BorderStroke(1.dp, Color(0xFF0D3773))
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Print,
+                    contentDescription = "Test Print",
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "TEST PRINT INVOICE",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily(Font(R.font.zain_regular))
+                )
+            }
 
             Spacer(modifier = Modifier.height(8.dp))
 

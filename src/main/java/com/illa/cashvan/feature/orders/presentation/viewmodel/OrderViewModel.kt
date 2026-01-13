@@ -13,8 +13,8 @@ import com.illa.cashvan.feature.orders.domain.usecase.GetOrdersUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOrderByIdUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.UpdateOrderUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
-import com.illa.cashvan.feature.printer.HoneywellPrinterManager
 import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
+import com.illa.cashvan.feature.printer.HoneywellPrinterManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -202,7 +202,7 @@ class OrderViewModel(
 
                 _uiState.value = _uiState.value.copy(
                     isPrinting = true,
-                    printStatus = "Fetching invoice..."
+                    printStatus = "جاري تحميل الفاتورة..."
                 )
 
                 // Fetch the order with invoice_attachment
@@ -213,7 +213,7 @@ class OrderViewModel(
                     Log.e("OrderViewModel", "Failed to fetch order details: ${(orderResult as? ApiResult.Error)?.message}")
                     _uiState.value = _uiState.value.copy(
                         isPrinting = false,
-                        printStatus = "Failed to fetch invoice: ${(orderResult as? ApiResult.Error)?.message}"
+                        printStatus = "فشل في تحميل الفاتورة"
                     )
                     return@launch
                 }
@@ -223,7 +223,7 @@ class OrderViewModel(
                     Log.e("OrderViewModel", "No invoice attachment found for order $orderId")
                     _uiState.value = _uiState.value.copy(
                         isPrinting = false,
-                        printStatus = "No invoice available for this order"
+                        printStatus = "لا توجد فاتورة متاحة لهذا الطلب"
                     )
                     return@launch
                 }
@@ -233,7 +233,7 @@ class OrderViewModel(
                 Log.d("OrderViewModel", "Invoice filename: ${invoiceAttachment.filename}")
                 Log.d("OrderViewModel", "Invoice content type: ${invoiceAttachment.content_type}")
 
-                _uiState.value = _uiState.value.copy(printStatus = "Downloading invoice...")
+                _uiState.value = _uiState.value.copy(printStatus = "جاري تنزيل الفاتورة...")
 
                 // Download the invoice content directly from S3 URL
                 Log.d("OrderViewModel", "Calling getInvoiceContentUseCase with URL: $invoiceUrl")
@@ -243,7 +243,7 @@ class OrderViewModel(
                     Log.e("OrderViewModel", "Failed to download invoice: ${(invoiceResult as? ApiResult.Error)?.message}")
                     _uiState.value = _uiState.value.copy(
                         isPrinting = false,
-                        printStatus = "Failed to download invoice: ${(invoiceResult as? ApiResult.Error)?.message}"
+                        printStatus = "فشل في تنزيل الفاتورة"
                     )
                     return@launch
                 }
@@ -253,36 +253,48 @@ class OrderViewModel(
                 Log.d("OrderViewModel", "Loaded invoice, length: ${invoiceText.length} characters")
                 Log.d("OrderViewModel", "Invoice preview: ${invoiceText.take(100)}")
 
-                _uiState.value = _uiState.value.copy(printStatus = "Formatting invoice...")
+                _uiState.value = _uiState.value.copy(printStatus = "جاري تجهيز الفاتورة...")
 
-                // Format the plain text invoice as CPCL commands for Honeywell printer
-                val cpclFormattedInvoice = CpclInvoiceFormatter.formatInvoiceTextAsCpcl(invoiceText)
-                Log.d("OrderViewModel", "Formatted invoice as CPCL, length: ${cpclFormattedInvoice.length} characters")
+                // Format as CPCL ByteArray with proper encoding (ASCII for commands, UTF-8 for text)
+                val cpclFormattedBytes = CpclInvoiceFormatter.formatInvoiceAsCpclBytes(invoiceText)
+                Log.d("OrderViewModel", "Formatted invoice as CPCL ByteArray, size: ${cpclFormattedBytes.size} bytes")
 
-                _uiState.value = _uiState.value.copy(printStatus = "Printing invoice...")
+                _uiState.value = _uiState.value.copy(printStatus = "جاري طباعة الفاتورة...")
 
-                // Send CPCL formatted invoice to printer
+                // Send CPCL formatted invoice to printer using printBytes (sends raw bytes directly)
                 Log.d("OrderViewModel", "Sending CPCL formatted invoice to printer...")
 
-                val printResult = printerManager.printInvoice(cpclFormattedInvoice)
+                // Connect if needed
+                val connectResult = if (!printerManager.isConnected()) {
+                    printerManager.connect()
+                } else {
+                    Result.success("Already connected")
+                }
+
+                // Use printBytes() to send raw bytes directly (no re-encoding)
+                val printResult = if (connectResult.isSuccess) {
+                    printerManager.printBytes(cpclFormattedBytes)
+                } else {
+                    connectResult
+                }
 
                 if (printResult.isSuccess) {
                     _uiState.value = _uiState.value.copy(
                         isPrinting = false,
-                        printStatus = "Invoice printed successfully!"
+                        printStatus = "تم طباعة الفاتورة بنجاح!"
                     )
                     Log.d("OrderViewModel", "Invoice printed successfully!")
                 } else {
                     _uiState.value = _uiState.value.copy(
                         isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
+                        printStatus = "فشل في الطباعة: ${printResult.exceptionOrNull()?.message}"
                     )
                     Log.e("OrderViewModel", "Print failed: ${printResult.exceptionOrNull()?.message}")
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isPrinting = false,
-                    printStatus = "Error: ${e.message}"
+                    printStatus = "خطأ: ${e.message}"
                 )
                 Log.e("OrderViewModel", "Exception during print process", e)
             }
@@ -291,6 +303,113 @@ class OrderViewModel(
 
     fun clearPrintStatus() {
         _uiState.value = _uiState.value.copy(printStatus = null)
+    }
+
+    /**
+     * Test print function with sample invoice data
+     * For testing printer while backend engineer creates invoice API
+     */
+    fun testPrintInvoice() {
+        viewModelScope.launch {
+            try {
+                Log.d("OrderViewModel", "========================================")
+                Log.d("OrderViewModel", "Starting TEST print with sample invoice")
+                Log.d("OrderViewModel", "========================================")
+
+                _uiState.value = _uiState.value.copy(
+                    isPrinting = true,
+                    printStatus = "Testing printer with sample invoice..."
+                )
+
+                // Sample invoice text (same as from S3)
+                // Logo made narrower to fit 80mm paper
+                val testInvoiceText = """
+████████████████  ████ ████  ████     ████
+██████████  ████  ████ ████  ████    ██████
+████████    ████  ████ ████  ████   ████████
+██████      ████  ████ ████  ████  ██████████
+█████       ████  ████ ████  ████  ████  ████
+██████    ██████  ████ ████  ████  ████  ████
+██████      ████  ████ ████  ████  ████  ████
+████  █     ████  ████ █████ █████ ██████████
+█████ ███   ████  ████ █████ █████ ████  ████
+████████████████  ████ █████ █████ ████  ████
+
+
+                           إلى لخدمات النقل الذكية
+                               رقم السجل: 4763
+                       رقم التسجيل الضريبي: 562-062-645
+                           فاتورة مبيعات ضريبة نسخة
+
+                          تاريخ الاصدار: 2026-01-09
+            رقم الفاتورة: ORD-b20ed851-102a-483a-962a-21140f5c2f0b
+                                رمز الخطة: 13
+
+                          العميل: Smart Gadgets Shop
+                         رمز العميل: MER-2026-7326397
+                        العنوان: 321 Nasr City, Cairo
+
+                           اسم المندوب: Seif Fayez
+                              كود المندوب: SA005
+
+الوصف | كمية |    سعر  | النهائي | الإجمالي
+ 129.99 | 129.99  |  129.99 |  1   | Wireless Earbuds Pro   
+
+
+عدد الاصناف: 1.00
+المجموع الفرعي (دون الاضافات): 129.99 EGP
+قيمة الضريبة والخصم 0.00 EGP
+
+الإجمالي: 129.99 EGP
+
+           سلمت البضاعة بحالة جيدة - الشركة غير مسئولة عن أي توالف
+                             شكراً لتعاملكم معنا!
+                """.trimIndent()
+
+                Log.d("OrderViewModel", "Test invoice text length: ${testInvoiceText.length} characters")
+
+                _uiState.value = _uiState.value.copy(printStatus = "Formatting test invoice...")
+
+                // Format as CPCL ByteArray with proper encoding
+                val cpclFormattedBytes = CpclInvoiceFormatter.formatInvoiceAsCpclBytes(testInvoiceText)
+                Log.d("OrderViewModel", "Formatted test invoice as CPCL ByteArray, size: ${cpclFormattedBytes.size} bytes")
+
+                _uiState.value = _uiState.value.copy(printStatus = "Printing test invoice...")
+
+                // Connect if needed
+                val connectResult = if (!printerManager.isConnected()) {
+                    printerManager.connect()
+                } else {
+                    Result.success("Already connected")
+                }
+
+                val printResult = if (connectResult.isSuccess) {
+                    printerManager.printBytes(cpclFormattedBytes)
+                } else {
+                    connectResult
+                }
+
+                if (printResult.isSuccess) {
+                    _uiState.value = _uiState.value.copy(
+                        isPrinting = false,
+                        printStatus = "Test invoice printed successfully!"
+                    )
+                    Log.d("OrderViewModel", "Test invoice printed successfully!")
+                } else {
+                    _uiState.value = _uiState.value.copy(
+                        isPrinting = false,
+                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
+                    )
+                    Log.e("OrderViewModel", "Test print failed: ${printResult.exceptionOrNull()?.message}")
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(
+                    isPrinting = false,
+                    printStatus = "Error: ${e.message}"
+                )
+                Log.e("OrderViewModel", "Exception during test print", e)
+            }
+        }
     }
 
     override fun onCleared() {
