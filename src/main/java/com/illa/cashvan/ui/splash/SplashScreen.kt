@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.illa.cashvan.BuildConfig
 import com.illa.cashvan.R
 
 @Composable
@@ -75,6 +76,12 @@ fun SplashScreen(
                     fontFamily = FontFamily(Font(R.font.zain_regular)),
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = "v${BuildConfig.VERSION_NAME}",
+                    fontSize = 14.sp,
+                    color = Color.White.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center
                 )
             }

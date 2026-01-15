@@ -34,15 +34,27 @@ object CpclInvoiceFormatter {
 
         Log.d("CpclFormatter", "Logo lines: ${logoLines.size}, Content lines: ${contentLines.size}")
 
-        // === SECTION 1: LOGO ===
+        // === SECTION 1: LOGO - Big centered text "FRONTDOOR" ===
+        output.write("! 0 200 200 80 1\r\n".toByteArray(Charsets.US_ASCII))
+        output.write("PAGE-WIDTH 640\r\n".toByteArray(Charsets.US_ASCII))
+        output.write("ENCODING UTF-8\r\n".toByteArray(Charsets.US_ASCII))
+        output.write("CENTER\r\n".toByteArray(Charsets.US_ASCII))
+        // Use font 4 (large) with magnification for big text
+        output.write("SETMAG 2 2\r\n".toByteArray(Charsets.US_ASCII))
+        output.write("TEXT 4 0 0 10 FRONTDOOR\r\n".toByteArray(Charsets.US_ASCII))
+        output.write("SETMAG 1 1\r\n".toByteArray(Charsets.US_ASCII))
+        output.write("FORM\r\n".toByteArray(Charsets.US_ASCII))
+        output.write("PRINT\r\n".toByteArray(Charsets.US_ASCII))
+        Log.d("CpclFormatter", "Logo: FRONTDOOR (big centered text)")
+
+        /* === OLD LOGO CODE (block characters) - uncomment to restore ===
         val logoHeight = (logoLines.size * 12) + 30
         output.write("! 0 200 200 $logoHeight 1\r\n".toByteArray(Charsets.US_ASCII))
         output.write("PAGE-WIDTH 640\r\n".toByteArray(Charsets.US_ASCII))
         output.write("ENCODING UTF-8\r\n".toByteArray(Charsets.US_ASCII))
 
-        var currentY = 5
+        var currentY = 0
         for ((index, line) in logoLines.withIndex()) {
-            // Full logo - X=0 for maximum width, no truncation
             output.write("TEXT 0 0 0 $currentY ".toByteArray(Charsets.US_ASCII))
             output.write(line.toByteArray(Charset.forName("UTF-8")))
             output.write("\r\n".toByteArray(Charsets.US_ASCII))
@@ -51,6 +63,7 @@ object CpclInvoiceFormatter {
         }
         output.write("FORM\r\n".toByteArray(Charsets.US_ASCII))
         output.write("PRINT\r\n".toByteArray(Charsets.US_ASCII))
+        === END OLD LOGO CODE === */
 
         // === SECTION 2: CONTENT (each line separate label) ===
         for ((index, line) in contentLines.withIndex()) {
