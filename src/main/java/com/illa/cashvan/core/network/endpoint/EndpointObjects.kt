@@ -100,7 +100,7 @@ object ApiEndpoints {
             path = "orders",
             method = HttpMethod.Get,
             parameters = Parameters.build {
-                append("include", "order_plan_products,order_plan_products.product,merchant")
+                append("include", "order_plan_products,order_plan_products.product,order_plan_products.plan_product_price,merchant")
                 planId?.let { append("f[plan_id_eq]", it) }
                 createdAtDateEq?.let { append("f[created_at_day_lteq]", it) }
                 orderTypeEq?.let { append("f[order_type_eq]", it) }
@@ -113,7 +113,7 @@ object ApiEndpoints {
             path = "orders/$orderId",
             method = HttpMethod.Get,
             parameters = Parameters.build {
-                append("include", "order_plan_products,order_plan_products.product,merchant,invoice_attachment")
+                append("include", "order_plan_products,order_plan_products.product,order_plan_products.plan_product_price,merchant,invoice_attachment")
             },
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2

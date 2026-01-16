@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
@@ -87,6 +88,14 @@ fun MerchantDetailsComponent(
                         fontFamily = FontFamily(Font(R.font.zain_regular)),
                         color = Color(0xFF1F252E)
                     )
+
+                    if (merchant.code.isNotEmpty()) {
+                        MerchantDetailItem(
+                            icon = Icons.Default.Badge,
+                            text = merchant.code,
+                            iconTint = Color(0xFF6B7280)
+                        )
+                    }
 
                     if (showLocation && merchant.address.isNotEmpty()) {
                         MerchantDetailItem(

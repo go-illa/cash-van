@@ -67,7 +67,8 @@ fun Order.toUIMerchant(): Merchant {
         id = merchant?.id ?: "",
         name = merchant?.name ?: "غير محدد",
         phoneNumber = merchant?.phone_number ?: "",
-        address = merchant?.address ?: ""
+        address = merchant?.address ?: "",
+        code = merchant?.code ?: ""
     )
 }
 
@@ -82,9 +83,14 @@ fun Order.toPaymentSummary(): PaymentSummary {
 fun Order.toProductDetailsList(): List<ProductDetails> {
     return order_plan_products?.mapNotNull { orderPlanProduct ->
         orderPlanProduct.product?.let { product ->
-            val unitPrice = product.price.toDoubleOrNull() ?: 0.0
+            // Use plan_product_price.final_price if available, fallback to product.price
+            val unitPrice = orderPlanProduct.plan_product_price?.final_price?.toDoubleOrNull()
+                ?: product.price.toDoubleOrNull()
+                ?: 0.0
             val quantity = orderPlanProduct.sold_quantity
-            val totalPrice = unitPrice * quantity
+            // Use total_income from orderPlanProduct for accurate total (includes discounts/VAT)
+            val totalPrice = orderPlanProduct.total_income.toDoubleOrNull()
+                ?: (unitPrice * quantity)
 
             ProductDetails(
                 productName = product.name,
