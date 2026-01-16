@@ -10,17 +10,24 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Print
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -47,6 +54,9 @@ import com.illa.cashvan.feature.orders.presentation.mapper.toProductDetailsList
 import com.illa.cashvan.feature.orders.presentation.mapper.toUIMerchant
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
+import com.illa.cashvan.ui.common.ErrorSnackbar
+import com.illa.cashvan.ui.common.SuccessSnackbar
+import kotlinx.coroutines.delay
 import com.illa.cashvan.ui.orders.ui_components.CancelOrderBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.MerchantDetailsComponent
 import com.illa.cashvan.ui.orders.ui_components.OrderConfirmationBottomSheet
@@ -154,6 +164,7 @@ private fun OrderDetailsContent(
     onBackClick: () -> Unit,
     orderViewModel: OrderViewModel = koinViewModel()
 ) {
+    val uiState by orderViewModel.uiState.collectAsState()
     val orderSpecs = order.toOrderSpecs()
     val merchant = order.toUIMerchant()
     val paymentSummary = order.toPaymentSummary()
@@ -168,156 +179,232 @@ private fun OrderDetailsContent(
         skipPartiallyExpanded = true
     )
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
-    ) {
-        CashVanHeader()
+    // Auto-clear print status after delay
+    LaunchedEffect(uiState.printStatus) {
+        uiState.printStatus?.let {
+            delay(3000)
+            orderViewModel.clearPrintStatus()
+        }
+    }
 
-        // Scrollable content
+    Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .fillMaxSize()
+                .background(Color(0xFFF5F5F5))
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            CashVanHeader()
 
-            SectionTitle(title = "تفاصيل الطلب")
+            // Scrollable content
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
 
-            OrderSpecsComponentCompact(
-                orderSpecs = orderSpecs
-            )
+                SectionTitle(title = "تفاصيل الطلب")
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            SectionTitle(title = "معلومات التاجر")
-
-            MerchantDetailsComponent(
-                merchant = merchant
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            SectionTitle(title = "عناصر الطلب")
-
-            productDetailsList.forEach { product ->
-                ProductsDetailsComponent(
-                    productDetails = product
+                OrderSpecsComponentCompact(
+                    orderSpecs = orderSpecs
                 )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                SectionTitle(title = "معلومات التاجر")
+
+                MerchantDetailsComponent(
+                    merchant = merchant
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                SectionTitle(title = "عناصر الطلب")
+
+                productDetailsList.forEach { product ->
+                    ProductsDetailsComponent(
+                        productDetails = product
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                PaymentSummaryCard(
+                    paymentSummary = paymentSummary
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
-
-            PaymentSummaryCard(
-                paymentSummary = paymentSummary
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-        }
-
-        // Fixed action buttons at bottom - shown only for ongoing pre_sell orders
-        if (order.status == "ongoing" && order.order_type == "pre_sell") {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(2.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
+            // Fixed action buttons at bottom - shown only for ongoing pre_sell orders
+            if (order.status == "ongoing" && order.order_type == "pre_sell") {
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(2.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
-                    // Cancel button
-                    OutlinedButton(
-                        onClick = { showCancelBottomSheet = true },
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(40.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color(0xFFDC3545)
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            Color(0xFFDC3545)
-                        )
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Text(
-                            text = "إلغاء الأوردر",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily(Font(R.font.zain_regular))
-                        )
-                    }
+                        // Cancel button
+                        OutlinedButton(
+                            onClick = { showCancelBottomSheet = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(40.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFFDC3545)
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                Color(0xFFDC3545)
+                            )
+                        ) {
+                            Text(
+                                text = "إلغاء الأوردر",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular))
+                            )
+                        }
 
-                    // Submit button
-                    Button(
-                        onClick = {
-                            orderViewModel.submitOrder(order) {
-                                showConfirmationBottomSheet = true
-                            }
-                        },
+                        // Submit button
+                        Button(
+                            onClick = {
+                                orderViewModel.submitOrder(order) {
+                                    showConfirmationBottomSheet = true
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(40.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF0D3773)
+                            )
+                        ) {
+                            Text(
+                                text = "تسليم الاوردر",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular))
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Print Invoice button - shown for fulfilled or partially fulfilled orders
+            if (order.status == "fulfilled" || order.status == "partially_fulfilled") {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(2.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(40.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF0D3773)
-                        )
+                            .padding(12.dp)
                     ) {
-                        Text(
-                            text = "تسليم الاوردر",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily(Font(R.font.zain_regular))
-                        )
+                        Button(
+                            onClick = {
+                                orderViewModel.printInvoice(order.id)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF0D3773)
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Print,
+                                contentDescription = "طباعة الفاتورة",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "إطبع الفاتورة",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular))
+                            )
+                        }
                     }
                 }
             }
         }
-    }
 
-    // Cancel order bottom sheet
-    if (showCancelBottomSheet) {
-        CancelOrderBottomSheet(
-            sheetState = cancelSheetState,
-            onDismiss = {
-                showCancelBottomSheet = false
-            },
-            onConfirm = { reason, note ->
-                orderViewModel.cancelOrder(
-                    orderId = order.id,
-                    reason = reason,
-                    note = note
-                ) {
+        // Cancel order bottom sheet
+        if (showCancelBottomSheet) {
+            CancelOrderBottomSheet(
+                sheetState = cancelSheetState,
+                onDismiss = {
                     showCancelBottomSheet = false
+                },
+                onConfirm = { reason, note ->
+                    orderViewModel.cancelOrder(
+                        orderId = order.id,
+                        reason = reason,
+                        note = note
+                    ) {
+                        showCancelBottomSheet = false
+                        onBackClick()
+                    }
+                },
+                orderNumber = order.formatted_code
+            )
+        }
+
+        // Order confirmation bottom sheet
+        if (showConfirmationBottomSheet) {
+            OrderConfirmationBottomSheet(
+                sheetState = confirmationSheetState,
+                onDismiss = {
+                    showConfirmationBottomSheet = false
+                    onBackClick()
+                },
+                onBackToHome = {
+                    showConfirmationBottomSheet = false
                     onBackClick()
                 }
-            },
-            orderNumber = order.formatted_code
-        )
-    }
+            )
+        }
 
-    // Order confirmation bottom sheet
-    if (showConfirmationBottomSheet) {
-        OrderConfirmationBottomSheet(
-            sheetState = confirmationSheetState,
-            onDismiss = {
-                showConfirmationBottomSheet = false
-                onBackClick()
-            },
-            onBackToHome = {
-                showConfirmationBottomSheet = false
-                onBackClick()
+        // Show print status snackbar
+        if (uiState.printStatus != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                if (uiState.printStatus?.contains("بنجاح") == true) {
+                    SuccessSnackbar(
+                        message = uiState.printStatus ?: "",
+                        onDismiss = { orderViewModel.clearPrintStatus() }
+                    )
+                } else {
+                    ErrorSnackbar(
+                        message = uiState.printStatus ?: "",
+                        onDismiss = { orderViewModel.clearPrintStatus() }
+                    )
+                }
             }
-        )
+        }
     }
 }
 
