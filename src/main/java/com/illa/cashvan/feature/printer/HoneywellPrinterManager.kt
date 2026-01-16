@@ -1,10 +1,14 @@
 package com.illa.cashvan.feature.printer
 
+import android.Manifest
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -28,6 +32,25 @@ class HoneywellPrinterManager(private val context: Context) {
     }
 
     /**
+     * Check if Bluetooth permissions are granted (required for Android 12+)
+     */
+    private fun hasBluetoothPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val hasConnect = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) == PackageManager.PERMISSION_GRANTED
+            val hasScan = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.BLUETOOTH_SCAN
+            ) == PackageManager.PERMISSION_GRANTED
+            hasConnect && hasScan
+        } else {
+            true // Permission not required below Android 12
+        }
+    }
+
+    /**
      * Connect to the Honeywell printer via Bluetooth
      * @param deviceAddress Bluetooth MAC address of the printer (optional, will auto-discover if null)
      * @return Result indicating success or failure with message
@@ -44,6 +67,12 @@ class HoneywellPrinterManager(private val context: Context) {
                 return@withContext Result.failure(Exception("Bluetooth is not enabled. Please enable Bluetooth."))
             }
 
+            // Check for Bluetooth permission on Android 12+
+            if (!hasBluetoothPermission()) {
+                Log.e("PrinterManager", "Bluetooth permission not granted")
+                return@withContext Result.failure(Exception("Bluetooth permission required. Please grant Bluetooth permission in app settings."))
+            }
+
             val device = if (deviceAddress != null) {
                 bluetoothAdapter.getRemoteDevice(deviceAddress)
             } else {
@@ -55,7 +84,14 @@ class HoneywellPrinterManager(private val context: Context) {
             }
 
             bluetoothSocket = device.createRfcommSocketToServiceRecord(SPP_UUID)
-            bluetoothAdapter.cancelDiscovery()
+
+            // Cancel discovery if running (requires BLUETOOTH_SCAN on Android 12+)
+            try {
+                bluetoothAdapter.cancelDiscovery()
+            } catch (e: SecurityException) {
+                Log.w("PrinterManager", "Could not cancel discovery: ${e.message}")
+                // Continue anyway - discovery might not be running
+            }
 
             bluetoothSocket?.connect()
             outputStream = bluetoothSocket?.outputStream
@@ -198,6 +234,10 @@ class HoneywellPrinterManager(private val context: Context) {
 
     fun getPairedDevices(): List<Pair<String, String>> {
         return try {
+            if (!hasBluetoothPermission()) {
+                Timber.w("Bluetooth permission not granted, cannot get paired devices")
+                return emptyList()
+            }
             bluetoothAdapter?.bondedDevices?.map { device ->
                 Pair(device.name ?: "Unknown", device.address)
             } ?: emptyList()
@@ -206,4 +246,14 @@ class HoneywellPrinterManager(private val context: Context) {
             emptyList()
         }
     }
+
+    /**
+     * Check if Bluetooth permission is granted (for UI to check before printing)
+     */
+    fun isBluetoothPermissionGranted(): Boolean = hasBluetoothPermission()
+
+    /**
+     * Check if Bluetooth is enabled
+     */
+    fun isBluetoothEnabled(): Boolean = bluetoothAdapter?.isEnabled == true
 }

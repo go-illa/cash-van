@@ -1,5 +1,7 @@
 package com.illa.cashvan.ui.orders
 
+import android.Manifest
+import android.os.Build
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,6 +51,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import kotlinx.coroutines.launch
 import com.illa.cashvan.R
 import com.illa.cashvan.feature.orders.presentation.mapper.toOrderItem
@@ -64,7 +68,7 @@ import com.illa.cashvan.ui.orders.ui_components.OrderItem
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun OrderScreen(
     onAddOrderClick: () -> Unit = {},
@@ -74,6 +78,29 @@ fun OrderScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val orderItems = uiState.orders.map { it.toOrderItem() }
+
+    // Bluetooth permissions state for Android 12+ (need both CONNECT and SCAN)
+    val bluetoothPermissionsState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        rememberMultiplePermissionsState(
+            listOf(
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN
+            )
+        )
+    } else {
+        null
+    }
+
+    // Track pending print order ID for after permission is granted
+    var pendingPrintOrderId by remember { mutableStateOf<String?>(null) }
+
+    // Handle print after permissions are granted
+    LaunchedEffect(bluetoothPermissionsState?.allPermissionsGranted, pendingPrintOrderId) {
+        if (bluetoothPermissionsState?.allPermissionsGranted == true && pendingPrintOrderId != null) {
+            viewModel.printInvoice(pendingPrintOrderId!!)
+            pendingPrintOrderId = null
+        }
+    }
 
     // Bottom sheet state
     var showCancelBottomSheet by remember { mutableStateOf(false) }
@@ -121,7 +148,17 @@ fun OrderScreen(
             OutlinedButton(
                 onClick = {
                     analyticsHelper.logEvent("test_print_invoice_clicked")
-                    viewModel.testPrintInvoice()
+                    // Check Bluetooth permissions on Android 12+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        if (bluetoothPermissionsState?.allPermissionsGranted == true) {
+                            viewModel.testPrintInvoice()
+                        } else {
+                            // Request permissions - test print will need manual retry after permission
+                            bluetoothPermissionsState?.launchMultiplePermissionRequest()
+                        }
+                    } else {
+                        viewModel.testPrintInvoice()
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -252,7 +289,19 @@ fun OrderScreen(
                                 },
                                 onPrintClick = { orderItem ->
                                     analyticsHelper.logEvent("order_print_invoice_clicked")
-                                    viewModel.printInvoice(orderItem.id)
+                                    // Check Bluetooth permissions on Android 12+
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                        if (bluetoothPermissionsState?.allPermissionsGranted == true) {
+                                            viewModel.printInvoice(orderItem.id)
+                                        } else {
+                                            // Request permissions and save order ID for later
+                                            pendingPrintOrderId = orderItem.id
+                                            bluetoothPermissionsState?.launchMultiplePermissionRequest()
+                                        }
+                                    } else {
+                                        // No permission needed for older Android versions
+                                        viewModel.printInvoice(orderItem.id)
+                                    }
                                 },
                                 modifier = Modifier.fillMaxWidth()
                             )
