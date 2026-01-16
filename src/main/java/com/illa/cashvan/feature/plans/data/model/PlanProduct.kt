@@ -15,14 +15,6 @@ data class PlanProduct(
     val plan_id: String,
     val product_id: String,
     val product: Product,
-    val pre_sell_available_quantity: Int? = null,
-    val cash_van_available_quantity: Int? = null
-) {
-    val calculatedPreSellAvailable: Int
-        get() = pre_sell_available_quantity
-            ?: ((assigned_quantity - sold_quantity).coerceAtLeast(0))
-
-    val calculatedCashVanAvailable: Int
-        get() = cash_van_available_quantity
-            ?: ((assigned_quantity - sold_quantity).coerceAtLeast(0))
-}
+    val pre_sell_available_quantity: Int = 0,
+    val cash_van_available_quantity: Int = 0
+)

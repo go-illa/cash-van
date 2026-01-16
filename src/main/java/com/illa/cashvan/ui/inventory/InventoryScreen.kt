@@ -42,8 +42,8 @@ import com.illa.cashvan.ui.inventory.ui_components.InventoryItem
 import org.koin.androidx.compose.koinViewModel
 
 fun PlanProduct.toInventoryItem(): InventoryItem {
-    val assignedQty = assigned_quantity ?: 0
-    val soldQty = sold_quantity ?: 0
+    val assignedQty = assigned_quantity
+    val soldQty = sold_quantity
 
     val soldPercentage = if (assignedQty > 0) {
         (soldQty.toFloat() / assignedQty.toFloat()) * 100f
@@ -56,8 +56,8 @@ fun PlanProduct.toInventoryItem(): InventoryItem {
         name = product.name,
         code = product.sku,
         totalQuantity = assignedQty,
-        preSellAvailableQuantity = calculatedPreSellAvailable,
-        cashVanAvailableQuantity = calculatedCashVanAvailable,
+        preSellAvailableQuantity = pre_sell_available_quantity,
+        cashVanAvailableQuantity = cash_van_available_quantity,
         soldQuantity = soldQty,
         progressPercentage = soldPercentage
     )
