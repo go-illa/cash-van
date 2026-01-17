@@ -278,31 +278,36 @@ class OrderViewModel(
                     connectResult
                 }
 
+                _uiState.value = _uiState.value.copy(isPrinting = false)
                 if (printResult.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "تم طباعة الفاتورة بنجاح!"
-                    )
                     Log.d("OrderViewModel", "Invoice printed successfully!")
+                    setPrintStatusWithAutoClear("تم طباعة الفاتورة بنجاح!")
                 } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "فشل في الطباعة: ${printResult.exceptionOrNull()?.message}"
-                    )
                     Log.e("OrderViewModel", "Print failed: ${printResult.exceptionOrNull()?.message}")
+                    setPrintStatusWithAutoClear("فشل في الطباعة: ${printResult.exceptionOrNull()?.message}")
                 }
             } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "خطأ: ${e.message}"
-                )
                 Log.e("OrderViewModel", "Exception during print process", e)
+                _uiState.value = _uiState.value.copy(isPrinting = false)
+                setPrintStatusWithAutoClear("خطأ: ${e.message}")
             }
         }
     }
 
     fun clearPrintStatus() {
         _uiState.value = _uiState.value.copy(printStatus = null)
+    }
+
+    /**
+     * Set print status with auto-clear after delay
+     * This is managed by ViewModel lifecycle to avoid UI lifecycle issues
+     */
+    private fun setPrintStatusWithAutoClear(status: String, delayMs: Long = 3000) {
+        _uiState.value = _uiState.value.copy(printStatus = status)
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(delayMs)
+            _uiState.value = _uiState.value.copy(printStatus = null)
+        }
     }
 
     /**
@@ -363,7 +368,7 @@ class OrderViewModel(
 اEGP 129.99 :الإجمالي
 
            سلمت البضاعة بحالة جيدة - الشركة غير مسئولة عن أي توالف
-                             شكراً لتعاملكم معنا!
+                             شكرا لتعاملكم معنا!
                 """.trimIndent()
 
                 Log.d("OrderViewModel", "Test invoice text length: ${testInvoiceText.length} characters")

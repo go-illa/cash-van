@@ -116,15 +116,6 @@ fun OrderScreen(
         viewModel.refresh()
     }
 
-    // Show print status snackbar
-    LaunchedEffect(uiState.printStatus) {
-        uiState.printStatus?.let {
-            // Print status will be shown, then cleared after a delay
-            kotlinx.coroutines.delay(3000)
-            viewModel.clearPrintStatus()
-        }
-    }
-
     Box(
         modifier = Modifier.fillMaxSize()
     ) {

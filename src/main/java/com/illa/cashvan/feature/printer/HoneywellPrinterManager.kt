@@ -129,8 +129,9 @@ class HoneywellPrinterManager(private val context: Context) {
 
     /**
      * Send raw bytes to the printer (recommended for CPCL commands)
+     * Includes automatic reconnection on broken pipe errors
      */
-    suspend fun printBytes(bytes: ByteArray): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun printBytes(bytes: ByteArray, retryCount: Int = 0): Result<String> = withContext(Dispatchers.IO) {
         try {
             if (outputStream == null) {
                 return@withContext Result.failure(Exception("Printer not connected. Please connect first."))
@@ -144,6 +145,22 @@ class HoneywellPrinterManager(private val context: Context) {
             Result.success("Print job sent (${bytes.size} bytes)")
         } catch (e: IOException) {
             Log.e("PrinterManager", "IOException during printBytes: ${e.message}", e)
+
+            // Handle broken pipe - attempt reconnection and retry once
+            if (e.message?.contains("Broken pipe", ignoreCase = true) == true && retryCount < 1) {
+                Log.d("PrinterManager", "Broken pipe detected, attempting reconnection...")
+                disconnect()
+
+                val reconnectResult = connect()
+                if (reconnectResult.isSuccess) {
+                    Log.d("PrinterManager", "Reconnection successful, retrying print...")
+                    return@withContext printBytes(bytes, retryCount + 1)
+                } else {
+                    Log.e("PrinterManager", "Reconnection failed: ${reconnectResult.exceptionOrNull()?.message}")
+                    return@withContext Result.failure(Exception("فشل إعادة الاتصال بالطابعة. يرجى إعادة المحاولة."))
+                }
+            }
+
             Timber.e(e, "Error printing bytes")
             Result.failure(Exception("Print error: ${e.message}"))
         } catch (e: Exception) {
@@ -229,7 +246,7 @@ class HoneywellPrinterManager(private val context: Context) {
     }
 
     fun isConnected(): Boolean {
-        return bluetoothSocket?.isConnected == true
+        return bluetoothSocket?.isConnected == true && outputStream != null
     }
 
     fun getPairedDevices(): List<Pair<String, String>> {

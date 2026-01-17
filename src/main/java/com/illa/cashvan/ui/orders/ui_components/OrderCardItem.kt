@@ -33,7 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -91,6 +91,7 @@ fun OrderCardItem(
                 verticalAlignment = Alignment.Top
             ) {
                 Column(
+                    modifier = Modifier.weight(1f),
                     horizontalAlignment = Alignment.Start
                 ) {
                     Text(
@@ -99,7 +100,8 @@ fun OrderCardItem(
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily(Font(R.font.zain_regular)),
                         color = Color(0xFF212121),
-                        textAlign = TextAlign.End
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
@@ -132,15 +134,17 @@ fun OrderCardItem(
                         }
                     }
                 }
+                Spacer(modifier = Modifier.width(12.dp))
                 Column(
                     horizontalAlignment = Alignment.End
                 ) {
                     Text(
-                        text = "${order.totalAmount} جنيه",
-                        fontSize = 20.sp,
+                        text = "${String.format("%.2f", order.totalAmount)} جنيه",
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily(Font(R.font.zain_regular)),
-                        color = Color(0xFF4CAF50)
+                        color = Color(0xFF4CAF50),
+                        maxLines = 1
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -150,9 +154,9 @@ fun OrderCardItem(
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Normal,
                         fontFamily = FontFamily(Font(R.font.zain_regular)),
-                        color = Color(0xFF757575)
+                        color = Color(0xFF757575),
+                        maxLines = 1
                     )
-                }
                 }
             }
 
@@ -241,7 +245,7 @@ fun OrderCardItem(
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+                        .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
                         .height(48.dp),
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(
@@ -264,6 +268,7 @@ fun OrderCardItem(
             }
         }
     }
+}
 
 @Composable
 fun OrderItemRow(
@@ -273,16 +278,15 @@ fun OrderItemRow(
 ) {
     Row(
         modifier = modifier.fillMaxWidth()
-            .background(color = Color(0x80F1F5F9), shape = RoundedCornerShape(size = 4.dp))
-        ,
+            .background(color = Color(0x80F1F5F9), shape = RoundedCornerShape(size = 4.dp)),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(
+            modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-
             Icon(
                 imageVector = Icons.Default.CardGiftcard,
                 tint = Color(0xFF1F252E),
@@ -293,7 +297,9 @@ fun OrderItemRow(
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,
                 fontFamily = FontFamily(Font(R.font.zain_regular)),
-                color = Color(0xFF1F252E)
+                color = Color(0xFF1F252E),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
         Text(

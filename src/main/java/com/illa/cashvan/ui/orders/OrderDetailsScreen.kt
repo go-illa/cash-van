@@ -56,7 +56,6 @@ import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
 import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.ui.common.SuccessSnackbar
-import kotlinx.coroutines.delay
 import com.illa.cashvan.ui.orders.ui_components.CancelOrderBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.MerchantDetailsComponent
 import com.illa.cashvan.ui.orders.ui_components.OrderConfirmationBottomSheet
@@ -178,14 +177,6 @@ private fun OrderDetailsContent(
     val confirmationSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
-
-    // Auto-clear print status after delay
-    LaunchedEffect(uiState.printStatus) {
-        uiState.printStatus?.let {
-            delay(3000)
-            orderViewModel.clearPrintStatus()
-        }
-    }
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(
