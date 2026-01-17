@@ -162,23 +162,6 @@ fun InventoryScreen(
                 }
             }
         }
-
-        FloatingActionButton(
-            onClick = onAddOrderClick,
-            modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
-                .size(64.dp),
-            containerColor = Color(0xFF0D3773),
-            shape = CircleShape,
-            contentColor = Color.White
-        ) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "إضافة طلب جديد",
-                modifier = Modifier.size(32.dp)
-            )
-        }
     }
 }
 
@@ -251,23 +234,6 @@ fun InventoryScreenPreview() {
                         )
                     }
                 }
-            }
-
-            FloatingActionButton(
-                onClick = { },
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp)
-                    .size(64.dp),
-                containerColor = Color(0xFF0D3773),
-                shape = CircleShape,
-                contentColor = Color.White
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "إضافة طلب جديد",
-                    modifier = Modifier.size(32.dp)
-                )
             }
         }
     }

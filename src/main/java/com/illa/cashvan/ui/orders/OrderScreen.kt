@@ -111,6 +111,11 @@ fun OrderScreen(
     val scope = rememberCoroutineScope()
 
 
+    // Refresh orders when screen is shown
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
+
     // Show print status snackbar
     LaunchedEffect(uiState.printStatus) {
         uiState.printStatus?.let {
