@@ -65,7 +65,7 @@ fun Order.toOrderSpecs(): OrderSpecs {
 fun Order.toUIMerchant(): Merchant {
     return Merchant(
         id = merchant?.id ?: "",
-        name = merchant?.name ?: "غير محدد",
+        name = merchant?.sign_name ?: "غير محدد",
         phoneNumber = merchant?.phone_number ?: "",
         address = merchant?.address ?: "",
         code = merchant?.code ?: ""
