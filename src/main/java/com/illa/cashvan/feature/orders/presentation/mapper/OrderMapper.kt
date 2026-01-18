@@ -26,7 +26,7 @@ fun Order.toOrderItem(): OrderItem {
     return OrderItem(
         id = id,
         orderNumber = formatted_code,
-        merchantName = merchant?.name ?: "غير محدد",
+        merchantName = merchant?.sign_name ?:merchant?.name?: "غير محدد",
         phoneNumber = merchant?.phone_number ?: "",
         totalAmount = total_income.toDoubleOrNull() ?: 0.0,
         itemsCount = total_sold_quantity,
@@ -65,7 +65,7 @@ fun Order.toOrderSpecs(): OrderSpecs {
 fun Order.toUIMerchant(): Merchant {
     return Merchant(
         id = merchant?.id ?: "",
-        name = merchant?.sign_name ?: "غير محدد",
+        name = merchant?.sign_name ?: merchant?.name?:"",
         phoneNumber = merchant?.phone_number ?: "",
         address = merchant?.address ?: "",
         code = merchant?.code ?: ""
