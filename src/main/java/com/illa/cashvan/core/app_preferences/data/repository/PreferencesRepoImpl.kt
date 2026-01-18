@@ -1,6 +1,8 @@
 package com.illa.cashvan.core.app_preferences.data.repository
 
 import android.content.Context
+import android.content.SharedPreferences
+import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -32,17 +34,30 @@ class PreferencesRepoImpl(
         encodeDefaults = true
     }
 
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
+    // Lazy initialization with fallback for devices where keystore fails
+    private val securePreferences: SharedPreferences by lazy {
+        try {
+            val masterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
 
-    private val encryptedSharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        "encrypted_cash_van_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+            EncryptedSharedPreferences.create(
+                context,
+                "encrypted_cash_van_prefs",
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (e: Exception) {
+            // Fallback to regular SharedPreferences if keystore fails
+            // This can happen on some devices with keystore issues
+            Log.e("PreferencesRepo", "EncryptedSharedPreferences failed, using fallback", e)
+            context.getSharedPreferences("fallback_cash_van_prefs", Context.MODE_PRIVATE)
+        }
+    }
+
+    private val encryptedSharedPreferences: SharedPreferences
+        get() = securePreferences
 
     override suspend fun <T> setValue(
         key: String,

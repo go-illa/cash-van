@@ -50,7 +50,8 @@ data class Merchant(
     val id: String,
     val name: String,
     val phoneNumber: String,
-    val address: String = ""
+    val address: String = "",
+    val code: String = ""
 )
 
 @Composable

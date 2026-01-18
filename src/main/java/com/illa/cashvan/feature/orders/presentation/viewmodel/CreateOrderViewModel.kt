@@ -15,6 +15,8 @@ import com.illa.cashvan.feature.orders.domain.usecase.CreateOrderUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOngoingPlanUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetPlanProductsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.SearchMerchantsUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetOrderByIdUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
 import com.illa.cashvan.feature.printer.HoneywellPrinterManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import android.util.Log
+import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
 import java.nio.charset.Charset
 
 data class CreateOrderUiState(
@@ -48,7 +51,9 @@ class CreateOrderViewModel(
     private val getOngoingPlanUseCase: GetOngoingPlanUseCase,
     private val searchMerchantsUseCase: SearchMerchantsUseCase,
     private val getPlanProductsUseCase: GetPlanProductsUseCase,
-    private val createOrderUseCase: CreateOrderUseCase
+    private val createOrderUseCase: CreateOrderUseCase,
+    private val getOrderByIdUseCase: GetOrderByIdUseCase,
+    private val getInvoiceContentUseCase: GetInvoiceContentUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateOrderUiState())
@@ -300,114 +305,60 @@ class CreateOrderViewModel(
 
     /**
      * Print invoice after order creation
-     * Prints the SAMPLE_INVOICE.txt file
+     * Fetches the invoice from the API and prints it
      */
     private fun printInvoice(order: CreateOrderResponse) {
         viewModelScope.launch {
             try {
-                Log.d("CreateOrderVM", "========================================")
-                Log.d("CreateOrderVM", "Starting print process for order ${order.id}")
-                Log.d("CreateOrderVM", "========================================")
+                _uiState.value = _uiState.value.copy(isPrinting = true, printStatus = "جاري جلب الفاتورة...")
 
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Connecting to printer..."
-                )
-
-                // First, test simple print (using printInvoice which handles connection)
-                Log.d("CreateOrderVM", "Attempting simple test print")
-                val testPrint = printerManager.printInvoice("TEST PRINT - Order ${order.id}\n\n")
-
-                if (testPrint.isFailure) {
-                    Log.e("CreateOrderVM", "Test print failed: ${testPrint.exceptionOrNull()?.message}")
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Printer connection failed: ${testPrint.exceptionOrNull()?.message}"
-                    )
-                    return@launch
+                val orderResult = getOrderByIdUseCase(order.id)
+                if (orderResult !is ApiResult.Success) {
+                    throw Exception("فشل جلب تفاصيل الطلب: ")
                 }
 
-                Log.d("CreateOrderVM", "Test print successful, loading sample invoice")
+                val attachment = orderResult.data.invoice_attachment
+                    ?: throw Exception("لم يتم العثور على مرفق فاتورة")
 
-                // Load sample invoice text from assets
-                val invoiceText = try {
-                    context.assets.open("SAMPLE_INVOICE.txt")
-                        .bufferedReader(Charset.forName("UTF-8"))
-                        .use { it.readText() }
-                } catch (e: Exception) {
-                    Log.e("CreateOrderVM", "Failed to load SAMPLE_INVOICE.txt", e)
-                    "=== ERROR ===\nFailed to load invoice file\n${e.message}\n============\n"
+                val invoiceUrl = attachment.url
+
+                _uiState.value = _uiState.value.copy(printStatus = "جاري تحميل الفاتورة...")
+
+                val invoiceResult = getInvoiceContentUseCase(invoiceUrl)
+                if (invoiceResult !is ApiResult.Success) {
+                    throw Exception("فشل تحميل الفاتورة: ")
                 }
 
-                Log.d("CreateOrderVM", "Loaded invoice, length: ${invoiceText.length} characters")
-                Log.d("CreateOrderVM", "Invoice preview: ${invoiceText.take(100)}")
+                val invoiceText = invoiceResult.data
 
-                // Use CPCL with CENTER alignment - force each line to be separate
-                Log.d("CreateOrderVM", "Generating CPCL with centered separate lines...")
+                _uiState.value = _uiState.value.copy(printStatus = "جاري تهيئة الفاتورة للطباعة...")
 
-                val lines = invoiceText.lines() // Keep ALL lines including blank ones
-                val labelHeight = lines.size * 35 + 200 // Height for spacing
+                val cpclBytes = CpclInvoiceFormatter.formatInvoiceAsCpclBytes(invoiceText)
 
-                val cpclCommands = buildString {
-                    // CPCL Header
-                    append("! 0 200 200 $labelHeight 1\r\n")
+                Log.d("CreateOrderVM", "CPCL prepared – ${cpclBytes.size} bytes")
 
-                    // Set encoding for Arabic
-                    append("ENCODING UTF-8\r\n")
+                _uiState.value = _uiState.value.copy(printStatus = "جاري الطباعة...")
 
-                    // Set magnification to 0 0 (normal size)
-                    append("SETMAG 0 0\r\n")
-
-                    var yPos = 15
-                    for ((index, line) in lines.withIndex()) {
-                        // CENTER each line individually
-                        append("CENTER\r\n")
-
-                        // Use font 7 (monospace) to preserve spacing
-                        append("TEXT 7 0 0 $yPos $line\r\n")
-
-                        // Reset to LEFT after each centered line
-                        // This forces the printer to process each line separately
-                        append("LEFT\r\n")
-
-                        yPos += 30  // Spacing between lines
-
-                        Log.d("CreateOrderVM", "Line $index (yPos=$yPos): ${line.take(50)}")
-                    }
-
-                    // Print command
-                    append("PRINT\r\n")
-                }
-
-                Log.d("CreateOrderVM", "CPCL length: ${cpclCommands.length}")
-                Log.d("CreateOrderVM", "Total lines: ${lines.size}")
-                Log.d("CreateOrderVM", "Label height: $labelHeight")
-
-                val printResult = printerManager.printInvoice(cpclCommands)
+                val printResult = printerManager.printInvoice(cpclBytes)
 
                 if (printResult.isSuccess) {
                     _uiState.value = _uiState.value.copy(
                         isPrinting = false,
-                        printStatus = "Invoice printed successfully!"
+                        printStatus = "تمت طباعة الفاتورة بنجاح ✓"
                     )
-                    Log.d("CreateOrderVM", "Invoice printed successfully!")
                 } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
-                    )
-                    Log.e("CreateOrderVM", "Print failed: ${printResult.exceptionOrNull()?.message}")
+                    throw printResult.exceptionOrNull() ?: Exception("فشل الطباعة – سبب غير معروف")
                 }
+
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isPrinting = false,
-                    printStatus = "Error: ${e.message}"
+                    printStatus = "خطأ أثناء الطباعة: ${e.message}"
                 )
-                Log.e("CreateOrderVM", "Exception during print process", e)
+                Log.e("CreateOrderVM", "Printing failed", e)
             }
         }
     }
-
 
 
 

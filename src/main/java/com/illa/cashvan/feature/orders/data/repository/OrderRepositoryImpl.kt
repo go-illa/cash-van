@@ -9,6 +9,7 @@ import com.illa.cashvan.feature.orders.data.model.OngoingPlanResponse
 import com.illa.cashvan.feature.orders.data.model.Order
 import com.illa.cashvan.feature.orders.data.model.OrdersResponse
 import com.illa.cashvan.feature.orders.data.model.PlanProductsResponse
+import com.illa.cashvan.feature.orders.data.model.UpdateOrderRequest
 import com.illa.cashvan.feature.orders.domain.repository.OrderRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -24,10 +25,11 @@ class OrderRepositoryImpl(
 
     override suspend fun getOrders(
         planId: String?,
-        createdAtDateEq: String?
+        createdAtDateEq: String?,
+        orderTypeEq: String?
     ): ApiResult<OrdersResponse> {
         return try {
-            val config = ApiEndpoints.Orders.getOrders(planId, createdAtDateEq)
+            val config = ApiEndpoints.Orders.getOrders(planId, createdAtDateEq, orderTypeEq)
             val versionedPath = "v${config.version}/${config.path}"
 
             val response = httpClient.request(versionedPath) {
@@ -126,6 +128,23 @@ class OrderRepositoryImpl(
             ApiResult.Success(response)
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to create order")
+        }
+    }
+
+    override suspend fun updateOrder(orderId: String, request: UpdateOrderRequest): ApiResult<Order> {
+        return try {
+            val config = ApiEndpoints.Orders.updateOrder(orderId)
+            val versionedPath = "v${config.version}/${config.path}"
+
+            val response = httpClient.request(versionedPath) {
+                method = HttpMethod.Put
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }.body<Order>()
+
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Failed to update order")
         }
     }
 }

@@ -14,5 +14,7 @@ data class PlanProduct(
     val product_price: String,
     val plan_id: String,
     val product_id: String,
-    val product: Product
+    val product: Product,
+    val pre_sell_available_quantity: Int = 0,
+    val cash_van_available_quantity: Int = 0
 )

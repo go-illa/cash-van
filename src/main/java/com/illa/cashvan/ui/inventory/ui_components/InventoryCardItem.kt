@@ -39,7 +39,8 @@ data class InventoryItem(
     val name: String,
     val code: String,
     val totalQuantity: Int,
-    val availableQuantity: Int,
+    val preSellAvailableQuantity: Int,
+    val cashVanAvailableQuantity: Int,
     val soldQuantity: Int,
     val progressPercentage: Float
 )
@@ -148,8 +149,13 @@ fun InventoryCard(
                 )
 
                 StatisticItem(
-                    label = stringResource(R.string.available_label),
-                    value = item.availableQuantity.toString(),
+                    label = stringResource(R.string.cash_van_available_label),
+                    value = item.cashVanAvailableQuantity.toString(),
+                    valueColor = Color(0xFF16A249)
+                )
+                StatisticItem(
+                    label = stringResource(R.string.pre_sell_available_label),
+                    value = item.preSellAvailableQuantity.toString(),
                     valueColor = Color(0xFF16A249)
                 )
 
@@ -201,7 +207,8 @@ fun InventoryCardArabicPreview() {
             name = "Coca Cola Classic 12pk",
             code = "CC001",
             totalQuantity = 24,
-            availableQuantity = 18,
+            preSellAvailableQuantity = 12,
+            cashVanAvailableQuantity = 6,
             soldQuantity = 6,
             progressPercentage = 75f
         )

@@ -94,14 +94,16 @@ object ApiEndpoints {
     object Orders {
         fun getOrders(
             planId: String? = null,
-            createdAtDateEq: String? = null
+            createdAtDateEq: String? = null,
+            orderTypeEq: String? = null
         ) = RequestConfiguration(
             path = "orders",
             method = HttpMethod.Get,
             parameters = Parameters.build {
-                append("include", "order_plan_products,order_plan_products.product,merchant")
+                append("include", "order_plan_products,order_plan_products.product,order_plan_products.plan_product_price,merchant")
                 planId?.let { append("f[plan_id_eq]", it) }
-                createdAtDateEq?.let { append("f[created_at_day_eq]", it) }
+                createdAtDateEq?.let { append("f[created_at_day_lteq]", it) }
+                orderTypeEq?.let { append("f[order_type_eq]", it) }
             },
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2
@@ -111,7 +113,7 @@ object ApiEndpoints {
             path = "orders/$orderId",
             method = HttpMethod.Get,
             parameters = Parameters.build {
-                append("include", "order_plan_products,order_plan_products.product,merchant")
+                append("include", "order_plan_products,order_plan_products.product,order_plan_products.plan_product_price,merchant,invoice_attachment")
             },
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2
@@ -120,6 +122,13 @@ object ApiEndpoints {
         fun createOrder() = RequestConfiguration(
             path = "orders",
             method = HttpMethod.Post,
+            parameterEncoding = ParameterEncoding.BODY,
+            version = 2
+        )
+
+        fun updateOrder(orderId: String) = RequestConfiguration(
+            path = "orders/$orderId",
+            method = HttpMethod.Put,
             parameterEncoding = ParameterEncoding.BODY,
             version = 2
         )

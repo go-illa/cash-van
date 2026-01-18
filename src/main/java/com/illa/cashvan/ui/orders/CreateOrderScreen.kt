@@ -58,6 +58,7 @@ import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewMod
 import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.ui.common.SuccessSnackbar
 import com.illa.cashvan.ui.orders.ui_components.AddMerchantBottomSheet
+import com.illa.cashvan.ui.orders.ui_components.OrderConfirmationBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.ProductSelectionComponent
 import com.illa.cashvan.ui.orders.ui_components.SearchableDropdown
 import com.illa.cashvan.ui.orders.ui_components.SelectedProductsList
@@ -75,7 +76,11 @@ fun CreateOrderScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     var showAddMerchantSheet by remember { mutableStateOf(false) }
-    val bottomSheetState = rememberModalBottomSheetState(
+    var showConfirmationBottomSheet by remember { mutableStateOf(false) }
+    val addMerchantSheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+    val confirmationSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
 
@@ -92,9 +97,8 @@ fun CreateOrderScreen(
 
     LaunchedEffect(uiState.orderCreated) {
         if (uiState.orderCreated) {
-            snackbarHostState.showSnackbar("تم إنشاء الطلب بنجاح")
             viewModel.resetOrderCreated()
-            onOrderCreated()
+            showConfirmationBottomSheet = true
         }
     }
 
@@ -184,7 +188,7 @@ fun CreateOrderScreen(
 
                 val hasInvalidQuantity = uiState.selectedProducts.any { (planProductId, quantity) ->
                     val product = uiState.products.find { it.id == planProductId }
-                    product == null || quantity > product.available_quantity
+                    product == null || quantity > (product.cash_van_available_quantity ?: 0)
                 }
 
                 Button(
@@ -377,7 +381,7 @@ fun CreateOrderScreen(
         if (showAddMerchantSheet) {
             ModalBottomSheet(
                 onDismissRequest = { showAddMerchantSheet = false },
-                sheetState = bottomSheetState
+                sheetState = addMerchantSheetState
             ) {
                 AddMerchantBottomSheet(
                     onDismiss = { showAddMerchantSheet = false },
@@ -390,6 +394,21 @@ fun CreateOrderScreen(
                     }
                 )
             }
+        }
+
+        // Order Confirmation Bottom Sheet
+        if (showConfirmationBottomSheet) {
+            OrderConfirmationBottomSheet(
+                sheetState = confirmationSheetState,
+                onDismiss = {
+                    showConfirmationBottomSheet = false
+                    onOrderCreated()
+                },
+                onBackToHome = {
+                    showConfirmationBottomSheet = false
+                    onOrderCreated()
+                }
+            )
         }
     }
 }
