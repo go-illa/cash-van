@@ -111,6 +111,7 @@ data class Merchant(
     val created_at: String? = null,
     val updated_at: String? = null,
     val name: String? = null,
+    val sign_name: String? = null,
     val phone_number: String? = null,
     val address: String? = null,
     val google_link: String? = null,

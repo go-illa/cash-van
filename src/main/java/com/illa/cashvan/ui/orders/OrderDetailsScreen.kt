@@ -206,8 +206,11 @@ private fun OrderDetailsContent(
 
                 SectionTitle(title = "معلومات التاجر")
 
+
                 MerchantDetailsComponent(
-                    merchant = merchant
+                    merchant = merchant,
+                    latitude = order.merchant?.latitude,
+                    longitude = order.merchant?.longitude
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
