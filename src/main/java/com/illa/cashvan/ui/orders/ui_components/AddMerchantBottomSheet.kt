@@ -1,5 +1,8 @@
 package com.illa.cashvan.ui.orders.ui_components
 
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +22,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Refresh
+import com.illa.cashvan.core.location.LocationPermissionHandler
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,6 +36,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -40,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -69,10 +77,6 @@ fun AddMerchantBottomSheet(
     val merchantUiState by merchantViewModel.uiState.collectAsState()
     val locationUiState by locationViewModel.uiState.collectAsState()
 
-    LaunchedEffect(Unit) {
-        locationViewModel.getCurrentLocation()
-    }
-
     LaunchedEffect(merchantUiState.isSuccess) {
         if (merchantUiState.isSuccess) {
             onMerchantCreated()
@@ -80,176 +84,309 @@ fun AddMerchantBottomSheet(
         }
     }
 
-    val displayCoordinates = locationUiState.locationData?.let {
-        "${it.latitude}, ${it.longitude}"
-    } ?: "Fetching location..."
-
     val scrollState = rememberScrollState()
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(scrollState)
-            .padding(24.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "اضافة تاجر",
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily(Font(R.font.zain_regular)),
-                color = Color.Black
-            )
+    LocationPermissionHandler(
+        onPermissionGranted = {
+            locationViewModel.onPermissionGranted()
+        },
+        onPermissionDenied = {
+            locationViewModel.onPermissionDenied()
+        }
+    ) { requestPermission, isPermissionGranted ->
+        val context = LocalContext.current
+        var showLocationDialog by remember { mutableStateOf(false) }
 
-            IconButton(
-                onClick = onDismiss,
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Close",
-                    tint = Color.Black
-                )
+        // Show dialog when permission denied or location error occurs
+        LaunchedEffect(isPermissionGranted, locationUiState.error) {
+            if (!isPermissionGranted || locationUiState.error != null) {
+                showLocationDialog = true
             }
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-
-        OutlinedTextField(
-            value = merchantName,
-            onValueChange = { merchantName = it },
-            label = {
-                Text(
-                    text = "اضافة اسم التاجر",
-                    color = Color.Black,
-                    fontSize = 14.sp
-                )
-            },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color.Gray,
-                unfocusedBorderColor = Color.LightGray,
-                focusedLabelColor = Color.Gray,
-                unfocusedLabelColor = Color.Gray
+        // Location Permission Dialog
+        if (showLocationDialog && (!isPermissionGranted || locationUiState.error != null)) {
+            AlertDialog(
+                onDismissRequest = { showLocationDialog = false },
+                title = {
+                    Text(
+                        text = "تحديد الموقع مطلوب",
+                        fontFamily = FontFamily(Font(R.font.zain_bold)),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Text(
+                        text = if (!isPermissionGranted)
+                            "يجب السماح بالوصول للموقع لإضافة التاجر. يرجى تفعيل صلاحية الموقع."
+                        else
+                            "تعذر تحديد موقعك. تأكد من تفعيل خدمة الموقع في جهازك وحاول مرة أخرى.",
+                        fontFamily = FontFamily(Font(R.font.zain_regular))
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (!isPermissionGranted) {
+                                requestPermission()
+                            } else {
+                                locationViewModel.getCurrentLocation()
+                            }
+                            showLocationDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colorResource(R.color.primary)
+                        )
+                    ) {
+                        Text(
+                            text = if (!isPermissionGranted) "السماح" else "إعادة المحاولة",
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color.White
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            // Open app settings
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", context.packageName, null)
+                            }
+                            context.startActivity(intent)
+                            showLocationDialog = false
+                        }
+                    ) {
+                        Text(
+                            text = "فتح الإعدادات",
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = colorResource(R.color.primary)
+                        )
+                    }
+                }
             )
-        )
+        }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = phoneNumber,
-            onValueChange = { phoneNumber = it },
-            label = {
-                Text(
-                    text = "اضافة رقم الهاتف",
-                    color = Color.Black,
-                    fontSize = 14.sp
-                )
-            },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(10.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Color.Gray,
-                unfocusedBorderColor = Color.LightGray,
-                focusedLabelColor = Color.Gray,
-                unfocusedLabelColor = Color.Gray
-            )
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(scrollState)
+                .padding(24.dp)
         ) {
-            Icon(
-                imageVector = Icons.Default.LocationOn,
-                contentDescription = "Location",
-                tint = colorResource(R.color.primary),
-                modifier = Modifier.size(20.dp)
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    text = "هنحط مكانك تلقائيا",
-                    fontSize = 14.sp,
-                    fontFamily = FontFamily(Font(R.font.zain_light)),
+                    text = "اضافة تاجر",
+                    fontSize = 22.sp,
                     fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily(Font(R.font.zain_regular)),
                     color = Color.Black
                 )
 
-                Text(
-                    text = displayCoordinates,
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        merchantUiState.error?.let { error ->
-            Text(
-                text = error,
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 14.sp,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-        }
-
-        Button(
-            onClick = {
-                locationUiState.locationData?.let { location ->
-                    analyticsHelper.logEvent(
-                        "add_merchant",
-                        mapOf(
-                            "merchant_name" to merchantName,
-                            "merchant_phone" to phoneNumber
-                        )
-                    )
-                    merchantViewModel.createMerchant(
-                        name = merchantName,
-                        phoneNumber = phoneNumber,
-                        latitude = location.latitude.toString(),
-                        longitude = location.longitude.toString(),
-                        planId = merchantViewModel.getFirstPlanId() ?: "2"
+                IconButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close",
+                        tint = Color.Black
                     )
                 }
-            },
-            enabled = merchantName.isNotBlank() && phoneNumber.isNotBlank() &&
-                     locationUiState.locationData != null && !merchantUiState.isLoading,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = colorResource(R.color.primary)
-            ),
-            shape = RoundedCornerShape(8.dp)
-        ) {
-            if (merchantUiState.isLoading) {
-                CircularProgressIndicator(
-                    color = Color.White,
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            OutlinedTextField(
+                value = merchantName,
+                onValueChange = { merchantName = it },
+                label = {
+                    Text(
+                        text = "اضافة اسم التاجر",
+                        color = Color.Black,
+                        fontSize = 14.sp
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Gray,
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedLabelColor = Color.Gray,
+                    unfocusedLabelColor = Color.Gray
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = phoneNumber,
+                onValueChange = { phoneNumber = it },
+                label = {
+                    Text(
+                        text = "اضافة رقم الهاتف",
+                        color = Color.Black,
+                        fontSize = 14.sp
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Gray,
+                    unfocusedBorderColor = Color.LightGray,
+                    focusedLabelColor = Color.Gray,
+                    unfocusedLabelColor = Color.Gray
+                )
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Location section with permission handling
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = "Location",
+                    tint = if (locationUiState.locationData != null) colorResource(R.color.primary) else Color.Red,
                     modifier = Modifier.size(20.dp)
                 )
-            } else {
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "هنحط مكانك تلقائيا",
+                        fontSize = 14.sp,
+                        fontFamily = FontFamily(Font(R.font.zain_light)),
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black
+                    )
+
+                    when {
+                        !isPermissionGranted -> {
+                            Text(
+                                text = "يجب السماح بالوصول للموقع",
+                                fontSize = 12.sp,
+                                color = Color.Red
+                            )
+                        }
+                        locationUiState.isLoading -> {
+                            Text(
+                                text = "جاري تحديد الموقع...",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                        locationUiState.error != null -> {
+                            Text(
+                                text = locationUiState.error!!,
+                                fontSize = 12.sp,
+                                color = Color.Red
+                            )
+                        }
+                        locationUiState.locationData != null -> {
+                            Text(
+                                text = "${locationUiState.locationData!!.latitude}, ${locationUiState.locationData!!.longitude}",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                }
+
+                // Show permission button or retry button
+                if (!isPermissionGranted) {
+                    Button(
+                        onClick = { requestPermission() },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colorResource(R.color.primary)
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.height(36.dp)
+                    ) {
+                        Text(
+                            text = "السماح",
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color.White
+                        )
+                    }
+                } else if (locationUiState.error != null && !locationUiState.isLoading) {
+                    IconButton(
+                        onClick = { locationViewModel.getCurrentLocation() },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Retry",
+                            tint = colorResource(R.color.primary)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            merchantUiState.error?.let { error ->
                 Text(
-                    text = "اضافة التاجر",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily(Font(R.font.zain_bold)),
-                    color = Color.White
+                    text = error,
+                    color = MaterialTheme.colorScheme.error,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = {
+                    locationUiState.locationData?.let { location ->
+                        analyticsHelper.logEvent(
+                            "add_merchant",
+                            mapOf(
+                                "merchant_name" to merchantName,
+                                "merchant_phone" to phoneNumber
+                            )
+                        )
+                        merchantViewModel.createMerchant(
+                            name = merchantName,
+                            phoneNumber = phoneNumber,
+                            latitude = location.latitude.toString(),
+                            longitude = location.longitude.toString(),
+                            planId = merchantViewModel.getFirstPlanId() ?: "2"
+                        )
+                    }
+                },
+                enabled = merchantName.isNotBlank() && phoneNumber.isNotBlank() &&
+                         locationUiState.locationData != null && !merchantUiState.isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(R.color.primary)
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                if (merchantUiState.isLoading) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Text(
+                        text = "اضافة التاجر",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily(Font(R.font.zain_bold)),
+                        color = Color.White
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 }
 
