@@ -50,18 +50,19 @@ import com.illa.cashvan.R
 import com.illa.cashvan.feature.orders.data.model.Order
 import com.illa.cashvan.feature.orders.presentation.mapper.toOrderSpecs
 import com.illa.cashvan.feature.orders.presentation.mapper.toPaymentSummary
-import com.illa.cashvan.feature.orders.presentation.mapper.toProductDetailsList
 import com.illa.cashvan.feature.orders.presentation.mapper.toUIMerchant
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
 import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.ui.common.SuccessSnackbar
+import com.illa.cashvan.feature.orders.presentation.viewmodel.ProductPriceInfo
 import com.illa.cashvan.ui.orders.ui_components.CancelOrderBottomSheet
+import com.illa.cashvan.ui.orders.ui_components.EditableOrderItem
+import com.illa.cashvan.ui.orders.ui_components.EditableOrderItemCard
 import com.illa.cashvan.ui.orders.ui_components.MerchantDetailsComponent
 import com.illa.cashvan.ui.orders.ui_components.OrderConfirmationBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.OrderSpecsComponentCompact
 import com.illa.cashvan.ui.orders.ui_components.PaymentSummaryCard
-import com.illa.cashvan.ui.orders.ui_components.ProductsDetailsComponent
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -164,10 +165,10 @@ private fun OrderDetailsContent(
     orderViewModel: OrderViewModel = koinViewModel()
 ) {
     val uiState by orderViewModel.uiState.collectAsState()
+    val orderDetailsState by orderViewModel.orderDetailsUiState.collectAsState()
     val orderSpecs = order.toOrderSpecs()
     val merchant = order.toUIMerchant()
     val paymentSummary = order.toPaymentSummary()
-    val productDetailsList = order.toProductDetailsList()
 
     var showCancelBottomSheet by remember { mutableStateOf(false) }
     var showConfirmationBottomSheet by remember { mutableStateOf(false) }
@@ -217,10 +218,90 @@ private fun OrderDetailsContent(
 
                 SectionTitle(title = "عناصر الطلب")
 
-                productDetailsList.forEach { product ->
-                    ProductsDetailsComponent(
-                        productDetails = product
+                // Show products with detailed price breakdown
+                order.order_plan_products?.forEach { orderPlanProduct ->
+                    val planProductId = orderPlanProduct.plan_product_id ?: return@forEach
+
+                    // Skip deleted products
+                    if (planProductId in orderDetailsState.deletedProductIds) {
+                        return@forEach
+                    }
+
+                    // Get current quantity
+                    val currentQuantity = if (orderDetailsState.isEditMode) {
+                        orderDetailsState.editedQuantities[planProductId] ?: orderPlanProduct.sold_quantity
+                    } else {
+                        orderPlanProduct.sold_quantity
+                    }
+
+                    // Get price info from state or calculate from order data
+                    val priceInfo = orderDetailsState.productPrices[planProductId] ?: run {
+                        // Try to use total_price_details first (new API structure)
+                        val totalPriceDetails = orderPlanProduct.total_price_details
+                        if (totalPriceDetails != null) {
+                            val basePrice = totalPriceDetails.unit?.base_price ?: 0.0
+                            val finalPricePerUnit = totalPriceDetails.unit?.final_price ?: 0.0
+                            val vatAmount = totalPriceDetails.unit?.vat_amount ?: 0.0
+                            val discountAmount = totalPriceDetails.unit?.discount_amount ?: 0.0
+                            val totalPrice = totalPriceDetails.total?.final_price ?: (finalPricePerUnit * currentQuantity)
+
+                            ProductPriceInfo(
+                                basePrice = basePrice,
+                                finalPrice = finalPricePerUnit,
+                                discountAmount = discountAmount,
+                                vatAmount = vatAmount,
+                                totalPrice = totalPrice
+                            )
+                        } else {
+                            // Fallback to old structure
+                            val priceDetails = orderPlanProduct.plan_product_price?.price_details
+                            val basePrice = orderPlanProduct.plan_product_price?.base_price?.toDoubleOrNull() ?: 0.0
+                            val finalPricePerUnit = priceDetails?.final_price ?: 0.0
+                            val vatAmount = priceDetails?.vat_amount ?: 0.0
+                            val discountAmount = priceDetails?.discount_amount ?: 0.0
+
+                            ProductPriceInfo(
+                                basePrice = basePrice,
+                                finalPrice = finalPricePerUnit,
+                                discountAmount = discountAmount,
+                                vatAmount = vatAmount,
+                                totalPrice = finalPricePerUnit * currentQuantity
+                            )
+                        }
+                    }
+
+                    // Get VAT percentage from total_price_details or fallback to plan_product_price
+                    val vatPercentage = orderPlanProduct.total_price_details?.vat_percentage
+                        ?: orderPlanProduct.plan_product_price?.vat_percentage ?: 0.0
+
+                    val item = EditableOrderItem(
+                        planProductId = planProductId,
+                        productName = orderPlanProduct.product?.name ?: "",
+                        sku = orderPlanProduct.product?.sku ?: "",
+                        quantity = currentQuantity,
+                        maxQuantity = orderPlanProduct.initial_sold_quantity,
+                        basePrice = priceInfo.basePrice,
+                        finalPrice = priceInfo.finalPrice,
+                        discountAmount = priceInfo.discountAmount,
+                        vatAmount = priceInfo.vatAmount,
+                        vatPercentage = vatPercentage,
+                        totalPrice = priceInfo.totalPrice,
+                        isLoadingPrice = planProductId in orderDetailsState.loadingPriceForProducts
                     )
+
+                    if (orderDetailsState.isEditMode && order.order_type == "pre_sell") {
+                        EditableOrderItemCard(
+                            item = item,
+                            onQuantityChange = { id, qty ->
+                                orderViewModel.updateProductQuantity(id, qty)
+                            },
+                            onRemoveItem = { id ->
+                                orderViewModel.deleteProductImmediately(id)
+                            }
+                        )
+                    } else {
+                        ReadOnlyProductCard(item = item)
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -248,50 +329,122 @@ private fun OrderDetailsContent(
                             .padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Cancel button
-                        OutlinedButton(
-                            onClick = { showCancelBottomSheet = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(40.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color(0xFFDC3545)
-                            ),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                Color(0xFFDC3545)
-                            )
-                        ) {
-                            Text(
-                                text = "إلغاء الأوردر",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily(Font(R.font.zain_regular))
-                            )
-                        }
-
-                        // Submit button
-                        Button(
-                            onClick = {
-                                orderViewModel.submitOrder(order) {
-                                    showConfirmationBottomSheet = true
+                        if (orderDetailsState.isEditMode) {
+                            // Edit mode buttons
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                // Cancel edit button
+                                OutlinedButton(
+                                    onClick = { orderViewModel.exitEditMode() },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(40.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.outlinedButtonColors(
+                                        contentColor = Color(0xFF6B7280)
+                                    ),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp,
+                                        Color(0xFF6B7280)
+                                    )
+                                ) {
+                                    Text(
+                                        text = "إلغاء",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily(Font(R.font.zain_regular))
+                                    )
                                 }
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(40.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF0D3773)
-                            )
-                        ) {
-                            Text(
-                                text = "تسليم الاوردر",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily(Font(R.font.zain_regular))
-                            )
+
+                                // Save button
+                                Button(
+                                    onClick = {
+                                        orderViewModel.saveEditedOrder()
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(40.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF0D3773)
+                                    )
+                                ) {
+                                    Text(
+                                        text = "حفظ",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily(Font(R.font.zain_regular))
+                                    )
+                                }
+                            }
+                        } else {
+                            // Normal mode buttons
+                            // Edit button
+                            Button(
+                                onClick = { orderViewModel.enterEditMode() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(40.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF6B7280)
+                                )
+                            ) {
+                                Text(
+                                    text = "تعديل الأوردر",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily(Font(R.font.zain_regular))
+                                )
+                            }
+
+                            // Cancel button
+                            OutlinedButton(
+                                onClick = { showCancelBottomSheet = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(40.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Color(0xFFDC3545)
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    Color(0xFFDC3545)
+                                )
+                            ) {
+                                Text(
+                                    text = "إلغاء الأوردر",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily(Font(R.font.zain_regular))
+                                )
+                            }
+
+                            // Submit button
+                            Button(
+                                onClick = {
+                                    orderViewModel.submitOrder(order) {
+                                        showConfirmationBottomSheet = true
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(40.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF0D3773)
+                                )
+                            ) {
+                                Text(
+                                    text = "تسليم الاوردر",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily(Font(R.font.zain_regular))
+                                )
+                            }
                         }
                     }
                 }
@@ -378,8 +531,13 @@ private fun OrderDetailsContent(
             )
         }
 
-        // Show print status snackbar
+        // Show print status snackbar with auto-dismiss
         if (uiState.printStatus != null) {
+            LaunchedEffect(uiState.printStatus) {
+                kotlinx.coroutines.delay(3000) // Auto-dismiss after 3 seconds
+                orderViewModel.clearPrintStatus()
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -397,6 +555,46 @@ private fun OrderDetailsContent(
                         onDismiss = { orderViewModel.clearPrintStatus() }
                     )
                 }
+            }
+        }
+
+        // Show success message snackbar with auto-dismiss
+        if (orderDetailsState.successMessage != null) {
+            LaunchedEffect(orderDetailsState.successMessage) {
+                kotlinx.coroutines.delay(3000) // Auto-dismiss after 3 seconds
+                orderViewModel.clearSuccessMessage()
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                SuccessSnackbar(
+                    message = orderDetailsState.successMessage ?: "",
+                    onDismiss = { orderViewModel.clearSuccessMessage() }
+                )
+            }
+        }
+
+        // Show error message snackbar with auto-dismiss
+        if (orderDetailsState.error != null) {
+            LaunchedEffect(orderDetailsState.error) {
+                kotlinx.coroutines.delay(3000) // Auto-dismiss after 3 seconds
+                orderViewModel.clearOrderDetailsError()
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                ErrorSnackbar(
+                    message = orderDetailsState.error ?: "",
+                    onDismiss = { orderViewModel.clearOrderDetailsError() }
+                )
             }
         }
     }
@@ -417,7 +615,162 @@ private fun SectionTitle(
     )
 }
 
+@Composable
+private fun ReadOnlyProductCard(item: EditableOrderItem) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            // Product Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Product Info
+                Column(
+                    horizontalAlignment = Alignment.Start
+                ) {
+                    Text(
+                        text = item.productName,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color(0xFF1F252E)
+                    )
+                    Text(
+                        text = "رمز التخزين: ${item.sku}",
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color(0xFF9CA3AF)
+                    )
+                }
+                // Quantity Badge
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color(0xFFE5E7EB),
+                            shape = RoundedCornerShape(8.dp)
+                        )
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        text = "الكمية: ${item.quantity}",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color(0xFF1F252E)
+                    )
+                }
+            }
 
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Price Details
+            PriceDetailsReadOnly(
+                basePrice = item.basePrice,
+                discountAmount = item.discountAmount,
+                vatAmount = item.vatAmount,
+                vatPercentage = item.vatPercentage,
+                totalPrice = item.totalPrice
+            )
+        }
+    }
+}
+
+@Composable
+private fun PriceDetailsReadOnly(
+    basePrice: Double,
+    discountAmount: Double,
+    vatAmount: Double,
+    vatPercentage: Double,
+    totalPrice: Double
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        // Base Price Per Unit
+        PriceRowReadOnly(
+            label = "سعر الوحدة",
+            value = "${"%.2f".format(basePrice)} جنيه"
+        )
+
+        // Discount (per unit if > 0)
+        if (discountAmount > 0) {
+            PriceRowReadOnly(
+                label = "الخصم",
+                value = "${"%.2f".format(discountAmount)} جنيه",
+                valueColor = Color(0xFF10B981)
+            )
+        }
+
+        // VAT Percentage (if > 0)
+        if (vatPercentage > 0) {
+            PriceRowReadOnly(
+                label = "نسبة الضريبة",
+                value = "${vatPercentage.toInt()}%"
+            )
+        }
+
+        // VAT Amount (per unit if > 0)
+        if (vatAmount > 0) {
+            PriceRowReadOnly(
+                label = "الضريبة",
+                value = "${"%.2f".format(vatAmount)} جنيه"
+            )
+        }
+
+        // Divider
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Color(0xFFE5E7EB))
+        )
+
+        // Total (final price after applying discounts and VAT, multiplied by quantity)
+        PriceRowReadOnly(
+            label = "الاجمالي",
+            value = "${"%.2f".format(totalPrice)} جنيه",
+            isHighlight = true
+        )
+    }
+}
+
+@Composable
+private fun PriceRowReadOnly(
+    label: String,
+    value: String,
+    isHighlight: Boolean = false,
+    valueColor: Color = Color(0xFF1F252E)
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            fontSize = if (isHighlight) 16.sp else 14.sp,
+            fontWeight = if (isHighlight) FontWeight.Bold else FontWeight.Normal,
+            fontFamily = FontFamily(Font(R.font.zain_regular)),
+            color = Color(0xFF6B7280)
+        )
+        Text(
+            text = value,
+            fontSize = if (isHighlight) 16.sp else 14.sp,
+            fontWeight = if (isHighlight) FontWeight.Bold else FontWeight.Normal,
+            fontFamily = FontFamily(Font(R.font.zain_regular)),
+            color = valueColor
+        )
+    }
+}
 
 @Preview(showBackground = true, locale = "ar")
 @Composable

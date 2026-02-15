@@ -35,8 +35,8 @@ data class InvoiceAttachment(
     val file_size: String,
     val content_type: String,
     val filename: String,
-    val created_at: String,
-    val updated_at: String
+    val created_at: String? = null,
+    val updated_at: String? = null
 )
 
 @Serializable
@@ -46,11 +46,13 @@ data class OrderPlanProduct(
     val updated_at: String,
     val order_id: String? = null,
     val plan_product_id: String? = null,
+    val initial_sold_quantity: Int = 0,
     val sold_quantity: Int,
     val total_income: String,
     val status: String? = null,
     val product: OrderProduct? = null,
-    val plan_product_price: PlanProductPrice? = null
+    val plan_product_price: PlanProductPrice? = null,
+    val total_price_details: TotalPriceDetails? = null
 )
 
 @Serializable
@@ -103,6 +105,36 @@ data class PriceDetails(
     val tax_amount: Double? = null,
     val vat_amount: Double? = null,
     val discount_amount: Double? = null
+)
+
+@Serializable
+data class TotalPriceDetails(
+    val plan_type: String? = null,
+    val price_tier: String? = null,
+    val active_discount: Boolean? = null,
+    val vat_percentage: Double? = null,
+    val unit: UnitPriceDetails? = null,
+    val total: TotalDetails? = null
+)
+
+@Serializable
+data class UnitPriceDetails(
+    val base_price: Double? = null,
+    val final_price: Double? = null,
+    val discount_amount: Double? = null,
+    val cash_discount_amount: Double? = null,
+    val vat_amount: Double? = null
+)
+
+@Serializable
+data class TotalDetails(
+    val base_price: Double? = null,
+    val final_price: Double? = null,
+    val discount_amount: Double? = null,
+    val cash_discount_amount: Double? = null,
+    val vat_amount: Double? = null,
+    val quantity: Int? = null,
+    val income: Double? = null
 )
 
 @Serializable
@@ -249,5 +281,25 @@ data class UpdateOrderData(
 @Serializable
 data class SubmitOrderItem(
     val plan_product_id: String,
-    val sold_quantity: Int
+    val sold_quantity: Int = 0,
+    val _destroy: Boolean? = null
+)
+
+@Serializable
+data class ProductPriceCalculationResponse(
+    val plan_type: String? = null,
+    val price_tier: String? = null,
+    val active_discount: Boolean? = null,
+    val vat_percentage: Double? = null,
+    val unit: UnitPriceDetails? = null,
+    val total: TotalDetails? = null,
+    // Keep old fields for backward compatibility
+    val base_price: Double? = null,
+    val final_price: Double? = null,
+    val quantity: Int? = null,
+    val total_price: Double? = null,
+    val discount_amount: Double? = null,
+    val cash_discount_amount: Double? = null,
+    val total_discount: Double? = null,
+    val total_vat: Double? = null
 )

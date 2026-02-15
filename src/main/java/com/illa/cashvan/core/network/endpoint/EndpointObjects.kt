@@ -132,5 +132,20 @@ object ApiEndpoints {
             parameterEncoding = ParameterEncoding.BODY,
             version = 2
         )
+
+        fun getProductTotalPrice(
+            planId: String,
+            productId: String,
+            orderId: String,
+            quantity: Int
+        ) = RequestConfiguration(
+            path = "plans/$planId/plan_products/$productId/pre_sell/plan_product_prices/$orderId/product_total_price",
+            method = HttpMethod.Get,
+            parameters = Parameters.build {
+                append("quantity", quantity.toString())
+            },
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
     }
 }

@@ -187,23 +187,22 @@ object MockData {
     // Mock Payment Summary
     val paymentSummaries = listOf(
         PaymentSummary(
-            total = 838.20
+            total = 838.20,
+            subtotal = TODO(),
+            taxAmount = TODO(),
+            taxPercentage = TODO(),
+            discountAmount = TODO(),
+            cashDiscountAmount = TODO()
         ),
     )
 
     // Helper functions to get random data
     fun getRandomMerchant() = merchants.random()
-    fun getRandomProduct() = products.random()
-    fun getRandomOrderElement() = orderElements.random()
-    fun getRandomOrderItem() = orderItems.random()
     fun getRandomOrderSpecs() = orderSpecs.random()
-    fun getRandomPaymentSummary() = paymentSummaries.random()
 
     // Get subsets of data
     fun getRandomMerchants(count: Int = 3) = merchants.shuffled().take(count)
     fun getRandomProducts(count: Int = 5) = products.shuffled().take(count)
-    fun getRandomOrderElements(count: Int = 3) = orderElements.shuffled().take(count)
-    fun getRandomOrderItems(count: Int = 5) = orderItems.shuffled().take(count)
 
     // Sample complete order data
     fun getSampleCompleteOrder() = CompleteOrderData(

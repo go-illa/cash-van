@@ -13,6 +13,7 @@ import com.illa.cashvan.feature.orders.domain.usecase.GetOrdersUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOrderByIdUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.UpdateOrderUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetProductTotalPriceUseCase
 import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
 import com.illa.cashvan.feature.printer.HoneywellPrinterManager
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,10 +35,25 @@ data class OrderUiState(
     val printStatus: String? = null
 )
 
+data class ProductPriceInfo(
+    val basePrice: Double,
+    val finalPrice: Double,
+    val discountAmount: Double,
+    val vatAmount: Double,
+    val totalPrice: Double
+)
+
 data class OrderDetailsUiState(
     val isLoading: Boolean = false,
     val order: Order? = null,
-    val error: String? = null
+    val error: String? = null,
+    val successMessage: String? = null,
+    val isEditMode: Boolean = false,
+    val editedQuantities: Map<String, Int> = emptyMap(), // planProductId -> quantity
+    val deletedProductIds: Set<String> = emptySet(),
+    val isUpdatingPrice: Boolean = false,
+    val productPrices: Map<String, ProductPriceInfo> = emptyMap(), // planProductId -> price info
+    val loadingPriceForProducts: Set<String> = emptySet() // planProductIds currently loading prices
 )
 
 class OrderViewModel(
@@ -45,7 +61,8 @@ class OrderViewModel(
     private val getOrdersUseCase: GetOrdersUseCase,
     private val getOrderByIdUseCase: GetOrderByIdUseCase,
     private val updateOrderUseCase: UpdateOrderUseCase,
-    private val getInvoiceContentUseCase: GetInvoiceContentUseCase
+    private val getInvoiceContentUseCase: GetInvoiceContentUseCase,
+    private val getProductTotalPriceUseCase: GetProductTotalPriceUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OrderUiState())
@@ -100,13 +117,16 @@ class OrderViewModel(
         loadOrders()
     }
 
-    fun clearError() {
-        _uiState.value = _uiState.value.copy(error = null)
-    }
-
     fun loadOrderById(orderId: String) {
         viewModelScope.launch {
-            _orderDetailsUiState.value = _orderDetailsUiState.value.copy(isLoading = true, error = null)
+            // Reset edit mode and clear any edited data when loading a new order
+            _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+                isLoading = true,
+                error = null,
+                isEditMode = false,
+                editedQuantities = emptyMap(),
+                deletedProductIds = emptySet()
+            )
 
             when (val result = getOrderByIdUseCase(orderId)) {
                 is ApiResult.Success -> {
@@ -114,6 +134,8 @@ class OrderViewModel(
                         isLoading = false,
                         order = result.data
                     )
+                    // Initialize prices from the order data
+                    initializeProductPrices()
                 }
                 is ApiResult.Error -> {
                     _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
@@ -126,10 +148,6 @@ class OrderViewModel(
                 }
             }
         }
-    }
-
-    fun clearOrderDetailsError() {
-        _orderDetailsUiState.value = _orderDetailsUiState.value.copy(error = null)
     }
 
     fun cancelOrder(orderId: String, reason: String, note: String, onSuccess: () -> Unit = {}) {
@@ -168,6 +186,7 @@ class OrderViewModel(
                 )
             } ?: emptyList()
 
+            // Submit order with status "submitted" and order items
             val request = UpdateOrderRequest(
                 order = UpdateOrderData(
                     status = "submitted",
@@ -307,6 +326,257 @@ class OrderViewModel(
         viewModelScope.launch {
             kotlinx.coroutines.delay(delayMs)
             _uiState.value = _uiState.value.copy(printStatus = null)
+        }
+    }
+
+    // Edit mode functions
+    fun enterEditMode() {
+        val currentOrder = _orderDetailsUiState.value.order ?: return
+        val initialQuantities = currentOrder.order_plan_products?.associate {
+            (it.plan_product_id ?: "") to it.sold_quantity
+        } ?: emptyMap()
+
+        _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+            isEditMode = true,
+            editedQuantities = initialQuantities,
+            deletedProductIds = emptySet()
+        )
+    }
+
+    fun exitEditMode() {
+        _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+            isEditMode = false,
+            editedQuantities = emptyMap(),
+            deletedProductIds = emptySet()
+        )
+    }
+
+    fun updateProductQuantity(planProductId: String, newQuantity: Int) {
+        val currentQuantities = _orderDetailsUiState.value.editedQuantities.toMutableMap()
+        currentQuantities[planProductId] = newQuantity
+        _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+            editedQuantities = currentQuantities
+        )
+
+        // Calculate new price for this product
+        calculateProductPrice(planProductId, newQuantity)
+    }
+
+    private fun calculateProductPrice(planProductId: String, quantity: Int) {
+        viewModelScope.launch {
+            val currentOrder = _orderDetailsUiState.value.order ?: return@launch
+
+            // Find the order plan product
+            val orderPlanProduct = currentOrder.order_plan_products?.find {
+                it.plan_product_id == planProductId
+            } ?: return@launch
+
+            val productId = orderPlanProduct.plan_product_id ?: return@launch
+            val planId = currentOrder.plan_id ?: return@launch
+
+            // Mark this product as loading price
+            val loadingProducts = _orderDetailsUiState.value.loadingPriceForProducts.toMutableSet()
+            loadingProducts.add(planProductId)
+            _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+                loadingPriceForProducts = loadingProducts
+            )
+
+            when (val result = getProductTotalPriceUseCase(
+                planId = planId,
+                productId = productId,
+                orderId = currentOrder.id,
+                quantity = quantity
+            )) {
+                is ApiResult.Success -> {
+                    val priceResponse = result.data
+
+                    // Try to use new structure (total_price_details) first
+                    val priceInfo = if (priceResponse.unit != null && priceResponse.total != null) {
+                        ProductPriceInfo(
+                            basePrice = priceResponse.unit.base_price ?: 0.0,
+                            finalPrice = priceResponse.unit.final_price ?: 0.0,
+                            discountAmount = priceResponse.unit.discount_amount ?: 0.0,
+                            vatAmount = priceResponse.unit.vat_amount ?: 0.0,
+                            totalPrice = priceResponse.total.final_price ?: 0.0
+                        )
+                    } else {
+                        // Fallback to old structure
+                        ProductPriceInfo(
+                            basePrice = priceResponse.base_price ?: 0.0,
+                            finalPrice = priceResponse.final_price ?: 0.0,
+                            discountAmount = priceResponse.total_discount ?: 0.0,
+                            vatAmount = priceResponse.total_vat ?: 0.0,
+                            totalPrice = priceResponse.total_price ?: 0.0
+                        )
+                    }
+
+                    val updatedPrices = _orderDetailsUiState.value.productPrices.toMutableMap()
+                    updatedPrices[planProductId] = priceInfo
+
+                    val updatedLoadingProducts = _orderDetailsUiState.value.loadingPriceForProducts.toMutableSet()
+                    updatedLoadingProducts.remove(planProductId)
+
+                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+                        productPrices = updatedPrices,
+                        loadingPriceForProducts = updatedLoadingProducts
+                    )
+                }
+                is ApiResult.Error -> {
+                    val updatedLoadingProducts = _orderDetailsUiState.value.loadingPriceForProducts.toMutableSet()
+                    updatedLoadingProducts.remove(planProductId)
+                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+                        loadingPriceForProducts = updatedLoadingProducts
+                    )
+                    Log.e("OrderViewModel", "Error calculating price: ${result.message}")
+                }
+                is ApiResult.Loading -> {
+                    // Already handled above
+                }
+            }
+        }
+    }
+
+    fun initializeProductPrices() {
+        val currentOrder = _orderDetailsUiState.value.order ?: return
+
+        val initialPrices = currentOrder.order_plan_products?.associate { orderPlanProduct ->
+            val planProductId = orderPlanProduct.plan_product_id ?: ""
+            val totalPriceDetails = orderPlanProduct.total_price_details
+            val quantity = orderPlanProduct.sold_quantity
+
+            val priceInfo = if (totalPriceDetails != null) {
+                // Use new total_price_details structure
+                ProductPriceInfo(
+                    basePrice = totalPriceDetails.unit?.base_price ?: 0.0,
+                    finalPrice = totalPriceDetails.unit?.final_price ?: 0.0,
+                    discountAmount = totalPriceDetails.unit?.discount_amount ?: 0.0,
+                    vatAmount = totalPriceDetails.unit?.vat_amount ?: 0.0,
+                    totalPrice = totalPriceDetails.total?.final_price ?: 0.0
+                )
+            } else {
+                // Fallback to old structure
+                val priceDetails = orderPlanProduct.plan_product_price?.price_details
+                ProductPriceInfo(
+                    basePrice = orderPlanProduct.plan_product_price?.base_price?.toDoubleOrNull() ?: 0.0,
+                    finalPrice = priceDetails?.final_price ?: 0.0,
+                    discountAmount = priceDetails?.discount_amount ?: 0.0,
+                    vatAmount = priceDetails?.vat_amount ?: 0.0,
+                    totalPrice = (priceDetails?.final_price ?: 0.0) * quantity
+                )
+            }
+
+            planProductId to priceInfo
+        }?.toMap() ?: emptyMap()
+
+        _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+            productPrices = initialPrices
+        )
+    }
+
+
+    fun deleteProductImmediately(planProductId: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            val currentOrder = _orderDetailsUiState.value.order ?: return@launch
+
+            // Set loading state
+            _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+                isLoading = true,
+                error = null
+            )
+
+            // Create request with _destroy flag
+            val request = UpdateOrderRequest(
+                order = UpdateOrderData(
+                    order_items = listOf(
+                        com.illa.cashvan.feature.orders.data.model.SubmitOrderItem(
+                            plan_product_id = planProductId,
+                            sold_quantity = 0,
+                            _destroy = true
+                        )
+                    )
+                )
+            )
+
+            when (val result = updateOrderUseCase(currentOrder.id, request)) {
+                is ApiResult.Success -> {
+                    // Refresh order data to get updated product list
+                    loadOrderById(currentOrder.id)
+                    // Set success message
+                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+                        successMessage = "تم حذف المنتج بنجاح"
+                    )
+                    onSuccess()
+                }
+                is ApiResult.Error -> {
+                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+                        isLoading = false,
+                        error = result.message
+                    )
+                    onError(result.message)
+                }
+                else -> {
+
+                }
+            }
+        }
+    }
+
+    fun clearSuccessMessage() {
+        _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+            successMessage = null
+        )
+    }
+
+    fun clearOrderDetailsError() {
+        _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+            error = null
+        )
+    }
+
+    fun saveEditedOrder(onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            val currentOrder = _orderDetailsUiState.value.order ?: return@launch
+            val editedQuantities = _orderDetailsUiState.value.editedQuantities
+            val deletedProductIds = _orderDetailsUiState.value.deletedProductIds
+
+            // Build order items from edited quantities, excluding deleted products
+            val orderItems = editedQuantities
+                .filter { (planProductId, _) -> planProductId !in deletedProductIds }
+                .filter { (_, quantity) -> quantity > 0 } // Only include products with quantity > 0
+                .map { (planProductId, quantity) ->
+                    com.illa.cashvan.feature.orders.data.model.SubmitOrderItem(
+                        plan_product_id = planProductId,
+                        sold_quantity = quantity
+                    )
+                }
+
+            val request = UpdateOrderRequest(
+                order = UpdateOrderData(
+                    order_items = orderItems
+                )
+            )
+
+            when (val result = updateOrderUseCase(currentOrder.id, request)) {
+                is ApiResult.Success -> {
+                    // Refresh order data
+                    loadOrderById(currentOrder.id)
+                    // Exit edit mode
+                    exitEditMode()
+                    // Set success message
+                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+                        successMessage = "تم حفظ التعديلات بنجاح"
+                    )
+                    onSuccess()
+                }
+                is ApiResult.Error -> {
+                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+                        error = result.message
+                    )
+                }
+                is ApiResult.Loading -> {
+                    // Handle loading state if needed
+                }
+            }
         }
     }
 

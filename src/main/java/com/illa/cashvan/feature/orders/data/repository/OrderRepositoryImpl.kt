@@ -9,6 +9,7 @@ import com.illa.cashvan.feature.orders.data.model.OngoingPlanResponse
 import com.illa.cashvan.feature.orders.data.model.Order
 import com.illa.cashvan.feature.orders.data.model.OrdersResponse
 import com.illa.cashvan.feature.orders.data.model.PlanProductsResponse
+import com.illa.cashvan.feature.orders.data.model.ProductPriceCalculationResponse
 import com.illa.cashvan.feature.orders.data.model.UpdateOrderRequest
 import com.illa.cashvan.feature.orders.domain.repository.OrderRepository
 import io.ktor.client.HttpClient
@@ -145,6 +146,29 @@ class OrderRepositoryImpl(
             ApiResult.Success(response)
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to update order")
+        }
+    }
+
+    override suspend fun getProductTotalPrice(
+        planId: String,
+        productId: String,
+        orderId: String,
+        quantity: Int
+    ): ApiResult<ProductPriceCalculationResponse> {
+        return try {
+            val config = ApiEndpoints.Orders.getProductTotalPrice(planId, productId, orderId, quantity)
+            val versionedPath = "v${config.version}/${config.path}"
+
+            val response = httpClient.request(versionedPath) {
+                method = HttpMethod.Get
+                config.parameters?.forEach { key, values ->
+                    url.parameters.appendAll(key, values)
+                }
+            }.body<ProductPriceCalculationResponse>()
+
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Failed to calculate product price")
         }
     }
 }

@@ -75,30 +75,69 @@ fun Order.toUIMerchant(): Merchant {
 fun Order.toPaymentSummary(): PaymentSummary {
     val totalAmount = total_income.toDoubleOrNull() ?: 0.0
 
+    // Calculate subtotal, tax, discounts, and cash discount from order_plan_products using total_price_details
+    var subtotal = 0.0
+    var totalTax = 0.0
+    var totalDiscount = 0.0
+    var totalCashDiscount = 0.0
+    var avgTaxPercentage = 0.0
+    var taxItemsCount = 0
+
+    order_plan_products?.forEach { planProduct ->
+        val totalPriceDetails = planProduct.total_price_details
+
+        if (totalPriceDetails != null) {
+            // Use total_price_details if available (new API structure)
+            subtotal += totalPriceDetails.total?.base_price ?: 0.0
+            totalTax += totalPriceDetails.total?.vat_amount ?: 0.0
+            totalDiscount += totalPriceDetails.total?.discount_amount ?: 0.0
+            totalCashDiscount += totalPriceDetails.total?.cash_discount_amount ?: 0.0
+
+            // Accumulate tax percentage for average
+            val vatPercentage = totalPriceDetails.vat_percentage ?: 0.0
+            if (vatPercentage > 0) {
+                avgTaxPercentage += vatPercentage
+                taxItemsCount++
+            }
+        } else {
+            // Fallback to old structure if total_price_details is not available
+            val quantity = planProduct.sold_quantity
+            val priceDetails = planProduct.plan_product_price?.price_details
+            val basePrice = planProduct.plan_product_price?.base_price?.toDoubleOrNull() ?: 0.0
+
+            // Calculate subtotal (base price * quantity)
+            subtotal += basePrice * quantity
+
+            // Calculate total tax
+            val vatAmount = priceDetails?.vat_amount ?: 0.0
+            totalTax += vatAmount * quantity
+
+            // Calculate total discount
+            val discountAmount = priceDetails?.discount_amount ?: 0.0
+            totalDiscount += discountAmount * quantity
+
+            // Accumulate tax percentage for average
+            val vatPercentage = planProduct.plan_product_price?.vat_percentage ?: 0.0
+            if (vatPercentage > 0) {
+                avgTaxPercentage += vatPercentage
+                taxItemsCount++
+            }
+        }
+    }
+
+    // Calculate average tax percentage
+    val taxPercentage = if (taxItemsCount > 0) {
+        avgTaxPercentage / taxItemsCount
+    } else {
+        0.0
+    }
+
     return PaymentSummary(
+        subtotal = subtotal,
+        taxAmount = totalTax,
+        taxPercentage = taxPercentage,
+        discountAmount = totalDiscount,
+        cashDiscountAmount = totalCashDiscount,
         total = totalAmount
     )
-}
-
-fun Order.toProductDetailsList(): List<ProductDetails> {
-    return order_plan_products?.mapNotNull { orderPlanProduct ->
-        orderPlanProduct.product?.let { product ->
-            // Use plan_product_price.final_price if available, fallback to product.price
-            val unitPrice = orderPlanProduct.plan_product_price?.final_price?.toDoubleOrNull()
-                ?: product.price.toDoubleOrNull()
-                ?: 0.0
-            val quantity = orderPlanProduct.sold_quantity
-            // Use total_income from orderPlanProduct for accurate total (includes discounts/VAT)
-            val totalPrice = orderPlanProduct.total_income.toDoubleOrNull()
-                ?: (unitPrice * quantity)
-
-            ProductDetails(
-                productName = product.name,
-                sku = product.sku,
-                price = totalPrice,
-                unitPrice = unitPrice,
-                quantity = quantity
-            )
-        }
-    } ?: emptyList()
 }

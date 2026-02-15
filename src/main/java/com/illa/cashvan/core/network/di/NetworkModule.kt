@@ -1,5 +1,6 @@
 package com.illa.cashvan.core.network.di
 
+import com.illa.cashvan.BuildConfig
 import com.illa.cashvan.core.app_preferences.domain.use_case.app_cache.ClearAppDataUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetRefreshTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetTokenUseCase
@@ -83,6 +84,7 @@ fun provideHttpClient(
             header(HttpHeaders.ContentType, ContentType.Application.Json)
             val token = runBlocking(Dispatchers.IO) { getTokenUseCase().firstOrNull() }
             header(HttpHeaders.AcceptLanguage, getLanguage())
+            header("X-App-Version", BuildConfig.VERSION_CODE.toString())
             if (!token.isNullOrBlank()) {
                 header(HttpHeaders.Authorization, "Bearer $token")
             }
