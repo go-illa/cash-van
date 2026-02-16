@@ -148,9 +148,14 @@ fun AddMerchantBottomSheet(
                 dismissButton = {
                     TextButton(
                         onClick = {
-                            // Open app settings
-                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                data = Uri.fromParts("package", context.packageName, null)
+                            // If permission is granted but there's an error (GPS disabled),
+                            // open location settings. Otherwise, open app permission settings.
+                            val intent = if (isPermissionGranted && locationUiState.error != null) {
+                                Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                            } else {
+                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                }
                             }
                             context.startActivity(intent)
                             showLocationDialog = false

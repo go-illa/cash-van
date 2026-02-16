@@ -100,7 +100,9 @@ fun EditableOrderItemCard(
                         fontWeight = FontWeight.Medium,
                         fontFamily = FontFamily(Font(R.font.zain_regular)),
                         color = Color(0xFF1F252E),
-                        textAlign = TextAlign.End
+                        textAlign = TextAlign.End,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
