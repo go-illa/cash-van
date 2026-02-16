@@ -1,7 +1,13 @@
 package com.illa.cashvan.feature.orders.presentation.viewmodel
 
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
+import android.net.Uri
 import android.util.Log
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.illa.cashvan.core.getCurrentDateApiFormat
@@ -16,10 +22,17 @@ import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetProductTotalPriceUseCase
 import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
 import com.illa.cashvan.feature.printer.HoneywellPrinterManager
+import com.illa.cashvan.core.utils.WhatsAppHelper
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.android.Android
+import io.ktor.client.request.get
+import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.readBytes
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.io.File
 
 enum class OrderType(val value: String, val displayName: String) {
     CASH_VAN("cash_van", "أوردارات كاش"),
@@ -576,6 +589,295 @@ class OrderViewModel(
                 is ApiResult.Loading -> {
                     // Handle loading state if needed
                 }
+            }
+        }
+    }
+
+    /**
+     * Send invoice PDF to merchant via WhatsApp
+     */
+    fun sendInvoiceViaWhatsApp(orderId: String) {
+        viewModelScope.launch {
+            try {
+                Log.d("OrderViewModel", "Starting send invoice via WhatsApp for order $orderId")
+
+                _uiState.value = _uiState.value.copy(
+                    isPrinting = true,
+                    printStatus = "جاري تحميل الفاتورة..."
+                )
+
+                // Fetch the order with invoice_attachment
+                val orderResult = getOrderByIdUseCase(orderId)
+
+                if (orderResult !is ApiResult.Success) {
+                    _uiState.value = _uiState.value.copy(
+                        isPrinting = false,
+                        printStatus = "فشل في تحميل الفاتورة"
+                    )
+                    return@launch
+                }
+
+                val order = orderResult.data
+                val invoiceAttachment = order.invoice_attachment
+                if (invoiceAttachment == null) {
+                    _uiState.value = _uiState.value.copy(
+                        isPrinting = false,
+                        printStatus = "لا توجد فاتورة متاحة لهذا الطلب"
+                    )
+                    return@launch
+                }
+
+                val merchantPhone = order.merchant?.phone_number
+                if (merchantPhone.isNullOrBlank()) {
+                    _uiState.value = _uiState.value.copy(
+                        isPrinting = false,
+                        printStatus = "رقم هاتف التاجر غير متوفر"
+                    )
+                    return@launch
+                }
+
+                val invoiceUrl = invoiceAttachment.url
+                Log.d("OrderViewModel", "Invoice URL: $invoiceUrl")
+                Log.d("OrderViewModel", "Invoice content_type: ${invoiceAttachment.content_type}")
+                Log.d("OrderViewModel", "Invoice filename: ${invoiceAttachment.filename}")
+                Log.d("OrderViewModel", "Merchant phone: $merchantPhone")
+
+                _uiState.value = _uiState.value.copy(printStatus = "جاري تنزيل الفاتورة...")
+
+                // Try to download as PDF first
+                var pdfFile = downloadPdfFile(invoiceUrl, order.formatted_code)
+
+                if (pdfFile == null) {
+                    // If it's not a PDF, download as text and generate PDF
+                    Log.d("OrderViewModel", "Not a PDF file, downloading as text and generating PDF")
+                    _uiState.value = _uiState.value.copy(printStatus = "جاري تحويل الفاتورة إلى PDF...")
+
+                    // Download invoice content as text
+                    val invoiceResult = getInvoiceContentUseCase(invoiceUrl)
+                    if (invoiceResult !is ApiResult.Success) {
+                        _uiState.value = _uiState.value.copy(
+                            isPrinting = false,
+                            printStatus = "فشل في تحميل محتوى الفاتورة"
+                        )
+                        return@launch
+                    }
+
+                    val invoiceText = invoiceResult.data
+                    Log.d("OrderViewModel", "Downloaded invoice text, length: ${invoiceText.length}")
+
+                    // Generate PDF from text
+                    pdfFile = generatePdfFromText(invoiceText, order.formatted_code)
+                    if (pdfFile == null) {
+                        _uiState.value = _uiState.value.copy(
+                            isPrinting = false,
+                            printStatus = "فشل في إنشاء ملف PDF"
+                        )
+                        return@launch
+                    }
+                }
+
+                _uiState.value = _uiState.value.copy(printStatus = "جاري فتح واتساب...")
+
+                // Open WhatsApp to send the file
+                openWhatsAppWithFile(pdfFile, merchantPhone, order.formatted_code)
+
+                _uiState.value = _uiState.value.copy(isPrinting = false)
+                setPrintStatusWithAutoClear("تم فتح واتساب لإرسال الفاتورة")
+
+            } catch (e: Exception) {
+                Log.e("OrderViewModel", "Exception during send via WhatsApp", e)
+                _uiState.value = _uiState.value.copy(isPrinting = false)
+                setPrintStatusWithAutoClear("خطأ: ${e.message}")
+            }
+        }
+    }
+
+    private suspend fun downloadPdfFile(url: String, orderCode: String): File? {
+        return try {
+            val client = HttpClient(Android)
+            val response: HttpResponse = client.get(url)
+
+            // Check content type
+            val contentType = response.headers["Content-Type"]
+            Log.d("OrderViewModel", "Response Content-Type: $contentType")
+
+            val bytes = response.readBytes()
+            client.close()
+
+            // Verify it's actually a PDF by checking the first few bytes (PDF magic number)
+            if (bytes.size < 4 || !isPdfFile(bytes)) {
+                Log.e("OrderViewModel", "Downloaded file is not a PDF. First bytes: ${bytes.take(10).joinToString()}")
+                return null
+            }
+
+            // Save to cache directory
+            val cacheDir = context.cacheDir
+            val pdfFile = File(cacheDir, "invoice_${orderCode}.pdf")
+            pdfFile.writeBytes(bytes)
+
+            Log.d("OrderViewModel", "PDF file saved successfully: ${pdfFile.absolutePath}, size: ${bytes.size} bytes")
+            pdfFile
+        } catch (e: Exception) {
+            Log.e("OrderViewModel", "Failed to download PDF", e)
+            null
+        }
+    }
+
+    private fun isPdfFile(bytes: ByteArray): Boolean {
+        return bytes.size >= 4 &&
+               bytes[0] == 0x25.toByte() && // %
+               bytes[1] == 0x50.toByte() && // P
+               bytes[2] == 0x44.toByte() && // D
+               bytes[3] == 0x46.toByte()    // F
+    }
+
+    private fun generatePdfFromText(text: String, orderCode: String): File? {
+        return try {
+            val pdfDocument = PdfDocument()
+            val pageWidth = 595 // A4 width in points (8.27 inches)
+            val pageHeight = 842 // A4 height in points (11.69 inches)
+            val margin = 40f
+            val lineHeight = 18f
+            val fontSize = 11f
+
+            // Configure paint for text
+            val paint = Paint().apply {
+                textSize = fontSize
+                isAntiAlias = true
+                color = android.graphics.Color.BLACK
+                // Use monospace font for receipt formatting
+                typeface = android.graphics.Typeface.MONOSPACE
+            }
+
+            // Split text into lines
+            val lines = text.lines()
+            val linesPerPage = ((pageHeight - 2 * margin) / lineHeight).toInt()
+
+            var pageNumber = 1
+            var lineIndex = 0
+
+            while (lineIndex < lines.size) {
+                // Create a new page
+                val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
+                val page = pdfDocument.startPage(pageInfo)
+                val canvas = page.canvas
+
+                var yPosition = margin
+
+                // Draw lines on this page
+                val endLine = minOf(lineIndex + linesPerPage, lines.size)
+                for (i in lineIndex until endLine) {
+                    var line = lines[i]
+
+                    // Skip empty lines but preserve spacing
+                    if (line.isBlank()) {
+                        yPosition += lineHeight
+                        continue
+                    }
+
+                    // Detect line alignment based on content
+                    val trimmedLine = line.trim()
+                    val leadingSpaces = line.takeWhile { it == ' ' }.length
+                    val trailingSpaces = line.takeLastWhile { it == ' ' }.length
+
+                    // Use trimmed line for drawing
+                    line = trimmedLine
+
+                    val textWidth = paint.measureText(line)
+                    val contentWidth = pageWidth - 2 * margin
+
+                    // Determine alignment
+                    val xPosition = when {
+                        // Centered text (has significant spaces on both sides or is a title-like line)
+                        leadingSpaces > 5 && trailingSpaces > 5 -> {
+                            margin + (contentWidth - textWidth) / 2
+                        }
+                        // Arabic/RTL text - align right
+                        line.firstOrNull()?.let { isArabic(it) } == true -> {
+                            pageWidth - margin - textWidth
+                        }
+                        // Default - align left
+                        else -> {
+                            margin
+                        }
+                    }
+
+                    canvas.drawText(line, xPosition, yPosition, paint)
+                    yPosition += lineHeight
+                }
+
+                pdfDocument.finishPage(page)
+                lineIndex = endLine
+                pageNumber++
+            }
+
+            // Save to file
+            val cacheDir = context.cacheDir
+            val pdfFile = File(cacheDir, "invoice_${orderCode}.pdf")
+            pdfFile.outputStream().use { outputStream ->
+                pdfDocument.writeTo(outputStream)
+            }
+            pdfDocument.close()
+
+            Log.d("OrderViewModel", "PDF generated successfully: ${pdfFile.absolutePath}, pages: ${pageNumber - 1}")
+            pdfFile
+        } catch (e: Exception) {
+            Log.e("OrderViewModel", "Failed to generate PDF from text", e)
+            null
+        }
+    }
+
+    private fun isArabic(char: Char): Boolean {
+        // Check if character is in Arabic Unicode range
+        val codePoint = char.code
+        return codePoint in 0x0600..0x06FF || // Arabic
+               codePoint in 0x0750..0x077F || // Arabic Supplement
+               codePoint in 0xFB50..0xFDFF || // Arabic Presentation Forms-A
+               codePoint in 0xFE70..0xFEFF    // Arabic Presentation Forms-B
+    }
+
+    private fun openWhatsAppWithFile(file: File, phoneNumber: String, orderCode: String) {
+        try {
+            // Create content URI using FileProvider
+            val contentUri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+
+            val message = "فاتورة رقم: $orderCode"
+
+            // Send invoice to merchant via WhatsApp
+            Log.d("OrderViewModel", "Sending invoice to merchant via WhatsApp")
+            when (val result = WhatsAppHelper.sendInvoiceToMerchant(
+                context,
+                contentUri,
+                phoneNumber,
+                orderCode
+            )) {
+                is WhatsAppHelper.SendResult.ChatOpened -> {
+                    Log.d("OrderViewModel", "WhatsApp opened with invoice")
+                    setPrintStatusWithAutoClear(result.message)
+                }
+                is WhatsAppHelper.SendResult.Failure -> {
+                    setPrintStatusWithAutoClear(result.error)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("OrderViewModel", "Failed to open WhatsApp", e)
+            setPrintStatusWithAutoClear("فشل في فتح واتساب: ${e.message}")
+        }
+    }
+
+    private fun shareFileToOpenChat(contentUri: Uri, message: String) {
+        // Share the file via WhatsApp (will open share dialog on top of the already open chat)
+        val result = WhatsAppHelper.shareFile(context, contentUri, message)
+        when {
+            result.isSuccess -> {
+                Log.d("OrderViewModel", "File share initiated successfully")
+            }
+            result.isFailure -> {
+                Log.e("OrderViewModel", "Failed to share file", result.exceptionOrNull())
             }
         }
     }

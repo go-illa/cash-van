@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Print
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -26,8 +27,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -52,10 +51,10 @@ import com.illa.cashvan.feature.orders.presentation.mapper.toOrderSpecs
 import com.illa.cashvan.feature.orders.presentation.mapper.toPaymentSummary
 import com.illa.cashvan.feature.orders.presentation.mapper.toUIMerchant
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
+import com.illa.cashvan.feature.orders.presentation.viewmodel.ProductPriceInfo
 import com.illa.cashvan.ui.common.CashVanHeader
 import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.ui.common.SuccessSnackbar
-import com.illa.cashvan.feature.orders.presentation.viewmodel.ProductPriceInfo
 import com.illa.cashvan.ui.orders.ui_components.CancelOrderBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.EditableOrderItem
 import com.illa.cashvan.ui.orders.ui_components.EditableOrderItemCard
@@ -463,8 +462,10 @@ private fun OrderDetailsContent(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp)
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        // Print Invoice button
                         Button(
                             onClick = {
                                 orderViewModel.printInvoice(order.id)
@@ -485,6 +486,37 @@ private fun OrderDetailsContent(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "إطبع الفاتورة",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular))
+                            )
+                        }
+
+                        // Send Invoice via WhatsApp button
+                        OutlinedButton(
+                            onClick = {
+                                orderViewModel.sendInvoiceViaWhatsApp(order.id)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFF25D366)
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                Color(0xFF25D366)
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Send,
+                                contentDescription = "إرسال الفاتورة للتاجر",
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "ارسال الفاتورة للتاجر",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily(Font(R.font.zain_regular))
