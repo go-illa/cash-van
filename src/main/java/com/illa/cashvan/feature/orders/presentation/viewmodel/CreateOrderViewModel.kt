@@ -17,6 +17,7 @@ import com.illa.cashvan.feature.orders.domain.usecase.GetPlanProductsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.SearchMerchantsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOrderByIdUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetCashVanProductTotalPriceUseCase
 import com.illa.cashvan.feature.printer.HoneywellPrinterManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -43,7 +44,11 @@ data class CreateOrderUiState(
     val orderCreated: Boolean = false,
     val isPrinting: Boolean = false,
     val printStatus: String? = null,
-    val invoiceText: String? = null
+    val invoiceText: String? = null,
+    val productPrices: Map<String, ProductPriceInfo> = emptyMap(), // planProductId -> price info
+    val loadingPriceForProducts: Set<String> = emptySet(), // planProductIds currently loading prices
+    val previewProductPrice: ProductPriceInfo? = null, // price preview before adding product to order
+    val isLoadingPreviewPrice: Boolean = false
 )
 
 class CreateOrderViewModel(
@@ -53,7 +58,8 @@ class CreateOrderViewModel(
     private val getPlanProductsUseCase: GetPlanProductsUseCase,
     private val createOrderUseCase: CreateOrderUseCase,
     private val getOrderByIdUseCase: GetOrderByIdUseCase,
-    private val getInvoiceContentUseCase: GetInvoiceContentUseCase
+    private val getInvoiceContentUseCase: GetInvoiceContentUseCase,
+    private val getCashVanProductTotalPriceUseCase: GetCashVanProductTotalPriceUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateOrderUiState())
@@ -61,6 +67,7 @@ class CreateOrderViewModel(
 
     private var merchantSearchJob: Job? = null
     private var productSearchJob: Job? = null
+    private var previewPriceJob: Job? = null
     private val printerManager: HoneywellPrinterManager by lazy {
         HoneywellPrinterManager(context)
     }
@@ -137,6 +144,7 @@ class CreateOrderViewModel(
         productSearchJob?.cancel()
 
         val planId = _uiState.value.currentPlan?.id?.toString() ?: return
+        val priceTier = _uiState.value.selectedMerchant?.price_tier
 
         productSearchJob = viewModelScope.launch {
             // Debounce search
@@ -144,7 +152,7 @@ class CreateOrderViewModel(
 
             _uiState.value = _uiState.value.copy(isSearchingProducts = true)
 
-            when (val result = getPlanProductsUseCase(planId, query.ifEmpty { null })) {
+            when (val result = getPlanProductsUseCase(planId, query.ifEmpty { null }, priceTier)) {
                 is ApiResult.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isSearchingProducts = false,
@@ -164,13 +172,13 @@ class CreateOrderViewModel(
         }
     }
 
-    private fun loadProducts() {
+    private fun loadProducts(priceTier: String? = null) {
         val planId = _uiState.value.currentPlan?.id?.toString() ?: return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSearchingProducts = true)
 
-            when (val result = getPlanProductsUseCase(planId, null)) {
+            when (val result = getPlanProductsUseCase(planId, null, priceTier)) {
                 is ApiResult.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isSearchingProducts = false,
@@ -195,13 +203,66 @@ class CreateOrderViewModel(
             selectedMerchant = merchant,
             merchantSearchQuery = merchant.name
         )
+        loadProducts(merchant.price_tier)
     }
 
     fun clearMerchant() {
         _uiState.value = _uiState.value.copy(
             selectedMerchant = null
         )
+        loadProducts(priceTier = null)
     }
+
+    fun fetchPreviewPrice(planProductId: String, quantity: Int) {
+        val planId = _uiState.value.currentPlan?.id ?: return
+        val merchantId = _uiState.value.selectedMerchant?.id ?: return
+
+        previewPriceJob?.cancel()
+        _uiState.value = _uiState.value.copy(isLoadingPreviewPrice = true, previewProductPrice = null)
+
+        previewPriceJob = viewModelScope.launch {
+            delay(300)
+            when (val result = getCashVanProductTotalPriceUseCase(
+                planId = planId,
+                productId = planProductId,
+                merchantId = merchantId,
+                quantity = quantity
+            )) {
+                is ApiResult.Success -> {
+                    val priceResponse = result.data
+                    val priceInfo = if (priceResponse.unit != null && priceResponse.total != null) {
+                        ProductPriceInfo(
+                            basePrice = priceResponse.unit.base_price ?: 0.0,
+                            finalPrice = priceResponse.unit.final_price ?: 0.0,
+                            discountAmount = priceResponse.unit.discount_amount ?: 0.0,
+                            vatAmount = priceResponse.unit.vat_amount ?: 0.0,
+                            totalPrice = priceResponse.total.final_price ?: 0.0,
+                            vatPercentage = priceResponse.vat_percentage ?: 0.0
+                        )
+                    } else {
+                        ProductPriceInfo(
+                            basePrice = priceResponse.base_price ?: 0.0,
+                            finalPrice = priceResponse.final_price ?: 0.0,
+                            discountAmount = priceResponse.total_discount ?: 0.0,
+                            vatAmount = priceResponse.total_vat ?: 0.0,
+                            totalPrice = priceResponse.total_price ?: 0.0,
+                            vatPercentage = priceResponse.vat_percentage ?: 0.0
+                        )
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        previewProductPrice = priceInfo,
+                        isLoadingPreviewPrice = false
+                    )
+                }
+                is ApiResult.Error -> {
+                    _uiState.value = _uiState.value.copy(isLoadingPreviewPrice = false)
+                    Log.e("CreateOrderViewModel", "Error fetching preview price: ${result.message}")
+                }
+                is ApiResult.Loading -> {}
+            }
+        }
+    }
+
 
     fun addProductToOrder(planProductId: String, quantity: Int) {
         val currentProducts = linkedMapOf<String, Int>()
@@ -213,7 +274,16 @@ class CreateOrderViewModel(
             }
         }
 
-        _uiState.value = _uiState.value.copy(selectedProducts = currentProducts)
+        _uiState.value = _uiState.value.copy(
+            selectedProducts = currentProducts,
+            previewProductPrice = null,
+            isLoadingPreviewPrice = false
+        )
+
+        // Calculate price for the added product if merchant is selected
+        if (_uiState.value.selectedMerchant != null) {
+            calculateProductPrice(planProductId, currentProducts[planProductId] ?: quantity)
+        }
     }
 
     fun updateProductQuantity(planProductId: String, quantity: Int) {
@@ -225,6 +295,11 @@ class CreateOrderViewModel(
         }
 
         _uiState.value = _uiState.value.copy(selectedProducts = currentProducts)
+
+        // Calculate new price for this product if merchant is selected and quantity > 0
+        if (quantity > 0 && _uiState.value.selectedMerchant != null) {
+            calculateProductPrice(planProductId, quantity)
+        }
     }
 
     fun removeProduct(planProductId: String) {
@@ -232,6 +307,76 @@ class CreateOrderViewModel(
         currentProducts.remove(planProductId)
 
         _uiState.value = _uiState.value.copy(selectedProducts = currentProducts)
+    }
+
+    private fun calculateProductPrice(planProductId: String, quantity: Int) {
+        viewModelScope.launch {
+            val currentPlan = _uiState.value.currentPlan ?: return@launch
+            val selectedMerchant = _uiState.value.selectedMerchant ?: return@launch
+            val planId = currentPlan.id?.toString() ?: return@launch
+
+            // Mark this product as loading price
+            val loadingProducts = _uiState.value.loadingPriceForProducts.toMutableSet()
+            loadingProducts.add(planProductId)
+            _uiState.value = _uiState.value.copy(
+                loadingPriceForProducts = loadingProducts
+            )
+
+            when (val result = getCashVanProductTotalPriceUseCase(
+                planId = planId,
+                productId = planProductId,
+                merchantId = selectedMerchant.id,
+                quantity = quantity
+            )) {
+                is ApiResult.Success -> {
+                    val priceResponse = result.data
+
+                    // Try to use new structure (total_price_details) first
+                    val priceInfo = if (priceResponse.unit != null && priceResponse.total != null) {
+                        ProductPriceInfo(
+                            basePrice = priceResponse.unit.base_price ?: 0.0,
+                            finalPrice = priceResponse.unit.final_price ?: 0.0,
+                            discountAmount = priceResponse.unit.discount_amount ?: 0.0,
+                            vatAmount = priceResponse.unit.vat_amount ?: 0.0,
+                            totalPrice = priceResponse.total.final_price ?: 0.0,
+                            vatPercentage = priceResponse.vat_percentage ?: 0.0
+                        )
+                    } else {
+                        // Fallback to old structure
+                        ProductPriceInfo(
+                            basePrice = priceResponse.base_price ?: 0.0,
+                            finalPrice = priceResponse.final_price ?: 0.0,
+                            discountAmount = priceResponse.total_discount ?: 0.0,
+                            vatAmount = priceResponse.total_vat ?: 0.0,
+                            totalPrice = priceResponse.total_price ?: 0.0,
+                            vatPercentage = priceResponse.vat_percentage ?: 0.0
+                        )
+                    }
+
+                    val updatedPrices = _uiState.value.productPrices.toMutableMap()
+                    updatedPrices[planProductId] = priceInfo
+
+                    val updatedLoadingProducts = _uiState.value.loadingPriceForProducts.toMutableSet()
+                    updatedLoadingProducts.remove(planProductId)
+
+                    _uiState.value = _uiState.value.copy(
+                        productPrices = updatedPrices,
+                        loadingPriceForProducts = updatedLoadingProducts
+                    )
+                }
+                is ApiResult.Error -> {
+                    val updatedLoadingProducts = _uiState.value.loadingPriceForProducts.toMutableSet()
+                    updatedLoadingProducts.remove(planProductId)
+                    _uiState.value = _uiState.value.copy(
+                        loadingPriceForProducts = updatedLoadingProducts
+                    )
+                    Log.e("CreateOrderViewModel", "Error calculating price: ${result.message}")
+                }
+                is ApiResult.Loading -> {
+                    // Already handled above
+                }
+            }
+        }
     }
 
     fun createOrder() {
@@ -359,22 +504,6 @@ class CreateOrderViewModel(
             }
         }
     }
-
-
-
-
-
-
-    /**
-     * Clear print status message
-     */
-    fun clearPrintStatus() {
-        _uiState.value = _uiState.value.copy(printStatus = null)
-    }
-
-
-
-
 
     /**
      * Cleanup resources

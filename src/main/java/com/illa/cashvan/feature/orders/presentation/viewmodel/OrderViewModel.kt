@@ -20,6 +20,7 @@ import com.illa.cashvan.feature.orders.domain.usecase.GetOrderByIdUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.UpdateOrderUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetProductTotalPriceUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetCashVanProductTotalPriceUseCase
 import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
 import com.illa.cashvan.feature.printer.HoneywellPrinterManager
 import com.illa.cashvan.core.utils.WhatsAppHelper
@@ -53,7 +54,8 @@ data class ProductPriceInfo(
     val finalPrice: Double,
     val discountAmount: Double,
     val vatAmount: Double,
-    val totalPrice: Double
+    val totalPrice: Double,
+    val vatPercentage: Double = 0.0
 )
 
 data class OrderDetailsUiState(
@@ -75,7 +77,8 @@ class OrderViewModel(
     private val getOrderByIdUseCase: GetOrderByIdUseCase,
     private val updateOrderUseCase: UpdateOrderUseCase,
     private val getInvoiceContentUseCase: GetInvoiceContentUseCase,
-    private val getProductTotalPriceUseCase: GetProductTotalPriceUseCase
+    private val getProductTotalPriceUseCase: GetProductTotalPriceUseCase,
+    private val getCashVanProductTotalPriceUseCase: GetCashVanProductTotalPriceUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OrderUiState())
@@ -394,12 +397,24 @@ class OrderViewModel(
                 loadingPriceForProducts = loadingProducts
             )
 
-            when (val result = getProductTotalPriceUseCase(
-                planId = planId,
-                productId = productId,
-                orderId = currentOrder.id,
-                quantity = quantity
-            )) {
+            val result = if (currentOrder.order_type == "cash_van") {
+                val priceId = orderPlanProduct.plan_product_price?.id ?: return@launch
+                getCashVanProductTotalPriceUseCase(
+                    planId = planId,
+                    productId = productId,
+                    merchantId = priceId,
+                    quantity = quantity
+                )
+            } else {
+                getProductTotalPriceUseCase(
+                    planId = planId,
+                    productId = productId,
+                    orderId = currentOrder.id,
+                    quantity = quantity
+                )
+            }
+
+            when (result) {
                 is ApiResult.Success -> {
                     val priceResponse = result.data
 
@@ -410,7 +425,8 @@ class OrderViewModel(
                             finalPrice = priceResponse.unit.final_price ?: 0.0,
                             discountAmount = priceResponse.unit.discount_amount ?: 0.0,
                             vatAmount = priceResponse.unit.vat_amount ?: 0.0,
-                            totalPrice = priceResponse.total.final_price ?: 0.0
+                            totalPrice = priceResponse.total.final_price ?: 0.0,
+                            vatPercentage = priceResponse.vat_percentage ?: 0.0
                         )
                     } else {
                         // Fallback to old structure
@@ -419,7 +435,8 @@ class OrderViewModel(
                             finalPrice = priceResponse.final_price ?: 0.0,
                             discountAmount = priceResponse.total_discount ?: 0.0,
                             vatAmount = priceResponse.total_vat ?: 0.0,
-                            totalPrice = priceResponse.total_price ?: 0.0
+                            totalPrice = priceResponse.total_price ?: 0.0,
+                            vatPercentage = priceResponse.vat_percentage ?: 0.0
                         )
                     }
 
@@ -464,7 +481,8 @@ class OrderViewModel(
                     finalPrice = totalPriceDetails.unit?.final_price ?: 0.0,
                     discountAmount = totalPriceDetails.unit?.discount_amount ?: 0.0,
                     vatAmount = totalPriceDetails.unit?.vat_amount ?: 0.0,
-                    totalPrice = totalPriceDetails.total?.final_price ?: 0.0
+                    totalPrice = totalPriceDetails.total?.final_price ?: 0.0,
+                    vatPercentage = totalPriceDetails.vat_percentage ?: 0.0
                 )
             } else {
                 // Fallback to old structure
@@ -474,7 +492,8 @@ class OrderViewModel(
                     finalPrice = priceDetails?.final_price ?: 0.0,
                     discountAmount = priceDetails?.discount_amount ?: 0.0,
                     vatAmount = priceDetails?.vat_amount ?: 0.0,
-                    totalPrice = (priceDetails?.final_price ?: 0.0) * quantity
+                    totalPrice = (priceDetails?.final_price ?: 0.0) * quantity,
+                    vatPercentage = orderPlanProduct.plan_product_price?.vat_percentage ?: 0.0
                 )
             }
 

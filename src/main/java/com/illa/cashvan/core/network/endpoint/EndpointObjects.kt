@@ -58,12 +58,13 @@ object ApiEndpoints {
             version = 2
         )
 
-        fun getPlanProducts(planId: String, query: String? = null) = RequestConfiguration(
+        fun getPlanProducts(planId: String, query: String? = null, priceTier: String? = null) = RequestConfiguration(
             path = "plans/$planId/plan_products",
             method = HttpMethod.Get,
             parameters = Parameters.build {
                 append("include", "product")
                 query?.let { append("q", it) }
+                priceTier?.let { append("f[plan_product_prices_price_tier_eq]", it) }
             },
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2
@@ -140,6 +141,21 @@ object ApiEndpoints {
             quantity: Int
         ) = RequestConfiguration(
             path = "plans/$planId/plan_products/$productId/pre_sell/plan_product_prices/$orderId/product_total_price",
+            method = HttpMethod.Get,
+            parameters = Parameters.build {
+                append("quantity", quantity.toString())
+            },
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+
+        fun getCashVanProductTotalPrice(
+            planId: String,
+            productId: String,
+            merchantId: String,
+            quantity: Int
+        ) = RequestConfiguration(
+            path = "plans/$planId/plan_products/$productId/cash_van/plan_product_prices/$merchantId/product_total_price",
             method = HttpMethod.Get,
             parameters = Parameters.build {
                 append("quantity", quantity.toString())

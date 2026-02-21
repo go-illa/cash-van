@@ -97,9 +97,9 @@ class OrderRepositoryImpl(
         }
     }
 
-    override suspend fun getPlanProducts(planId: String, query: String?): ApiResult<PlanProductsResponse> {
+    override suspend fun getPlanProducts(planId: String, query: String?, priceTier: String?): ApiResult<PlanProductsResponse> {
         return try {
-            val config = ApiEndpoints.Plans.getPlanProducts(planId, query)
+            val config = ApiEndpoints.Plans.getPlanProducts(planId, query, priceTier)
             val versionedPath = "v${config.version}/${config.path}"
 
             val response = httpClient.request(versionedPath) {
@@ -169,6 +169,29 @@ class OrderRepositoryImpl(
             ApiResult.Success(response)
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to calculate product price")
+        }
+    }
+
+    override suspend fun getCashVanProductTotalPrice(
+        planId: String,
+        productId: String,
+        merchantId: String,
+        quantity: Int
+    ): ApiResult<ProductPriceCalculationResponse> {
+        return try {
+            val config = ApiEndpoints.Orders.getCashVanProductTotalPrice(planId, productId, merchantId, quantity)
+            val versionedPath = "v${config.version}/${config.path}"
+
+            val response = httpClient.request(versionedPath) {
+                method = HttpMethod.Get
+                config.parameters?.forEach { key, values ->
+                    url.parameters.appendAll(key, values)
+                }
+            }.body<ProductPriceCalculationResponse>()
+
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Failed to calculate CashVan product price")
         }
     }
 }

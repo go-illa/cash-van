@@ -158,8 +158,13 @@ fun CreateOrderScreen(
                     .padding(16.dp)
             ) {
                 val totalAmount = uiState.selectedProducts.entries.sumOf { (planProductId, quantity) ->
-                    val product = uiState.products.find { it.id == planProductId }
-                    product?.product_price?.toDoubleOrNull()?.times(quantity) ?: 0.0
+                    val priceInfo = uiState.productPrices[planProductId]
+                    if (priceInfo != null) {
+                        priceInfo.totalPrice
+                    } else {
+                        val product = uiState.products.find { it.id == planProductId }
+                        product?.product_price?.toDoubleOrNull()?.times(quantity) ?: 0.0
+                    }
                 }
 
                 Row(
@@ -355,7 +360,13 @@ fun CreateOrderScreen(
                         viewModel.addProductToOrder(product.id, quantity)
                     },
                     isLoading = uiState.isSearchingProducts,
-                    enabled = !uiState.isLoading
+                    enabled = !uiState.isLoading,
+                    onFetchPricePreview = { planProductId, quantity ->
+                        viewModel.fetchPreviewPrice(planProductId, quantity)
+                    },
+                    previewPrice = uiState.previewProductPrice,
+                    isLoadingPreviewPrice = uiState.isLoadingPreviewPrice,
+                    merchantSelected = uiState.selectedMerchant != null
                 )
 
                 // Selected Products List
@@ -369,7 +380,9 @@ fun CreateOrderScreen(
                         },
                         onRemoveProduct = { planProductId ->
                             viewModel.removeProduct(planProductId)
-                        }
+                        },
+                        productPrices = uiState.productPrices,
+                        loadingPriceForProducts = uiState.loadingPriceForProducts
                     )
                 }
 

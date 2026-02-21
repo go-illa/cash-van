@@ -305,9 +305,11 @@ private fun OrderDetailsContent(
 
                 Spacer(modifier = Modifier.height(4.dp))
 
-                PaymentSummaryCard(
-                    paymentSummary = paymentSummary
-                )
+                if (!orderDetailsState.isEditMode) {
+                    PaymentSummaryCard(
+                        paymentSummary = paymentSummary
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -663,18 +665,22 @@ private fun ReadOnlyProductCard(item: EditableOrderItem) {
             // Product Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
                 // Product Info
                 Column(
-                    horizontalAlignment = Alignment.Start
+                    horizontalAlignment = Alignment.Start,
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text(
                         text = item.productName,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium,
                         fontFamily = FontFamily(Font(R.font.zain_regular)),
-                        color = Color(0xFF1F252E)
+                        color = Color(0xFF1F252E),
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
                     Text(
                         text = "رمز التخزين: ${item.sku}",
@@ -683,6 +689,7 @@ private fun ReadOnlyProductCard(item: EditableOrderItem) {
                         color = Color(0xFF9CA3AF)
                     )
                 }
+                Spacer(modifier = Modifier.width(8.dp))
                 // Quantity Badge
                 Box(
                     modifier = Modifier

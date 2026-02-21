@@ -194,7 +194,8 @@ data class MerchantItem(
     val longitude: String? = null,
     val governorate_id: String? = null,
     val creator_id: String? = null,
-    val creator_type: String? = null
+    val creator_type: String? = null,
+    val price_tier: String? = null
 )
 
 @Serializable

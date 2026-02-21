@@ -7,7 +7,7 @@ import com.illa.cashvan.feature.orders.domain.repository.OrderRepository
 class GetPlanProductsUseCase(
     private val orderRepository: OrderRepository
 ) {
-    suspend operator fun invoke(planId: String, query: String? = null): ApiResult<PlanProductsResponse> {
-        return orderRepository.getPlanProducts(planId, query)
+    suspend operator fun invoke(planId: String, query: String? = null, priceTier: String? = null): ApiResult<PlanProductsResponse> {
+        return orderRepository.getPlanProducts(planId, query, priceTier)
     }
 }

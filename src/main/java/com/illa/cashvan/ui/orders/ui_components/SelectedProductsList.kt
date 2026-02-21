@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -29,7 +29,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
 import com.illa.cashvan.feature.orders.data.model.PlanProduct
+import com.illa.cashvan.feature.orders.presentation.viewmodel.ProductPriceInfo
 
 @Composable
 fun SelectedProductsList(
@@ -48,7 +48,9 @@ fun SelectedProductsList(
     selectedProducts: Map<String, Int>,
     products: List<PlanProduct>,
     onQuantityChange: (String, Int) -> Unit,
-    onRemoveProduct: (String) -> Unit
+    onRemoveProduct: (String) -> Unit,
+    productPrices: Map<String, ProductPriceInfo> = emptyMap(),
+    loadingPriceForProducts: Set<String> = emptySet()
 ) {
     Column(
         modifier = modifier
@@ -70,6 +72,8 @@ fun SelectedProductsList(
                 SelectedProductItem(
                     product = it,
                     quantity = quantity,
+                    priceInfo = productPrices[planProductId],
+                    isLoadingPrice = planProductId in loadingPriceForProducts,
                     onQuantityChange = { newQuantity ->
                         onQuantityChange(planProductId, newQuantity)
                     },
@@ -85,12 +89,13 @@ fun SelectedProductsList(
 private fun SelectedProductItem(
     product: PlanProduct,
     quantity: Int,
+    priceInfo: ProductPriceInfo?,
+    isLoadingPrice: Boolean,
     onQuantityChange: (Int) -> Unit,
     onRemove: () -> Unit
 ) {
     var quantityText by remember(quantity) { mutableStateOf(quantity.toString()) }
     var showQuantityError by remember { mutableStateOf(false) }
-    val totalPrice = (product.product_price.toDoubleOrNull() ?: 0.0) * quantity
 
     Column(
         modifier = Modifier
@@ -99,6 +104,7 @@ private fun SelectedProductItem(
             .border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(12.dp))
             .padding(12.dp)
     ) {
+        // Header: name + delete
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -136,6 +142,7 @@ private fun SelectedProductItem(
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Quantity controls row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -250,14 +257,131 @@ private fun SelectedProductItem(
                 }
             }
 
-            // Total Price
+            // Total price (from API if available, fallback to product_price)
+            val displayTotal = priceInfo?.totalPrice
+                ?: (product.product_price.toDoubleOrNull()?.times(quantity) ?: 0.0)
             Text(
-                text = "${String.format("%.2f", totalPrice)} جنيه",
+                text = "${"%.2f".format(displayTotal)} جنيه",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily(Font(R.font.zain_regular)),
                 color = Color(0xFF0D3773)
             )
         }
+
+        // Price breakdown section
+        Spacer(modifier = Modifier.height(12.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Color(0xFFE5E7EB))
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (isLoadingPrice) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(18.dp),
+                    strokeWidth = 2.dp,
+                    color = Color(0xFF1E40AF)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "جاري حساب السعر...",
+                    fontSize = 12.sp,
+                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                    color = Color(0xFF6B7280)
+                )
+            }
+        } else if (priceInfo != null) {
+            PriceBreakdownSection(priceInfo = priceInfo)
+        } else {
+            // Fallback: show base price only before first price fetch
+            PriceBreakdownRow(
+                label = "السعر الأساسي",
+                value = "${"%.2f".format(product.product_price.toDoubleOrNull() ?: 0.0)} جنيه"
+            )
+        }
+    }
+}
+
+@Composable
+private fun PriceBreakdownSection(priceInfo: ProductPriceInfo) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        PriceBreakdownRow(
+            label = "السعر الأساسي",
+            value = "${"%.2f".format(priceInfo.basePrice)} جنيه"
+        )
+
+        if (priceInfo.discountAmount > 0) {
+            PriceBreakdownRow(
+                label = "الخصم",
+                value = "${"%.2f".format(priceInfo.discountAmount)} جنيه",
+                valueColor = Color(0xFF10B981)
+            )
+        }
+
+        if (priceInfo.vatPercentage > 0) {
+            PriceBreakdownRow(
+                label = "نسبة الضريبة",
+                value = "${priceInfo.vatPercentage.toInt()}%"
+            )
+        }
+
+        if (priceInfo.vatAmount > 0) {
+            PriceBreakdownRow(
+                label = "ضريبة القيمة المضافة",
+                value = "${"%.2f".format(priceInfo.vatAmount)} جنيه"
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(Color(0xFFE5E7EB))
+        )
+
+        PriceBreakdownRow(
+            label = "الإجمالي",
+            value = "${"%.2f".format(priceInfo.totalPrice)} جنيه",
+            isHighlight = true
+        )
+    }
+}
+
+@Composable
+private fun PriceBreakdownRow(
+    label: String,
+    value: String,
+    isHighlight: Boolean = false,
+    valueColor: Color = Color(0xFF1F252E)
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            fontSize = if (isHighlight) 15.sp else 13.sp,
+            fontWeight = if (isHighlight) FontWeight.Bold else FontWeight.Normal,
+            fontFamily = FontFamily(Font(R.font.zain_regular)),
+            color = Color(0xFF6B7280)
+        )
+        Text(
+            text = value,
+            fontSize = if (isHighlight) 15.sp else 13.sp,
+            fontWeight = if (isHighlight) FontWeight.Bold else FontWeight.Normal,
+            fontFamily = FontFamily(Font(R.font.zain_regular)),
+            color = if (isHighlight) Color(0xFF0D3773) else valueColor
+        )
     }
 }
