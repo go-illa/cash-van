@@ -10,8 +10,14 @@ data class CreateMerchantRequest(
 @Serializable
 data class MerchantData(
     val name: String,
+    val sign_name: String,
     val phone_number: String,
-    val latitude: String,
-    val longitude: String,
-    val plan_id: String
+    val secondary_phone: String? = null,
+    val merchant_type_id: String,
+    val price_tier: String,
+    val detailed_address: String,
+    val latitude: Double,
+    val longitude: Double,
+    val plan_id: Int,
+    val working_days: Map<String, Boolean>
 )

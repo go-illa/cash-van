@@ -357,10 +357,16 @@ fun AddMerchantBottomSheet(
                         )
                         merchantViewModel.createMerchant(
                             name = merchantName,
+                            signName = merchantName,
                             phoneNumber = phoneNumber,
-                            latitude = location.latitude.toString(),
-                            longitude = location.longitude.toString(),
-                            planId = merchantViewModel.getFirstPlanId() ?: "2"
+                            secondaryPhoneNumber = null,
+                            latitude = location.latitude,
+                            longitude = location.longitude,
+                            planId = merchantViewModel.getFirstPlanId() ?: 0,
+                            merchantTypeId = "",
+                            detailedAddress = "",
+                            priceTier = "retail",
+                            visitDays = emptySet()
                         )
                     }
                 },

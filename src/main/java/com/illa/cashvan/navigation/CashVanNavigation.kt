@@ -16,6 +16,7 @@ import com.illa.cashvan.core.auth.presentation.viewmodel.AuthenticationViewModel
 import com.illa.cashvan.navigation.*
 import com.illa.cashvan.ui.home.HomeScreen
 import com.illa.cashvan.ui.inventory.InventoryScreen
+import com.illa.cashvan.ui.merchant.CreateMerchantScreen
 import com.illa.cashvan.ui.orders.CreateOrderScreen
 import com.illa.cashvan.ui.orders.OrderDetailsScreen
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
@@ -43,6 +44,7 @@ fun CashVanNavigation(
     val backStack = remember { mutableStateListOf<Any>(SplashKey) }
     val currentKey = backStack.lastOrNull() ?: SplashKey
     var splashComplete by remember { mutableStateOf(false) }
+    var merchantCreatedSignal by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(3000)
@@ -136,12 +138,31 @@ fun CashVanNavigation(
                     }
                     CreateOrderKey -> NavEntry(key) {
                         CreateOrderScreen(
+                            merchantCreatedSignal = merchantCreatedSignal,
+                            onAddMerchantClick = {
+                                backStack.add(CreateMerchantKey)
+                            },
                             onBackClick = {
                                 if (backStack.size > 1) {
                                     backStack.removeLastOrNull()
                                 }
                             },
                             onOrderCreated = {
+                                if (backStack.size > 1) {
+                                    backStack.removeLastOrNull()
+                                }
+                            }
+                        )
+                    }
+                    CreateMerchantKey -> NavEntry(key) {
+                        CreateMerchantScreen(
+                            onBackClick = {
+                                if (backStack.size > 1) {
+                                    backStack.removeLastOrNull()
+                                }
+                            },
+                            onMerchantCreated = {
+                                merchantCreatedSignal++
                                 if (backStack.size > 1) {
                                     backStack.removeLastOrNull()
                                 }

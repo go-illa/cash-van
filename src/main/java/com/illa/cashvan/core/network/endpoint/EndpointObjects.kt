@@ -89,6 +89,32 @@ object ApiEndpoints {
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2
         )
+
+        fun getGovernorates() = RequestConfiguration(
+            path = "governorates",
+            method = HttpMethod.Get,
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+
+        fun getMerchantTypes() = RequestConfiguration(
+            path = "merchant_types",
+            method = HttpMethod.Get,
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+
+        fun getNearestMerchants(latitude: String, longitude: String, radiusMeters: Int) = RequestConfiguration(
+            path = "merchants/nearest",
+            method = HttpMethod.Get,
+            parameters = Parameters.build {
+                append("latitude", latitude)
+                append("longitude", longitude)
+                append("radius_meters", radiusMeters.toString())
+            },
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
     }
 
     // Orders endpoints
