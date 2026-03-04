@@ -125,16 +125,26 @@ fun CreateMerchantScreen(
 
     LaunchedEffect(locationUiState.locationData) {
         locationUiState.locationData?.let { location ->
-            merchantViewModel.loadNearestAddress(
+            merchantViewModel.loadReverseGeocode(
                 latitude = location.latitude.toString(),
                 longitude = location.longitude.toString()
             )
         }
     }
 
-    LaunchedEffect(merchantUiState.nearestAddress) {
-        if (address.isEmpty() && !merchantUiState.nearestAddress.isNullOrEmpty()) {
-            address = merchantUiState.nearestAddress.orEmpty()
+    LaunchedEffect(merchantUiState.reverseGeocodeAddress) {
+        if (address.isEmpty() && !merchantUiState.reverseGeocodeAddress.isNullOrEmpty()) {
+            address = merchantUiState.reverseGeocodeAddress.orEmpty()
+        }
+    }
+
+    LaunchedEffect(merchantUiState.reverseGeocodeGovernorateName, merchantUiState.governorates) {
+        val governorateName = merchantUiState.reverseGeocodeGovernorateName
+        val governorates = merchantUiState.governorates
+        if (selectedGovernorate == null && !governorateName.isNullOrEmpty() && governorates.isNotEmpty()) {
+            selectedGovernorate = governorates.find {
+                it.english_name.equals(governorateName, ignoreCase = true)
+            }
         }
     }
 

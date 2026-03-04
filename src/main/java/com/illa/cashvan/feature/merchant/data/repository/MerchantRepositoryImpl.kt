@@ -6,7 +6,7 @@ import com.illa.cashvan.feature.merchant.data.model.CreateMerchantRequest
 import com.illa.cashvan.feature.merchant.data.model.CreateMerchantResponse
 import com.illa.cashvan.feature.merchant.data.model.GovernoratesResponse
 import com.illa.cashvan.feature.merchant.data.model.MerchantTypesResponse
-import com.illa.cashvan.feature.merchant.data.model.NearestMerchantsResponse
+import com.illa.cashvan.feature.merchant.data.model.ReverseGeocodeResponse
 import com.illa.cashvan.feature.merchant.domain.repository.MerchantRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -67,13 +67,12 @@ class MerchantRepositoryImpl(
         }
     }
 
-    override suspend fun getNearestMerchants(
+    override suspend fun reverseGeocode(
         latitude: String,
-        longitude: String,
-        radiusMeters: Int
-    ): ApiResult<NearestMerchantsResponse> {
+        longitude: String
+    ): ApiResult<ReverseGeocodeResponse> {
         return try {
-            val config = ApiEndpoints.Merchant.getNearestMerchants(latitude, longitude, radiusMeters)
+            val config = ApiEndpoints.Merchant.reverseGeocode(latitude, longitude)
             val versionedPath = "v${config.version}/${config.path}"
 
             val response = httpClient.request(versionedPath) {
@@ -81,13 +80,12 @@ class MerchantRepositoryImpl(
                 url {
                     parameters.append("latitude", latitude)
                     parameters.append("longitude", longitude)
-                    parameters.append("radius_meters", radiusMeters.toString())
                 }
-            }.body<NearestMerchantsResponse>()
+            }.body<ReverseGeocodeResponse>()
 
             ApiResult.Success(response)
         } catch (e: Exception) {
-            ApiResult.Error(e, e.message ?: "Failed to get nearest merchants")
+            ApiResult.Error(e, e.message ?: "Failed to reverse geocode")
         }
     }
 }

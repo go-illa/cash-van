@@ -29,7 +29,7 @@ class CreateMerchantUseCase(
             secondary_phone = secondaryPhoneNumber,
             merchant_type_id = merchantTypeId,
             price_tier = priceTier,
-            detailed_address = detailedAddress,
+            location = detailedAddress,
             latitude = latitude,
             longitude = longitude,
             plan_id = planId,

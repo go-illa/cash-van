@@ -15,7 +15,7 @@ data class MerchantData(
     val secondary_phone: String? = null,
     val merchant_type_id: String,
     val price_tier: String,
-    val detailed_address: String,
+    val location: String,
     val latitude: Double,
     val longitude: Double,
     val plan_id: Int,

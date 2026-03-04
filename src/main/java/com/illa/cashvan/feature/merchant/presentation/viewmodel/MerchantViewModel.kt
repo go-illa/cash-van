@@ -9,7 +9,7 @@ import com.illa.cashvan.feature.merchant.data.model.MerchantType
 import com.illa.cashvan.feature.merchant.domain.usecase.CreateMerchantUseCase
 import com.illa.cashvan.feature.merchant.domain.usecase.GetGovernoratesUseCase
 import com.illa.cashvan.feature.merchant.domain.usecase.GetMerchantTypesUseCase
-import com.illa.cashvan.feature.merchant.domain.usecase.GetNearestMerchantsUseCase
+import com.illa.cashvan.feature.merchant.domain.usecase.GetReverseGeocodeUseCase
 import com.illa.cashvan.feature.plans.data.model.Plan
 import com.illa.cashvan.feature.plans.domain.usecase.GetPlansUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,8 +31,9 @@ data class CreateMerchantUiState(
     val merchantTypes: List<MerchantType> = emptyList(),
     val isMerchantTypesLoading: Boolean = false,
     val merchantTypesError: String? = null,
-    val nearestAddress: String? = null,
-    val isNearestLoading: Boolean = false
+    val reverseGeocodeAddress: String? = null,
+    val reverseGeocodeGovernorateName: String? = null,
+    val isReverseGeocodeLoading: Boolean = false
 )
 
 class MerchantViewModel(
@@ -40,7 +41,7 @@ class MerchantViewModel(
     private val getPlansUseCase: GetPlansUseCase,
     private val getGovernoratesUseCase: GetGovernoratesUseCase,
     private val getMerchantTypesUseCase: GetMerchantTypesUseCase,
-    private val getNearestMerchantsUseCase: GetNearestMerchantsUseCase
+    private val getReverseGeocodeUseCase: GetReverseGeocodeUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateMerchantUiState())
@@ -173,20 +174,20 @@ class MerchantViewModel(
         }
     }
 
-    fun loadNearestAddress(latitude: String, longitude: String) {
+    fun loadReverseGeocode(latitude: String, longitude: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isNearestLoading = true)
+            _uiState.value = _uiState.value.copy(isReverseGeocodeLoading = true)
 
-            when (val result = getNearestMerchantsUseCase.invoke(latitude, longitude)) {
+            when (val result = getReverseGeocodeUseCase.invoke(latitude, longitude)) {
                 is ApiResult.Success -> {
-                    val address = result.data.merchants.firstOrNull()?.address
                     _uiState.value = _uiState.value.copy(
-                        isNearestLoading = false,
-                        nearestAddress = address
+                        isReverseGeocodeLoading = false,
+                        reverseGeocodeAddress = result.data.detailed_address,
+                        reverseGeocodeGovernorateName = result.data.components.governorate
                     )
                 }
                 is ApiResult.Error -> {
-                    _uiState.value = _uiState.value.copy(isNearestLoading = false)
+                    _uiState.value = _uiState.value.copy(isReverseGeocodeLoading = false)
                 }
                 is ApiResult.Loading -> {}
             }

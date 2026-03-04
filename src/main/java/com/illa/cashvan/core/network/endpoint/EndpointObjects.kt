@@ -100,13 +100,12 @@ object ApiEndpoints {
             version = 2
         )
 
-        fun getNearestMerchants(latitude: String, longitude: String, radiusMeters: Int) = RequestConfiguration(
-            path = "merchants/nearest",
+        fun reverseGeocode(latitude: String, longitude: String) = RequestConfiguration(
+            path = "geocode/reverse",
             method = HttpMethod.Get,
             parameters = Parameters.build {
                 append("latitude", latitude)
                 append("longitude", longitude)
-                append("radius_meters", radiusMeters.toString())
             },
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2
