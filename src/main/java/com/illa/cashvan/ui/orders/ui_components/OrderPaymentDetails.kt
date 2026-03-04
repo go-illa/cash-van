@@ -53,7 +53,6 @@ fun PaymentSummaryCard(
                 .padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Header
             Text(
                 text = "ملخص الطلب",
                 fontSize = 18.sp,
@@ -62,18 +61,15 @@ fun PaymentSummaryCard(
                 modifier = Modifier.align(Alignment.Start)
             )
 
-            // Summary Items
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Subtotal
                 SummaryRow(
                     label = "المجموع الفرعي",
                     value = "${String.format("%.2f", paymentSummary.subtotal)} جنيه"
                 )
 
-                // Tax
                 if (paymentSummary.taxAmount > 0) {
                     val taxLabel = if (paymentSummary.taxPercentage > 0) {
                         "الضريبة (${paymentSummary.taxPercentage.toInt()}%)"
@@ -86,7 +82,6 @@ fun PaymentSummaryCard(
                     )
                 }
 
-                // Discount (not including cash discount)
                 if (paymentSummary.discountAmount > 0) {
                     SummaryRow(
                         label = "إجمالي الخصومات",
@@ -94,7 +89,6 @@ fun PaymentSummaryCard(
                     )
                 }
 
-                // Cash Discount
                 if (paymentSummary.cashDiscountAmount > 0) {
                     SummaryRow(
                         label = "الخصم النقدي",
@@ -103,14 +97,12 @@ fun PaymentSummaryCard(
                 }
             }
 
-            // Divider
             HorizontalDivider(
                 color = Color(0xFFE1E7EF),
                 thickness = 1.dp,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Total
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

@@ -83,13 +83,11 @@ fun EditableOrderItemCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Header: Product name, SKU and Quantity Input
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                // Product Info
                 Column(
                     horizontalAlignment = Alignment.Start,
                     modifier = Modifier.weight(1f)
@@ -115,7 +113,6 @@ fun EditableOrderItemCard(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Quantity Input
                 QuantityInput(
                     quantity = item.quantity,
                     maxQuantity = item.maxQuantity,
@@ -127,7 +124,6 @@ fun EditableOrderItemCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Divider
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -137,7 +133,6 @@ fun EditableOrderItemCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Price Details
             if (item.isLoadingPrice) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -169,7 +164,6 @@ fun EditableOrderItemCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Remove Button (aligned to end)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
@@ -206,7 +200,6 @@ fun EditableOrderItemCard(
         }
     }
 
-    // Show confirmation dialog
     if (showDeleteDialog) {
         DeleteProductConfirmationDialog(
             productName = item.productName,
@@ -231,7 +224,6 @@ private fun QuantityInput(
     Column(
         horizontalAlignment = Alignment.Start
     ) {
-        // Quantity Label
         Text(
             text = "الكمية",
             fontSize = 12.sp,
@@ -241,7 +233,6 @@ private fun QuantityInput(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Quantity Input Field
         Box(
             modifier = Modifier
                 .width(80.dp)
@@ -261,26 +252,19 @@ private fun QuantityInput(
             BasicTextField(
                 value = textValue,
                 onValueChange = { newValue ->
-                    // Only allow numbers
                     if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
-                        // Parse and validate
                         val newQty = newValue.toIntOrNull()
 
-                        // Check if exceeds maximum
                         if (newQty != null && newQty > maxQuantity) {
-                            // Show error (red border) but don't update text
                             isError = true
                         } else if (newQty != null && newQty > 0) {
-                            // Valid input (greater than 0) - update text and clear error
                             isError = false
                             textValue = newValue
                             onQuantityChange(newQty)
                         } else if (newValue.isEmpty()) {
-                            // Allow clearing but don't call onChange with 0
                             isError = false
                             textValue = newValue
                         }
-                        // If newQty is 0, don't update (ignore the input)
                     }
                 },
                 textStyle = TextStyle(
@@ -298,7 +282,6 @@ private fun QuantityInput(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Max Quantity Hint
         Text(
             text = "الحد الأقصى: $maxQuantity",
             fontSize = 11.sp,
@@ -320,14 +303,12 @@ private fun PriceDetailsSection(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Base Price
         PriceRow(
             label = "السعر الأساسي",
             value = "${"%.2f".format(basePrice)} جنيه",
             isHighlight = false
         )
 
-        // Discount
         if (discountAmount > 0) {
             PriceRow(
                 label = "الخصم",
@@ -336,7 +317,6 @@ private fun PriceDetailsSection(
             )
         }
 
-        // VAT Percentage
         if (vatPercentage > 0) {
             PriceRow(
                 label = "نسبة الضريبة",
@@ -344,7 +324,6 @@ private fun PriceDetailsSection(
             )
         }
 
-        // VAT Amount
         if (vatAmount > 0) {
             PriceRow(
                 label = "ضريبة القيمة المضافة",
@@ -352,7 +331,6 @@ private fun PriceDetailsSection(
             )
         }
 
-        // Divider
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -360,7 +338,6 @@ private fun PriceDetailsSection(
                 .background(Color(0xFFE5E7EB))
         )
 
-        // Total
         PriceRow(
             label = "الإجمالي",
             value = "${"%.2f".format(totalPrice)} جنيه",
@@ -409,7 +386,6 @@ fun EditableOrderItemsList(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Items
         items.forEach { item ->
             EditableOrderItemCard(
                 item = item,

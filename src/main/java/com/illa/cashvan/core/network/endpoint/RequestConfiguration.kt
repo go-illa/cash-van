@@ -50,14 +50,12 @@ suspend fun HttpClient.request(config: RequestConfiguration): HttpResponse {
                     setBody(it)
                 }
             }
-
             ParameterEncoding.FORM -> {
                 config.parameters?.let {
                     contentType(ContentType.Application.FormUrlEncoded)
                     setBody(FormDataContent(it))
                 }
             }
-
             else -> Unit
         }
     }

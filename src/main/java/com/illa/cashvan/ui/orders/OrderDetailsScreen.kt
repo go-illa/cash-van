@@ -31,8 +31,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -72,7 +72,7 @@ fun OrderDetailsScreen(
     onConfirmOrder: () -> Unit = {},
     orderViewModel: OrderViewModel = koinViewModel()
 ) {
-    val orderDetailsState by orderViewModel.orderDetailsUiState.collectAsState()
+    val orderDetailsState by orderViewModel.orderDetailsUiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(orderId) {
         orderViewModel.loadOrderById(orderId)
@@ -91,7 +91,7 @@ fun OrderDetailsScreen(
         orderDetailsState.order != null -> {
             OrderDetailsContent(
                 modifier = modifier,
-                order = orderDetailsState.order!!,
+                order = orderDetailsState.order ?: return,
                 onBackClick = onBackClick,
                 orderViewModel = orderViewModel
             )
@@ -163,8 +163,8 @@ private fun OrderDetailsContent(
     onBackClick: () -> Unit,
     orderViewModel: OrderViewModel = koinViewModel()
 ) {
-    val uiState by orderViewModel.uiState.collectAsState()
-    val orderDetailsState by orderViewModel.orderDetailsUiState.collectAsState()
+    val uiState by orderViewModel.uiState.collectAsStateWithLifecycle()
+    val orderDetailsState by orderViewModel.orderDetailsUiState.collectAsStateWithLifecycle()
     val orderSpecs = order.toOrderSpecs()
     val merchant = order.toUIMerchant()
     val paymentSummary = order.toPaymentSummary()
@@ -186,7 +186,6 @@ private fun OrderDetailsContent(
         ) {
             CashVanHeader()
 
-            // Scrollable content
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -217,25 +216,20 @@ private fun OrderDetailsContent(
 
                 SectionTitle(title = "عناصر الطلب")
 
-                // Show products with detailed price breakdown
                 order.order_plan_products?.forEach { orderPlanProduct ->
                     val planProductId = orderPlanProduct.plan_product_id ?: return@forEach
 
-                    // Skip deleted products
                     if (planProductId in orderDetailsState.deletedProductIds) {
                         return@forEach
                     }
 
-                    // Get current quantity
                     val currentQuantity = if (orderDetailsState.isEditMode) {
                         orderDetailsState.editedQuantities[planProductId] ?: orderPlanProduct.sold_quantity
                     } else {
                         orderPlanProduct.sold_quantity
                     }
 
-                    // Get price info from state or calculate from order data
                     val priceInfo = orderDetailsState.productPrices[planProductId] ?: run {
-                        // Try to use total_price_details first (new API structure)
                         val totalPriceDetails = orderPlanProduct.total_price_details
                         if (totalPriceDetails != null) {
                             val basePrice = totalPriceDetails.unit?.base_price ?: 0.0
@@ -252,7 +246,6 @@ private fun OrderDetailsContent(
                                 totalPrice = totalPrice
                             )
                         } else {
-                            // Fallback to old structure
                             val priceDetails = orderPlanProduct.plan_product_price?.price_details
                             val basePrice = orderPlanProduct.plan_product_price?.base_price?.toDoubleOrNull() ?: 0.0
                             val finalPricePerUnit = priceDetails?.final_price ?: 0.0
@@ -269,7 +262,6 @@ private fun OrderDetailsContent(
                         }
                     }
 
-                    // Get VAT percentage from total_price_details or fallback to plan_product_price
                     val vatPercentage = orderPlanProduct.total_price_details?.vat_percentage
                         ?: orderPlanProduct.plan_product_price?.vat_percentage ?: 0.0
 
@@ -314,7 +306,6 @@ private fun OrderDetailsContent(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Fixed action buttons at bottom - shown only for ongoing pre_sell orders
             if (order.status == "ongoing" && order.order_type == "pre_sell") {
                 Card(
                     modifier = Modifier
@@ -331,12 +322,10 @@ private fun OrderDetailsContent(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         if (orderDetailsState.isEditMode) {
-                            // Edit mode buttons
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                // Cancel edit button
                                 OutlinedButton(
                                     onClick = { orderViewModel.exitEditMode() },
                                     modifier = Modifier
@@ -359,7 +348,6 @@ private fun OrderDetailsContent(
                                     )
                                 }
 
-                                // Save button
                                 Button(
                                     onClick = {
                                         orderViewModel.saveEditedOrder()
@@ -381,8 +369,6 @@ private fun OrderDetailsContent(
                                 }
                             }
                         } else {
-                            // Normal mode buttons
-                            // Edit button
                             Button(
                                 onClick = { orderViewModel.enterEditMode() },
                                 modifier = Modifier
@@ -401,7 +387,6 @@ private fun OrderDetailsContent(
                                 )
                             }
 
-                            // Cancel button
                             OutlinedButton(
                                 onClick = { showCancelBottomSheet = true },
                                 modifier = Modifier
@@ -424,7 +409,6 @@ private fun OrderDetailsContent(
                                 )
                             }
 
-                            // Submit button
                             Button(
                                 onClick = {
                                     orderViewModel.submitOrder(order) {
@@ -451,7 +435,6 @@ private fun OrderDetailsContent(
                 }
             }
 
-            // Print Invoice button - shown for fulfilled or partially fulfilled orders
             if (order.status == "fulfilled" || order.status == "partially_fulfilled") {
                 Card(
                     modifier = Modifier
@@ -467,7 +450,6 @@ private fun OrderDetailsContent(
                             .padding(12.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Print Invoice button
                         Button(
                             onClick = {
                                 orderViewModel.printInvoice(order.id)
@@ -494,7 +476,6 @@ private fun OrderDetailsContent(
                             )
                         }
 
-                        // Send Invoice via WhatsApp button
                         OutlinedButton(
                             onClick = {
                                 orderViewModel.sendInvoiceViaWhatsApp(order.id)
@@ -529,7 +510,6 @@ private fun OrderDetailsContent(
             }
         }
 
-        // Cancel order bottom sheet
         if (showCancelBottomSheet) {
             CancelOrderBottomSheet(
                 sheetState = cancelSheetState,
@@ -550,7 +530,6 @@ private fun OrderDetailsContent(
             )
         }
 
-        // Order confirmation bottom sheet
         if (showConfirmationBottomSheet) {
             OrderConfirmationBottomSheet(
                 sheetState = confirmationSheetState,
@@ -565,10 +544,9 @@ private fun OrderDetailsContent(
             )
         }
 
-        // Show print status snackbar with auto-dismiss
         if (uiState.printStatus != null) {
             LaunchedEffect(uiState.printStatus) {
-                kotlinx.coroutines.delay(3000) // Auto-dismiss after 3 seconds
+                kotlinx.coroutines.delay(3000)
                 orderViewModel.clearPrintStatus()
             }
 
@@ -592,10 +570,9 @@ private fun OrderDetailsContent(
             }
         }
 
-        // Show success message snackbar with auto-dismiss
         if (orderDetailsState.successMessage != null) {
             LaunchedEffect(orderDetailsState.successMessage) {
-                kotlinx.coroutines.delay(3000) // Auto-dismiss after 3 seconds
+                kotlinx.coroutines.delay(3000)
                 orderViewModel.clearSuccessMessage()
             }
 
@@ -612,10 +589,9 @@ private fun OrderDetailsContent(
             }
         }
 
-        // Show error message snackbar with auto-dismiss
         if (orderDetailsState.error != null) {
             LaunchedEffect(orderDetailsState.error) {
-                kotlinx.coroutines.delay(3000) // Auto-dismiss after 3 seconds
+                kotlinx.coroutines.delay(3000)
                 orderViewModel.clearOrderDetailsError()
             }
 
@@ -662,13 +638,11 @@ private fun ReadOnlyProductCard(item: EditableOrderItem) {
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
-            // Product Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                // Product Info
                 Column(
                     horizontalAlignment = Alignment.Start,
                     modifier = Modifier.weight(1f)
@@ -690,7 +664,6 @@ private fun ReadOnlyProductCard(item: EditableOrderItem) {
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                // Quantity Badge
                 Box(
                     modifier = Modifier
                         .background(
@@ -711,7 +684,6 @@ private fun ReadOnlyProductCard(item: EditableOrderItem) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Price Details
             PriceDetailsReadOnly(
                 basePrice = item.basePrice,
                 discountAmount = item.discountAmount,
@@ -735,13 +707,11 @@ private fun PriceDetailsReadOnly(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        // Base Price Per Unit
         PriceRowReadOnly(
             label = "سعر الوحدة",
             value = "${"%.2f".format(basePrice)} جنيه"
         )
 
-        // Discount (per unit if > 0)
         if (discountAmount > 0) {
             PriceRowReadOnly(
                 label = "الخصم",
@@ -750,7 +720,6 @@ private fun PriceDetailsReadOnly(
             )
         }
 
-        // VAT Percentage (if > 0)
         if (vatPercentage > 0) {
             PriceRowReadOnly(
                 label = "نسبة الضريبة",
@@ -758,7 +727,6 @@ private fun PriceDetailsReadOnly(
             )
         }
 
-        // VAT Amount (per unit if > 0)
         if (vatAmount > 0) {
             PriceRowReadOnly(
                 label = "الضريبة",
@@ -766,7 +734,6 @@ private fun PriceDetailsReadOnly(
             )
         }
 
-        // Divider
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -774,7 +741,6 @@ private fun PriceDetailsReadOnly(
                 .background(Color(0xFFE5E7EB))
         )
 
-        // Total (final price after applying discounts and VAT, multiplied by quantity)
         PriceRowReadOnly(
             label = "الاجمالي",
             value = "${"%.2f".format(totalPrice)} جنيه",
@@ -867,7 +833,7 @@ fun OrderDetailsContentPreview() {
     MaterialTheme {
         OrderDetailsContent(
             order = sampleOrder,
-            onBackClick = { /* Handle back */ }
+            onBackClick = {}
         )
     }
 }

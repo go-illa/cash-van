@@ -80,7 +80,6 @@ fun CancelOrderBottomSheet(
                 .verticalScroll(scrollState)
                 .padding(24.dp)
         ) {
-            // Title
             Text(
                 text = "إلغاء الاوردر",
                 fontSize = 20.sp,
@@ -90,14 +89,12 @@ fun CancelOrderBottomSheet(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Sad box icon
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // Background circle
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -107,7 +104,7 @@ fun CancelOrderBottomSheet(
                         )
                 )
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_cancel_sheet), // Add this drawable
+                    painter = painterResource(id = R.drawable.ic_cancel_sheet),
                     contentDescription = "Cancel order",
                     modifier = Modifier.size(80.dp),
                     tint = Color(0xFFE57373)
@@ -118,7 +115,6 @@ fun CancelOrderBottomSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Reason selection label
             Text(
                 text = "اختار السبب*",
                 fontSize = 20.sp,
@@ -128,7 +124,6 @@ fun CancelOrderBottomSheet(
                 modifier = Modifier.padding(bottom = 12.dp)
             )
 
-            // Reason chips
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -163,7 +158,6 @@ fun CancelOrderBottomSheet(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Notes field label
             Text(
                 text = "اضافة أي ملاحظات؟*",
                 fontSize = 20.sp,
@@ -173,7 +167,6 @@ fun CancelOrderBottomSheet(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
 
-            // Notes text field
             OutlinedTextField(
                 value = cancellationNote,
                 onValueChange = { cancellationNote = it },
@@ -204,7 +197,6 @@ fun CancelOrderBottomSheet(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Info message
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -234,12 +226,10 @@ fun CancelOrderBottomSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Action buttons
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // No, I want to cancel button (dismiss)
                 OutlinedButton(
                     onClick = onDismiss,
                     modifier = Modifier
@@ -259,7 +249,6 @@ fun CancelOrderBottomSheet(
                     )
                 }
 
-                // Confirm cancel button
                 Button(
                     onClick = {
                         selectedReason?.let { reason ->

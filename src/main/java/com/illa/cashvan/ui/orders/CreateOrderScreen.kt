@@ -35,8 +35,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -71,7 +71,7 @@ fun CreateOrderScreen(
     onBackClick: () -> Unit = {},
     onOrderCreated: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -254,7 +254,6 @@ fun CreateOrderScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // Plan Info
                 uiState.currentPlan?.let { plan ->
                     Column(
                         modifier = Modifier
@@ -282,7 +281,6 @@ fun CreateOrderScreen(
                     }
                 }
 
-                // Merchant Selection
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -350,7 +348,6 @@ fun CreateOrderScreen(
                     )
                 }
 
-                // Product Selection
                 ProductSelectionComponent(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -372,7 +369,6 @@ fun CreateOrderScreen(
                     merchantSelected = uiState.selectedMerchant != null
                 )
 
-                // Selected Products List
                 if (uiState.selectedProducts.isNotEmpty()) {
                     SelectedProductsList(
                         modifier = Modifier.fillMaxWidth(),
@@ -393,7 +389,6 @@ fun CreateOrderScreen(
             }
         }
 
-        // Order Confirmation Bottom Sheet
         if (showConfirmationBottomSheet) {
             OrderConfirmationBottomSheet(
                 sheetState = confirmationSheetState,

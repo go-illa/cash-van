@@ -26,14 +26,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -59,7 +58,7 @@ fun PersonalProfileScreen(
     profileViewModel: ProfileViewModel = koinViewModel(),
     analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
-    val uiState by profileViewModel.uiState.collectAsState()
+    val uiState by profileViewModel.uiState.collectAsStateWithLifecycle()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -88,7 +87,7 @@ fun PersonalProfileScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = uiState.error!!,
+                            text = uiState.error.orEmpty(),
                             color = Color.Red,
                             textAlign = TextAlign.Center,
                             fontSize = 16.sp

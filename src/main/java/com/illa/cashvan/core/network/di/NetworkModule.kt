@@ -105,13 +105,10 @@ fun provideHttpClient(
 
                                     if (!refreshToken.isNullOrBlank()) {
                                         try {
-                                            // Make refresh request
                                             val refreshResponse = runBlocking(Dispatchers.IO) {
                                                 val refreshClient = HttpClient(Android) {
                                                     install(ContentNegotiation) {
-                                                        json(Json {
-                                                            ignoreUnknownKeys = true
-                                                        })
+                                                        json(Json { ignoreUnknownKeys = true })
                                                     }
                                                 }
 
@@ -125,7 +122,6 @@ fun provideHttpClient(
                                                 response
                                             }
 
-                                            // Save new tokens
                                             val newAccessToken = refreshResponse["access_token"]
                                             val newRefreshToken = refreshResponse["refresh_token"]
 
@@ -134,22 +130,16 @@ fun provideHttpClient(
                                                     saveTokenUseCase(newAccessToken)
                                                     saveRefreshTokenUseCase(newRefreshToken)
                                                 }
-                                                // Token refreshed successfully, let the request be retried
-                                                // by throwing the original exception
                                             } else {
-                                                // Refresh failed, clear data
                                                 runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
                                             }
                                         } catch (e: Exception) {
-                                            // Refresh failed, clear data
                                             runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
                                         }
                                     } else {
-                                        // No refresh token, clear data
                                         runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
                                     }
                                 } else {
-                                    // Refresh endpoint itself failed, clear data
                                     runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
                                 }
                             }

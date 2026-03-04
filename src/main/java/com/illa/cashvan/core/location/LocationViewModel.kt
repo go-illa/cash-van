@@ -47,7 +47,6 @@ class LocationViewModel(
                     )
                 },
                 onFailure = { exception ->
-                    // Try last known location as fallback
                     val lastKnownResult = locationService.getLastKnownLocation()
                     lastKnownResult.fold(
                         onSuccess = { location ->

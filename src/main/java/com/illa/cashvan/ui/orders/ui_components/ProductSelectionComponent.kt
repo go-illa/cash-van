@@ -77,7 +77,6 @@ fun ProductSelectionComponent(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Product Searchable Dropdown
         SearchableDropdown(
             label = "المنتج",
             placeholder = "ابحث بكود المنتج أو الاسم",
@@ -103,7 +102,6 @@ fun ProductSelectionComponent(
             analyticsHelper = analyticsHelper
         )
 
-        // Product Details & Quantity
         selectedProduct?.let { product ->
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -206,7 +204,6 @@ fun ProductSelectionComponent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Quantity Selector
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -338,7 +335,6 @@ fun ProductSelectionComponent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Add to Order Button
             Button(
                 onClick = {
                     onProductSelected(product, quantity)

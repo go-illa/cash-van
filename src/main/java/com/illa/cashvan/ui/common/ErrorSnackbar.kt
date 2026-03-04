@@ -38,7 +38,7 @@ fun ErrorSnackbar(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFDC2626)) // Red background
+            .background(Color(0xFFDC2626))
     ) {
         Row(
             modifier = Modifier
@@ -89,7 +89,7 @@ fun SuccessSnackbar(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF16A249)) // Green background
+            .background(Color(0xFF16A249))
     ) {
         Row(
             modifier = Modifier
@@ -99,7 +99,7 @@ fun SuccessSnackbar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                imageVector = Icons.Default.Error, // You can change this to a checkmark icon
+                imageVector = Icons.Default.Error,
                 contentDescription = "Success",
                 tint = Color.White,
                 modifier = Modifier.size(24.dp)

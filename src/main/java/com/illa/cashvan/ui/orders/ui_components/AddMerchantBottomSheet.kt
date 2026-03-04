@@ -39,8 +39,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -74,8 +74,8 @@ fun AddMerchantBottomSheet(
     var merchantName by remember { mutableStateOf("") }
     var phoneNumber by remember { mutableStateOf("") }
 
-    val merchantUiState by merchantViewModel.uiState.collectAsState()
-    val locationUiState by locationViewModel.uiState.collectAsState()
+    val merchantUiState by merchantViewModel.uiState.collectAsStateWithLifecycle()
+    val locationUiState by locationViewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(merchantUiState.isSuccess) {
         if (merchantUiState.isSuccess) {
@@ -97,14 +97,12 @@ fun AddMerchantBottomSheet(
         val context = LocalContext.current
         var showLocationDialog by remember { mutableStateOf(false) }
 
-        // Show dialog when permission denied or location error occurs
         LaunchedEffect(isPermissionGranted, locationUiState.error) {
             if (!isPermissionGranted || locationUiState.error != null) {
                 showLocationDialog = true
             }
         }
 
-        // Location Permission Dialog
         if (showLocationDialog && (!isPermissionGranted || locationUiState.error != null)) {
             AlertDialog(
                 onDismissRequest = { showLocationDialog = false },
@@ -148,8 +146,6 @@ fun AddMerchantBottomSheet(
                 dismissButton = {
                     TextButton(
                         onClick = {
-                            // If permission is granted but there's an error (GPS disabled),
-                            // open location settings. Otherwise, open app permission settings.
                             val intent = if (isPermissionGranted && locationUiState.error != null) {
                                 Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
                             } else {
@@ -248,7 +244,6 @@ fun AddMerchantBottomSheet(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Location section with permission handling
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -288,14 +283,14 @@ fun AddMerchantBottomSheet(
                         }
                         locationUiState.error != null -> {
                             Text(
-                                text = locationUiState.error!!,
+                                text = locationUiState.error.orEmpty(),
                                 fontSize = 12.sp,
                                 color = Color.Red
                             )
                         }
                         locationUiState.locationData != null -> {
                             Text(
-                                text = "${locationUiState.locationData!!.latitude}, ${locationUiState.locationData!!.longitude}",
+                                text = "${locationUiState.locationData?.latitude}, ${locationUiState.locationData?.longitude}",
                                 fontSize = 12.sp,
                                 color = Color.Gray
                             )
@@ -303,7 +298,6 @@ fun AddMerchantBottomSheet(
                     }
                 }
 
-                // Show permission button or retry button
                 if (!isPermissionGranted) {
                     Button(
                         onClick = { requestPermission() },

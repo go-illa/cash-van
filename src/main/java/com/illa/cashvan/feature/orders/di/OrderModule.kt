@@ -18,11 +18,9 @@ import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val orderModule = module {
-    // Repository
     single<OrderRepository> { OrderRepositoryImpl(get()) }
 
-    // Use Cases
-    factory { GetOrdersUseCase(get(),get()) }
+    factory { GetOrdersUseCase(get(), get()) }
     factory { GetOrderByIdUseCase(get()) }
     factory { CreateOrderUseCase(get()) }
     factory { UpdateOrderUseCase(get()) }
@@ -33,7 +31,6 @@ val orderModule = module {
     factory { GetProductTotalPriceUseCase(get()) }
     factory { GetCashVanProductTotalPriceUseCase(get()) }
 
-    // ViewModels
     viewModel { OrderViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { CreateOrderViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
 }

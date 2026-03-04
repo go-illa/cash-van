@@ -104,7 +104,6 @@ private fun SelectedProductItem(
             .border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(12.dp))
             .padding(12.dp)
     ) {
-        // Header: name + delete
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -142,13 +141,11 @@ private fun SelectedProductItem(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Quantity controls row
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Quantity Controls
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -257,7 +254,6 @@ private fun SelectedProductItem(
                 }
             }
 
-            // Total price (from API if available, fallback to product_price)
             val displayTotal = priceInfo?.totalPrice
                 ?: (product.product_price.toDoubleOrNull()?.times(quantity) ?: 0.0)
             Text(
@@ -269,7 +265,6 @@ private fun SelectedProductItem(
             )
         }
 
-        // Price breakdown section
         Spacer(modifier = Modifier.height(12.dp))
         Box(
             modifier = Modifier
@@ -301,7 +296,6 @@ private fun SelectedProductItem(
         } else if (priceInfo != null) {
             PriceBreakdownSection(priceInfo = priceInfo)
         } else {
-            // Fallback: show base price only before first price fetch
             PriceBreakdownRow(
                 label = "السعر الأساسي",
                 value = "${"%.2f".format(product.product_price.toDoubleOrNull() ?: 0.0)} جنيه"

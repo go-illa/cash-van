@@ -55,7 +55,6 @@ fun DeleteProductConfirmationDialog(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                // Title and Description
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.End,
@@ -80,12 +79,10 @@ fun DeleteProductConfirmationDialog(
                     )
                 }
 
-                // Buttons
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    // Cancel Button (Blue)
                     Button(
                         onClick = onDismiss,
                         modifier = Modifier
@@ -104,7 +101,6 @@ fun DeleteProductConfirmationDialog(
                         )
                     }
 
-                    // Confirm Delete Button (Red Outlined)
                     OutlinedButton(
                         onClick = onConfirm,
                         modifier = Modifier

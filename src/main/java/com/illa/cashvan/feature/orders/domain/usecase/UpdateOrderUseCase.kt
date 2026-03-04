@@ -4,9 +4,8 @@ import com.illa.cashvan.core.network.model.ApiResult
 import com.illa.cashvan.feature.orders.data.model.Order
 import com.illa.cashvan.feature.orders.data.model.UpdateOrderRequest
 import com.illa.cashvan.feature.orders.domain.repository.OrderRepository
-import javax.inject.Inject
 
-class UpdateOrderUseCase @Inject constructor(
+class UpdateOrderUseCase(
     private val orderRepository: OrderRepository
 ) {
     suspend operator fun invoke(

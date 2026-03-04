@@ -65,7 +65,6 @@ fun <T> SearchableDropdown(
     var expanded by remember { mutableStateOf(false) }
 
     Column(modifier = modifier) {
-        // Label with optional action button
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -81,7 +80,6 @@ fun <T> SearchableDropdown(
         }
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Search Field
         Box {
             OutlinedTextField(
                 value = searchQuery,
@@ -145,7 +143,6 @@ fun <T> SearchableDropdown(
             )
         }
 
-        // Dropdown List
         AnimatedVisibility(
             visible = expanded,
             enter = expandVertically(),
@@ -203,7 +200,6 @@ fun <T> SearchableDropdown(
             }
         }
 
-        // Selected Item Display
         selectedItem?.let {
             Text(
                 text = "المختار: ${itemText(it)}",

@@ -25,9 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import android.util.Log
 import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
-import java.nio.charset.Charset
 
 data class CreateOrderUiState(
     val isLoading: Boolean = false,
@@ -45,9 +43,9 @@ data class CreateOrderUiState(
     val isPrinting: Boolean = false,
     val printStatus: String? = null,
     val invoiceText: String? = null,
-    val productPrices: Map<String, ProductPriceInfo> = emptyMap(), // planProductId -> price info
-    val loadingPriceForProducts: Set<String> = emptySet(), // planProductIds currently loading prices
-    val previewProductPrice: ProductPriceInfo? = null, // price preview before adding product to order
+    val productPrices: Map<String, ProductPriceInfo> = emptyMap(),
+    val loadingPriceForProducts: Set<String> = emptySet(),
+    val previewProductPrice: ProductPriceInfo? = null,
     val isLoadingPreviewPrice: Boolean = false
 )
 
@@ -86,7 +84,6 @@ class CreateOrderViewModel(
                         isLoading = false,
                         currentPlan = result.data
                     )
-                    // Load initial products
                     loadProducts()
                 }
                 is ApiResult.Error -> {
@@ -105,16 +102,13 @@ class CreateOrderViewModel(
     fun searchMerchants(query: String) {
         _uiState.value = _uiState.value.copy(merchantSearchQuery = query)
 
-        // Cancel previous search
         merchantSearchJob?.cancel()
 
         merchantSearchJob = viewModelScope.launch {
-            // Debounce search
             delay(300)
 
             _uiState.value = _uiState.value.copy(isSearchingMerchants = true)
 
-            // Use empty string to fetch all merchants when query is empty
             val searchQuery = query.ifEmpty { "" }
 
             when (val result = searchMerchantsUseCase(searchQuery)) {
@@ -140,14 +134,12 @@ class CreateOrderViewModel(
     fun searchProducts(query: String) {
         _uiState.value = _uiState.value.copy(productSearchQuery = query)
 
-        // Cancel previous search
         productSearchJob?.cancel()
 
         val planId = _uiState.value.currentPlan?.id?.toString() ?: return
         val priceTier = _uiState.value.selectedMerchant?.price_tier
 
         productSearchJob = viewModelScope.launch {
-            // Debounce search
             delay(300)
 
             _uiState.value = _uiState.value.copy(isSearchingProducts = true)
@@ -256,13 +248,11 @@ class CreateOrderViewModel(
                 }
                 is ApiResult.Error -> {
                     _uiState.value = _uiState.value.copy(isLoadingPreviewPrice = false)
-                    Log.e("CreateOrderViewModel", "Error fetching preview price: ${result.message}")
                 }
                 is ApiResult.Loading -> {}
             }
         }
     }
-
 
     fun addProductToOrder(planProductId: String, quantity: Int) {
         val currentProducts = linkedMapOf<String, Int>()
@@ -280,7 +270,6 @@ class CreateOrderViewModel(
             isLoadingPreviewPrice = false
         )
 
-        // Calculate price for the added product if merchant is selected
         if (_uiState.value.selectedMerchant != null) {
             calculateProductPrice(planProductId, currentProducts[planProductId] ?: quantity)
         }
@@ -296,7 +285,6 @@ class CreateOrderViewModel(
 
         _uiState.value = _uiState.value.copy(selectedProducts = currentProducts)
 
-        // Calculate new price for this product if merchant is selected and quantity > 0
         if (quantity > 0 && _uiState.value.selectedMerchant != null) {
             calculateProductPrice(planProductId, quantity)
         }
@@ -315,7 +303,6 @@ class CreateOrderViewModel(
             val selectedMerchant = _uiState.value.selectedMerchant ?: return@launch
             val planId = currentPlan.id?.toString() ?: return@launch
 
-            // Mark this product as loading price
             val loadingProducts = _uiState.value.loadingPriceForProducts.toMutableSet()
             loadingProducts.add(planProductId)
             _uiState.value = _uiState.value.copy(
@@ -331,7 +318,6 @@ class CreateOrderViewModel(
                 is ApiResult.Success -> {
                     val priceResponse = result.data
 
-                    // Try to use new structure (total_price_details) first
                     val priceInfo = if (priceResponse.unit != null && priceResponse.total != null) {
                         ProductPriceInfo(
                             basePrice = priceResponse.unit.base_price ?: 0.0,
@@ -342,7 +328,6 @@ class CreateOrderViewModel(
                             vatPercentage = priceResponse.vat_percentage ?: 0.0
                         )
                     } else {
-                        // Fallback to old structure
                         ProductPriceInfo(
                             basePrice = priceResponse.base_price ?: 0.0,
                             finalPrice = priceResponse.final_price ?: 0.0,
@@ -370,11 +355,8 @@ class CreateOrderViewModel(
                     _uiState.value = _uiState.value.copy(
                         loadingPriceForProducts = updatedLoadingProducts
                     )
-                    Log.e("CreateOrderViewModel", "Error calculating price: ${result.message}")
                 }
-                is ApiResult.Loading -> {
-                    // Already handled above
-                }
+                is ApiResult.Loading -> {}
             }
         }
     }
@@ -412,7 +394,6 @@ class CreateOrderViewModel(
                         orderCreated = true
                     )
 
-                    // Print invoice after successful order creation
                     printInvoice(result.data)
                 }
                 is ApiResult.Error -> {
@@ -439,7 +420,7 @@ class CreateOrderViewModel(
     fun resetState() {
         _uiState.value = _uiState.value.copy(
             merchants = emptyList(),
-            products = _uiState.value.products, // Keep products as they are loaded with plan
+            products = _uiState.value.products,
             selectedMerchant = null,
             selectedProducts = emptyMap(),
             merchantSearchQuery = "",
@@ -448,10 +429,6 @@ class CreateOrderViewModel(
         )
     }
 
-    /**
-     * Print invoice after order creation
-     * Fetches the invoice from the API and prints it
-     */
     private fun printInvoice(order: CreateOrderResponse) {
         viewModelScope.launch {
             try {
@@ -480,8 +457,6 @@ class CreateOrderViewModel(
 
                 val cpclBytes = CpclInvoiceFormatter.formatInvoiceAsCpclBytes(invoiceText)
 
-                Log.d("CreateOrderVM", "CPCL prepared – ${cpclBytes.size} bytes")
-
                 _uiState.value = _uiState.value.copy(printStatus = "جاري الطباعة...")
 
                 val printResult = printerManager.printInvoice(cpclBytes)
@@ -500,14 +475,10 @@ class CreateOrderViewModel(
                     isPrinting = false,
                     printStatus = "خطأ أثناء الطباعة: ${e.message}"
                 )
-                Log.e("CreateOrderVM", "Printing failed", e)
             }
         }
     }
 
-    /**
-     * Cleanup resources
-     */
     override fun onCleared() {
         super.onCleared()
         printerManager.disconnect()

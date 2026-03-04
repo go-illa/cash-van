@@ -1,12 +1,8 @@
 package com.illa.cashvan.feature.orders.presentation.viewmodel
 
-import android.content.ActivityNotFoundException
 import android.content.Context
-import android.content.Intent
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
-import android.net.Uri
-import android.util.Log
 import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -64,11 +60,11 @@ data class OrderDetailsUiState(
     val error: String? = null,
     val successMessage: String? = null,
     val isEditMode: Boolean = false,
-    val editedQuantities: Map<String, Int> = emptyMap(), // planProductId -> quantity
+    val editedQuantities: Map<String, Int> = emptyMap(),
     val deletedProductIds: Set<String> = emptySet(),
     val isUpdatingPrice: Boolean = false,
-    val productPrices: Map<String, ProductPriceInfo> = emptyMap(), // planProductId -> price info
-    val loadingPriceForProducts: Set<String> = emptySet() // planProductIds currently loading prices
+    val productPrices: Map<String, ProductPriceInfo> = emptyMap(),
+    val loadingPriceForProducts: Set<String> = emptySet()
 )
 
 class OrderViewModel(
@@ -99,7 +95,6 @@ class OrderViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            // Always use today's date
             val dateToUse = getCurrentDateApiFormat()
 
             when (val result = getOrdersUseCase(dateToUse, orderType.value)) {
@@ -135,7 +130,6 @@ class OrderViewModel(
 
     fun loadOrderById(orderId: String) {
         viewModelScope.launch {
-            // Reset edit mode and clear any edited data when loading a new order
             _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
                 isLoading = true,
                 error = null,
@@ -150,7 +144,6 @@ class OrderViewModel(
                         isLoading = false,
                         order = result.data
                     )
-                    // Initialize prices from the order data
                     initializeProductPrices()
                 }
                 is ApiResult.Error -> {
@@ -179,22 +172,18 @@ class OrderViewModel(
             when (val result = updateOrderUseCase(orderId, request)) {
                 is ApiResult.Success -> {
                     onSuccess()
-                    // Refresh the orders list
                     loadOrders()
                 }
                 is ApiResult.Error -> {
                     _uiState.value = _uiState.value.copy(error = result.message)
                 }
-                is ApiResult.Loading -> {
-                    // Handle loading state if needed
-                }
+                is ApiResult.Loading -> {}
             }
         }
     }
 
     fun submitOrder(order: Order, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
-            // Map order plan products to submit order items
             val orderItems = order.order_plan_products?.map { planProduct ->
                 com.illa.cashvan.feature.orders.data.model.SubmitOrderItem(
                     plan_product_id = planProduct.plan_product_id ?: "",
@@ -202,7 +191,6 @@ class OrderViewModel(
                 )
             } ?: emptyList()
 
-            // Submit order with status "submitted" and order items
             val request = UpdateOrderRequest(
                 order = UpdateOrderData(
                     status = "submitted",
@@ -213,17 +201,13 @@ class OrderViewModel(
             when (val result = updateOrderUseCase(order.id, request)) {
                 is ApiResult.Success -> {
                     onSuccess()
-                    // Print invoice after successful submission
                     printInvoice(order.id)
-                    // Refresh the orders list
                     loadOrders()
                 }
                 is ApiResult.Error -> {
                     _uiState.value = _uiState.value.copy(error = result.message)
                 }
-                is ApiResult.Loading -> {
-                    // Handle loading state if needed
-                }
+                is ApiResult.Loading -> {}
             }
         }
     }
@@ -231,21 +215,14 @@ class OrderViewModel(
     fun printInvoice(orderId: String) {
         viewModelScope.launch {
             try {
-                Log.d("OrderViewModel", "========================================")
-                Log.d("OrderViewModel", "Starting print process for order $orderId")
-                Log.d("OrderViewModel", "========================================")
-
                 _uiState.value = _uiState.value.copy(
                     isPrinting = true,
                     printStatus = "جاري تحميل الفاتورة..."
                 )
 
-                // Fetch the order with invoice_attachment
-                Log.d("OrderViewModel", "Fetching order details with invoice attachment")
                 val orderResult = getOrderByIdUseCase(orderId)
 
                 if (orderResult !is ApiResult.Success) {
-                    Log.e("OrderViewModel", "Failed to fetch order details: ${(orderResult as? ApiResult.Error)?.message}")
                     _uiState.value = _uiState.value.copy(
                         isPrinting = false,
                         printStatus = "فشل في تحميل الفاتورة"
@@ -255,7 +232,6 @@ class OrderViewModel(
 
                 val invoiceAttachment = orderResult.data.invoice_attachment
                 if (invoiceAttachment == null) {
-                    Log.e("OrderViewModel", "No invoice attachment found for order $orderId")
                     _uiState.value = _uiState.value.copy(
                         isPrinting = false,
                         printStatus = "لا توجد فاتورة متاحة لهذا الطلب"
@@ -264,18 +240,12 @@ class OrderViewModel(
                 }
 
                 val invoiceUrl = invoiceAttachment.url
-                Log.d("OrderViewModel", "Invoice URL: $invoiceUrl")
-                Log.d("OrderViewModel", "Invoice filename: ${invoiceAttachment.filename}")
-                Log.d("OrderViewModel", "Invoice content type: ${invoiceAttachment.content_type}")
 
                 _uiState.value = _uiState.value.copy(printStatus = "جاري تنزيل الفاتورة...")
 
-                // Download the invoice content directly from S3 URL
-                Log.d("OrderViewModel", "Calling getInvoiceContentUseCase with URL: $invoiceUrl")
                 val invoiceResult = getInvoiceContentUseCase(invoiceUrl)
 
                 if (invoiceResult !is ApiResult.Success) {
-                    Log.e("OrderViewModel", "Failed to download invoice: ${(invoiceResult as? ApiResult.Error)?.message}")
                     _uiState.value = _uiState.value.copy(
                         isPrinting = false,
                         printStatus = "فشل في تنزيل الفاتورة"
@@ -284,29 +254,19 @@ class OrderViewModel(
                 }
 
                 val invoiceText = invoiceResult.data
-                Log.d("OrderViewModel", "Invoice downloaded successfully")
-                Log.d("OrderViewModel", "Loaded invoice, length: ${invoiceText.length} characters")
-                Log.d("OrderViewModel", "Invoice preview: ${invoiceText.take(100)}")
 
                 _uiState.value = _uiState.value.copy(printStatus = "جاري تجهيز الفاتورة...")
 
-                // Format as CPCL ByteArray with proper encoding (ASCII for commands, UTF-8 for text)
                 val cpclFormattedBytes = CpclInvoiceFormatter.formatInvoiceAsCpclBytes(invoiceText)
-                Log.d("OrderViewModel", "Formatted invoice as CPCL ByteArray, size: ${cpclFormattedBytes.size} bytes")
 
                 _uiState.value = _uiState.value.copy(printStatus = "جاري طباعة الفاتورة...")
 
-                // Send CPCL formatted invoice to printer using printBytes (sends raw bytes directly)
-                Log.d("OrderViewModel", "Sending CPCL formatted invoice to printer...")
-
-                // Connect if needed
                 val connectResult = if (!printerManager.isConnected()) {
                     printerManager.connect()
                 } else {
                     Result.success("Already connected")
                 }
 
-                // Use printBytes() to send raw bytes directly (no re-encoding)
                 val printResult = if (connectResult.isSuccess) {
                     printerManager.printBytes(cpclFormattedBytes)
                 } else {
@@ -315,14 +275,11 @@ class OrderViewModel(
 
                 _uiState.value = _uiState.value.copy(isPrinting = false)
                 if (printResult.isSuccess) {
-                    Log.d("OrderViewModel", "Invoice printed successfully!")
                     setPrintStatusWithAutoClear("تم طباعة الفاتورة بنجاح!")
                 } else {
-                    Log.e("OrderViewModel", "Print failed: ${printResult.exceptionOrNull()?.message}")
                     setPrintStatusWithAutoClear("فشل في الطباعة: ${printResult.exceptionOrNull()?.message}")
                 }
             } catch (e: Exception) {
-                Log.e("OrderViewModel", "Exception during print process", e)
                 _uiState.value = _uiState.value.copy(isPrinting = false)
                 setPrintStatusWithAutoClear("خطأ: ${e.message}")
             }
@@ -333,10 +290,6 @@ class OrderViewModel(
         _uiState.value = _uiState.value.copy(printStatus = null)
     }
 
-    /**
-     * Set print status with auto-clear after delay
-     * This is managed by ViewModel lifecycle to avoid UI lifecycle issues
-     */
     private fun setPrintStatusWithAutoClear(status: String, delayMs: Long = 3000) {
         _uiState.value = _uiState.value.copy(printStatus = status)
         viewModelScope.launch {
@@ -345,7 +298,6 @@ class OrderViewModel(
         }
     }
 
-    // Edit mode functions
     fun enterEditMode() {
         val currentOrder = _orderDetailsUiState.value.order ?: return
         val initialQuantities = currentOrder.order_plan_products?.associate {
@@ -374,7 +326,6 @@ class OrderViewModel(
             editedQuantities = currentQuantities
         )
 
-        // Calculate new price for this product
         calculateProductPrice(planProductId, newQuantity)
     }
 
@@ -382,7 +333,6 @@ class OrderViewModel(
         viewModelScope.launch {
             val currentOrder = _orderDetailsUiState.value.order ?: return@launch
 
-            // Find the order plan product
             val orderPlanProduct = currentOrder.order_plan_products?.find {
                 it.plan_product_id == planProductId
             } ?: return@launch
@@ -390,7 +340,6 @@ class OrderViewModel(
             val productId = orderPlanProduct.plan_product_id ?: return@launch
             val planId = currentOrder.plan_id ?: return@launch
 
-            // Mark this product as loading price
             val loadingProducts = _orderDetailsUiState.value.loadingPriceForProducts.toMutableSet()
             loadingProducts.add(planProductId)
             _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
@@ -418,7 +367,6 @@ class OrderViewModel(
                 is ApiResult.Success -> {
                     val priceResponse = result.data
 
-                    // Try to use new structure (total_price_details) first
                     val priceInfo = if (priceResponse.unit != null && priceResponse.total != null) {
                         ProductPriceInfo(
                             basePrice = priceResponse.unit.base_price ?: 0.0,
@@ -429,7 +377,6 @@ class OrderViewModel(
                             vatPercentage = priceResponse.vat_percentage ?: 0.0
                         )
                     } else {
-                        // Fallback to old structure
                         ProductPriceInfo(
                             basePrice = priceResponse.base_price ?: 0.0,
                             finalPrice = priceResponse.final_price ?: 0.0,
@@ -457,11 +404,8 @@ class OrderViewModel(
                     _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
                         loadingPriceForProducts = updatedLoadingProducts
                     )
-                    Log.e("OrderViewModel", "Error calculating price: ${result.message}")
                 }
-                is ApiResult.Loading -> {
-                    // Already handled above
-                }
+                is ApiResult.Loading -> {}
             }
         }
     }
@@ -475,7 +419,6 @@ class OrderViewModel(
             val quantity = orderPlanProduct.sold_quantity
 
             val priceInfo = if (totalPriceDetails != null) {
-                // Use new total_price_details structure
                 ProductPriceInfo(
                     basePrice = totalPriceDetails.unit?.base_price ?: 0.0,
                     finalPrice = totalPriceDetails.unit?.final_price ?: 0.0,
@@ -485,7 +428,6 @@ class OrderViewModel(
                     vatPercentage = totalPriceDetails.vat_percentage ?: 0.0
                 )
             } else {
-                // Fallback to old structure
                 val priceDetails = orderPlanProduct.plan_product_price?.price_details
                 ProductPriceInfo(
                     basePrice = orderPlanProduct.plan_product_price?.base_price?.toDoubleOrNull() ?: 0.0,
@@ -505,18 +447,15 @@ class OrderViewModel(
         )
     }
 
-
     fun deleteProductImmediately(planProductId: String, onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
         viewModelScope.launch {
             val currentOrder = _orderDetailsUiState.value.order ?: return@launch
 
-            // Set loading state
             _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
                 isLoading = true,
                 error = null
             )
 
-            // Create request with _destroy flag
             val request = UpdateOrderRequest(
                 order = UpdateOrderData(
                     order_items = listOf(
@@ -531,9 +470,7 @@ class OrderViewModel(
 
             when (val result = updateOrderUseCase(currentOrder.id, request)) {
                 is ApiResult.Success -> {
-                    // Refresh order data to get updated product list
                     loadOrderById(currentOrder.id)
-                    // Set success message
                     _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
                         successMessage = "تم حذف المنتج بنجاح"
                     )
@@ -546,9 +483,7 @@ class OrderViewModel(
                     )
                     onError(result.message)
                 }
-                else -> {
-
-                }
+                else -> {}
             }
         }
     }
@@ -571,10 +506,9 @@ class OrderViewModel(
             val editedQuantities = _orderDetailsUiState.value.editedQuantities
             val deletedProductIds = _orderDetailsUiState.value.deletedProductIds
 
-            // Build order items from edited quantities, excluding deleted products
             val orderItems = editedQuantities
                 .filter { (planProductId, _) -> planProductId !in deletedProductIds }
-                .filter { (_, quantity) -> quantity > 0 } // Only include products with quantity > 0
+                .filter { (_, quantity) -> quantity > 0 }
                 .map { (planProductId, quantity) ->
                     com.illa.cashvan.feature.orders.data.model.SubmitOrderItem(
                         plan_product_id = planProductId,
@@ -590,11 +524,8 @@ class OrderViewModel(
 
             when (val result = updateOrderUseCase(currentOrder.id, request)) {
                 is ApiResult.Success -> {
-                    // Refresh order data
                     loadOrderById(currentOrder.id)
-                    // Exit edit mode
                     exitEditMode()
-                    // Set success message
                     _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
                         successMessage = "تم حفظ التعديلات بنجاح"
                     )
@@ -605,27 +536,19 @@ class OrderViewModel(
                         error = result.message
                     )
                 }
-                is ApiResult.Loading -> {
-                    // Handle loading state if needed
-                }
+                is ApiResult.Loading -> {}
             }
         }
     }
 
-    /**
-     * Send invoice PDF to merchant via WhatsApp
-     */
     fun sendInvoiceViaWhatsApp(orderId: String) {
         viewModelScope.launch {
             try {
-                Log.d("OrderViewModel", "Starting send invoice via WhatsApp for order $orderId")
-
                 _uiState.value = _uiState.value.copy(
                     isPrinting = true,
                     printStatus = "جاري تحميل الفاتورة..."
                 )
 
-                // Fetch the order with invoice_attachment
                 val orderResult = getOrderByIdUseCase(orderId)
 
                 if (orderResult !is ApiResult.Success) {
@@ -656,22 +579,14 @@ class OrderViewModel(
                 }
 
                 val invoiceUrl = invoiceAttachment.url
-                Log.d("OrderViewModel", "Invoice URL: $invoiceUrl")
-                Log.d("OrderViewModel", "Invoice content_type: ${invoiceAttachment.content_type}")
-                Log.d("OrderViewModel", "Invoice filename: ${invoiceAttachment.filename}")
-                Log.d("OrderViewModel", "Merchant phone: $merchantPhone")
 
                 _uiState.value = _uiState.value.copy(printStatus = "جاري تنزيل الفاتورة...")
 
-                // Try to download as PDF first
                 var pdfFile = downloadPdfFile(invoiceUrl, order.formatted_code)
 
                 if (pdfFile == null) {
-                    // If it's not a PDF, download as text and generate PDF
-                    Log.d("OrderViewModel", "Not a PDF file, downloading as text and generating PDF")
                     _uiState.value = _uiState.value.copy(printStatus = "جاري تحويل الفاتورة إلى PDF...")
 
-                    // Download invoice content as text
                     val invoiceResult = getInvoiceContentUseCase(invoiceUrl)
                     if (invoiceResult !is ApiResult.Success) {
                         _uiState.value = _uiState.value.copy(
@@ -682,9 +597,7 @@ class OrderViewModel(
                     }
 
                     val invoiceText = invoiceResult.data
-                    Log.d("OrderViewModel", "Downloaded invoice text, length: ${invoiceText.length}")
 
-                    // Generate PDF from text
                     pdfFile = generatePdfFromText(invoiceText, order.formatted_code)
                     if (pdfFile == null) {
                         _uiState.value = _uiState.value.copy(
@@ -697,14 +610,12 @@ class OrderViewModel(
 
                 _uiState.value = _uiState.value.copy(printStatus = "جاري فتح واتساب...")
 
-                // Open WhatsApp to send the file
                 openWhatsAppWithFile(pdfFile, merchantPhone, order.formatted_code)
 
                 _uiState.value = _uiState.value.copy(isPrinting = false)
                 setPrintStatusWithAutoClear("تم فتح واتساب لإرسال الفاتورة")
 
             } catch (e: Exception) {
-                Log.e("OrderViewModel", "Exception during send via WhatsApp", e)
                 _uiState.value = _uiState.value.copy(isPrinting = false)
                 setPrintStatusWithAutoClear("خطأ: ${e.message}")
             }
@@ -716,59 +627,47 @@ class OrderViewModel(
             val client = HttpClient(Android)
             val response: HttpResponse = client.get(url)
 
-            // Check content type
-            val contentType = response.headers["Content-Type"]
-            Log.d("OrderViewModel", "Response Content-Type: $contentType")
-
             val bytes = response.readBytes()
             client.close()
 
-            // Verify it's actually a PDF by checking the first few bytes (PDF magic number)
             if (bytes.size < 4 || !isPdfFile(bytes)) {
-                Log.e("OrderViewModel", "Downloaded file is not a PDF. First bytes: ${bytes.take(10).joinToString()}")
                 return null
             }
 
-            // Save to cache directory
             val cacheDir = context.cacheDir
             val pdfFile = File(cacheDir, "invoice_${orderCode}.pdf")
             pdfFile.writeBytes(bytes)
 
-            Log.d("OrderViewModel", "PDF file saved successfully: ${pdfFile.absolutePath}, size: ${bytes.size} bytes")
             pdfFile
         } catch (e: Exception) {
-            Log.e("OrderViewModel", "Failed to download PDF", e)
             null
         }
     }
 
     private fun isPdfFile(bytes: ByteArray): Boolean {
         return bytes.size >= 4 &&
-               bytes[0] == 0x25.toByte() && // %
-               bytes[1] == 0x50.toByte() && // P
-               bytes[2] == 0x44.toByte() && // D
-               bytes[3] == 0x46.toByte()    // F
+               bytes[0] == 0x25.toByte() &&
+               bytes[1] == 0x50.toByte() &&
+               bytes[2] == 0x44.toByte() &&
+               bytes[3] == 0x46.toByte()
     }
 
     private fun generatePdfFromText(text: String, orderCode: String): File? {
         return try {
             val pdfDocument = PdfDocument()
-            val pageWidth = 595 // A4 width in points (8.27 inches)
-            val pageHeight = 842 // A4 height in points (11.69 inches)
+            val pageWidth = 595
+            val pageHeight = 842
             val margin = 40f
             val lineHeight = 18f
             val fontSize = 11f
 
-            // Configure paint for text
             val paint = Paint().apply {
                 textSize = fontSize
                 isAntiAlias = true
                 color = android.graphics.Color.BLACK
-                // Use monospace font for receipt formatting
                 typeface = android.graphics.Typeface.MONOSPACE
             }
 
-            // Split text into lines
             val lines = text.lines()
             val linesPerPage = ((pageHeight - 2 * margin) / lineHeight).toInt()
 
@@ -776,46 +675,37 @@ class OrderViewModel(
             var lineIndex = 0
 
             while (lineIndex < lines.size) {
-                // Create a new page
                 val pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
                 val page = pdfDocument.startPage(pageInfo)
                 val canvas = page.canvas
 
                 var yPosition = margin
 
-                // Draw lines on this page
                 val endLine = minOf(lineIndex + linesPerPage, lines.size)
                 for (i in lineIndex until endLine) {
                     var line = lines[i]
 
-                    // Skip empty lines but preserve spacing
                     if (line.isBlank()) {
                         yPosition += lineHeight
                         continue
                     }
 
-                    // Detect line alignment based on content
                     val trimmedLine = line.trim()
                     val leadingSpaces = line.takeWhile { it == ' ' }.length
                     val trailingSpaces = line.takeLastWhile { it == ' ' }.length
 
-                    // Use trimmed line for drawing
                     line = trimmedLine
 
                     val textWidth = paint.measureText(line)
                     val contentWidth = pageWidth - 2 * margin
 
-                    // Determine alignment
                     val xPosition = when {
-                        // Centered text (has significant spaces on both sides or is a title-like line)
                         leadingSpaces > 5 && trailingSpaces > 5 -> {
                             margin + (contentWidth - textWidth) / 2
                         }
-                        // Arabic/RTL text - align right
                         line.firstOrNull()?.let { isArabic(it) } == true -> {
                             pageWidth - margin - textWidth
                         }
-                        // Default - align left
                         else -> {
                             margin
                         }
@@ -830,7 +720,6 @@ class OrderViewModel(
                 pageNumber++
             }
 
-            // Save to file
             val cacheDir = context.cacheDir
             val pdfFile = File(cacheDir, "invoice_${orderCode}.pdf")
             pdfFile.outputStream().use { outputStream ->
@@ -838,36 +727,28 @@ class OrderViewModel(
             }
             pdfDocument.close()
 
-            Log.d("OrderViewModel", "PDF generated successfully: ${pdfFile.absolutePath}, pages: ${pageNumber - 1}")
             pdfFile
         } catch (e: Exception) {
-            Log.e("OrderViewModel", "Failed to generate PDF from text", e)
             null
         }
     }
 
     private fun isArabic(char: Char): Boolean {
-        // Check if character is in Arabic Unicode range
         val codePoint = char.code
-        return codePoint in 0x0600..0x06FF || // Arabic
-               codePoint in 0x0750..0x077F || // Arabic Supplement
-               codePoint in 0xFB50..0xFDFF || // Arabic Presentation Forms-A
-               codePoint in 0xFE70..0xFEFF    // Arabic Presentation Forms-B
+        return codePoint in 0x0600..0x06FF ||
+               codePoint in 0x0750..0x077F ||
+               codePoint in 0xFB50..0xFDFF ||
+               codePoint in 0xFE70..0xFEFF
     }
 
     private fun openWhatsAppWithFile(file: File, phoneNumber: String, orderCode: String) {
         try {
-            // Create content URI using FileProvider
             val contentUri = FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",
                 file
             )
 
-            val message = "فاتورة رقم: $orderCode"
-
-            // Send invoice to merchant via WhatsApp
-            Log.d("OrderViewModel", "Sending invoice to merchant via WhatsApp")
             when (val result = WhatsAppHelper.sendInvoiceToMerchant(
                 context,
                 contentUri,
@@ -875,7 +756,6 @@ class OrderViewModel(
                 orderCode
             )) {
                 is WhatsAppHelper.SendResult.ChatOpened -> {
-                    Log.d("OrderViewModel", "WhatsApp opened with invoice")
                     setPrintStatusWithAutoClear(result.message)
                 }
                 is WhatsAppHelper.SendResult.Failure -> {
@@ -883,128 +763,7 @@ class OrderViewModel(
                 }
             }
         } catch (e: Exception) {
-            Log.e("OrderViewModel", "Failed to open WhatsApp", e)
             setPrintStatusWithAutoClear("فشل في فتح واتساب: ${e.message}")
-        }
-    }
-
-    private fun shareFileToOpenChat(contentUri: Uri, message: String) {
-        // Share the file via WhatsApp (will open share dialog on top of the already open chat)
-        val result = WhatsAppHelper.shareFile(context, contentUri, message)
-        when {
-            result.isSuccess -> {
-                Log.d("OrderViewModel", "File share initiated successfully")
-            }
-            result.isFailure -> {
-                Log.e("OrderViewModel", "Failed to share file", result.exceptionOrNull())
-            }
-        }
-    }
-
-    /**
-     * Test print function with sample invoice data
-     * For testing printer while backend engineer creates invoice API
-     */
-    fun testPrintInvoice() {
-        viewModelScope.launch {
-            try {
-                Log.d("OrderViewModel", "========================================")
-                Log.d("OrderViewModel", "Starting TEST print with sample invoice")
-                Log.d("OrderViewModel", "========================================")
-
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = true,
-                    printStatus = "Testing printer with sample invoice..."
-                )
-
-                // Sample invoice text (same as from S3)
-                // Logo made narrower to fit 80mm paper
-                val testInvoiceText = """
-████████████████  ████ ████  ████     ████
-██████████  ████  ████ ████  ████    ██████
-████████    ████  ████ ████  ████   ████████
-██████      ████  ████ ████  ████  ██████████
-█████       ████  ████ ████  ████  ████  ████
-██████    ██████  ████ ████  ████  ████  ████
-██████      ████  ████ ████  ████  ████  ████
-████  █     ████  ████ █████ █████ ██████████
-█████ ███   ████  ████ █████ █████ ████  ████
-████████████████  ████ █████ █████ ████  ████
-
-
-                           إلى لخدمات النقل الذكية
-                               رقم السجل: 4763
-                       رقم التسجيل الضريبي: 562-062-645
-                           فاتورة مبيعات ضريبة نسخة
-
-                          تاريخ الاصدار: 2026-01-09
-            اORD-b20ed851-102a-483a-962a-21140f5c2f0b :رقم الفاتورة
-                                رمز الخطة: 13
-
-                          اSmart Gadgets Shop :العميل
-                         اMER-2026-7326397 :رمز العميل
-                        ا321 Nasr City, Cairo :العنوان
-
-                           اSeif Fayez :اسم المندوب
-                              اSA005 :كود المندوب
-
-الوصف | كمية |    سعر  | النهائي | الإجمالي
- 129.99 | 129.99  |  129.99 |  1   | Wireless Earbuds Pro   
-
-
-عدد الاصناف: 1.00
-اEGP 129.99 :(المجموع الفرعي (دون الاضافات)
-اEGP 0.00 :قيمة الضريبة والخصم
-
-اEGP 129.99 :الإجمالي
-
-           سلمت البضاعة بحالة جيدة - الشركة غير مسئولة عن أي توالف
-                             شكرا لتعاملكم معنا!
-                """.trimIndent()
-
-                Log.d("OrderViewModel", "Test invoice text length: ${testInvoiceText.length} characters")
-
-                _uiState.value = _uiState.value.copy(printStatus = "Formatting test invoice...")
-
-                // Format as CPCL ByteArray with proper encoding
-                val cpclFormattedBytes = CpclInvoiceFormatter.formatInvoiceAsCpclBytes(testInvoiceText)
-                Log.d("OrderViewModel", "Formatted test invoice as CPCL ByteArray, size: ${cpclFormattedBytes.size} bytes")
-
-                _uiState.value = _uiState.value.copy(printStatus = "Printing test invoice...")
-
-                // Connect if needed
-                val connectResult = if (!printerManager.isConnected()) {
-                    printerManager.connect()
-                } else {
-                    Result.success("Already connected")
-                }
-
-                val printResult = if (connectResult.isSuccess) {
-                    printerManager.printBytes(cpclFormattedBytes)
-                } else {
-                    connectResult
-                }
-
-                if (printResult.isSuccess) {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Test invoice printed successfully!"
-                    )
-                    Log.d("OrderViewModel", "Test invoice printed successfully!")
-                } else {
-                    _uiState.value = _uiState.value.copy(
-                        isPrinting = false,
-                        printStatus = "Print failed: ${printResult.exceptionOrNull()?.message}"
-                    )
-                    Log.e("OrderViewModel", "Test print failed: ${printResult.exceptionOrNull()?.message}")
-                }
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    isPrinting = false,
-                    printStatus = "Error: ${e.message}"
-                )
-                Log.e("OrderViewModel", "Exception during test print", e)
-            }
         }
     }
 

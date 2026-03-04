@@ -106,7 +106,6 @@ fun OrderCardItem(
 
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    // Dynamic status badge
                     val orderStatus = OrderStatus.fromApiValue(order.status)
                     Box(
                         modifier = Modifier
@@ -174,7 +173,6 @@ fun OrderCardItem(
                 }
             }
 
-            // Show buttons only for pending presell orders
             if (order.status == "ongoing" && order.orderType == "pre_sell") {
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -184,7 +182,6 @@ fun OrderCardItem(
                         .padding(start = 16.dp, end = 16.dp, bottom = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Cancel button
                     OutlinedButton(
                         onClick = {
                             analyticsHelper.logEvent("order_cancel_clicked")
@@ -210,7 +207,6 @@ fun OrderCardItem(
                         )
                     }
 
-                    // Submit button - opens order details
                     Button(
                         onClick = {
                             analyticsHelper.logEvent("order_submit_clicked")
@@ -234,7 +230,6 @@ fun OrderCardItem(
                 }
             }
 
-            // Show print button for partially fulfilled or fulfilled orders
             if (order.status == "partially_fulfilled" || order.status == "fulfilled") {
                 Spacer(modifier = Modifier.height(16.dp))
 

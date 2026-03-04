@@ -47,8 +47,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -100,8 +100,8 @@ fun CreateMerchantScreen(
     var selectedPriceTier by remember { mutableStateOf<Pair<String, String>?>(null) }
     var selectedVisitDays by remember { mutableStateOf(setOf<String>()) }
 
-    val merchantUiState by merchantViewModel.uiState.collectAsState()
-    val locationUiState by locationViewModel.uiState.collectAsState()
+    val merchantUiState by merchantViewModel.uiState.collectAsStateWithLifecycle()
+    val locationUiState by locationViewModel.uiState.collectAsStateWithLifecycle()
 
     val priceTiers = remember {
         listOf(
@@ -134,7 +134,7 @@ fun CreateMerchantScreen(
 
     LaunchedEffect(merchantUiState.nearestAddress) {
         if (address.isEmpty() && !merchantUiState.nearestAddress.isNullOrEmpty()) {
-            address = merchantUiState.nearestAddress!!
+            address = merchantUiState.nearestAddress.orEmpty()
         }
     }
 
@@ -299,9 +299,9 @@ fun CreateMerchantScreen(
                                     latitude = location.latitude,
                                     longitude = location.longitude,
                                     planId = merchantViewModel.getFirstPlanId() ?: 0,
-                                    merchantTypeId = selectedMerchantType!!.id,
+                                    merchantTypeId = selectedMerchantType?.id ?: "",
                                     detailedAddress = address,
-                                    priceTier = selectedPriceTier!!.first,
+                                    priceTier = selectedPriceTier?.first ?: "",
                                     visitDays = selectedVisitDays
                                 )
                             }
@@ -338,7 +338,6 @@ fun CreateMerchantScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // Section 1: Basic Info
                 MerchantSectionCard(title = "المعلومات الأساسية") {
                     MerchantFormField(
                         label = "اسم التاجر",
@@ -377,7 +376,6 @@ fun CreateMerchantScreen(
                     )
                 }
 
-                // Section 2: Contact Info
                 MerchantSectionCard(title = "معلومات الاتصال") {
                     MerchantFormField(
                         label = "رقم الهاتف الأساسي",
@@ -398,7 +396,6 @@ fun CreateMerchantScreen(
                     )
                 }
 
-                // Section 3: Location Details
                 MerchantSectionCard(title = "تفاصيل الموقع") {
                     MerchantFormField(
                         label = "العنوان التفصيلي",
@@ -419,7 +416,6 @@ fun CreateMerchantScreen(
                     )
                 }
 
-                // Section 4: Business Details
                 MerchantSectionCard(title = "تفاصيل العمل") {
                     Row(
                         modifier = Modifier.fillMaxWidth(),

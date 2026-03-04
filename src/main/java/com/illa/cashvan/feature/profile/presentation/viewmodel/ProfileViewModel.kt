@@ -34,7 +34,6 @@ class ProfileViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            // Get the current user's ID
             val user = getUserUseCase().firstOrNull()
             if (user?.id != null) {
                 when (val result = getProfileUseCase(user.id)) {

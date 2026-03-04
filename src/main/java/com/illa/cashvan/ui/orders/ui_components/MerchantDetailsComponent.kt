@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
-import com.illa.cashvan.data.MockData
 import org.koin.compose.koinInject
 
 @Composable
@@ -121,10 +120,8 @@ fun MerchantDetailsComponent(
                                     )
                                 )
                                 val uri = if (hasCoordinates) {
-                                    // Use coordinates if available
                                     Uri.parse("geo:$latitude,$longitude?q=$latitude,$longitude(${Uri.encode(merchant.name)})")
                                 } else {
-                                    // Fallback to address search
                                     Uri.parse("geo:0,0?q=${Uri.encode(merchant.address)}")
                                 }
                                 val intent = Intent(Intent.ACTION_VIEW, uri)
@@ -132,7 +129,6 @@ fun MerchantDetailsComponent(
                                 if (intent.resolveActivity(context.packageManager) != null) {
                                     context.startActivity(intent)
                                 } else {
-                                    // Fallback to browser if Google Maps is not installed
                                     val browserUri = if (hasCoordinates) {
                                         Uri.parse("https://www.google.com/maps?q=$latitude,$longitude")
                                     } else {
@@ -199,7 +195,7 @@ private fun MerchantDetailItem(
 @Preview(showBackground = true, locale = "ar")
 @Composable
 fun MerchantDetailsComponentPreview() {
-    val sampleMerchant = MockData.getRandomMerchant()
+    val sampleMerchant = Merchant(id = "1", name = "محل أحمد للبقالة", phoneNumber = "01012345678", address = "شارع الجمهورية، القاهرة", code = "M-001")
 
     MaterialTheme {
         Column(

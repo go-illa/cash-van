@@ -2,7 +2,6 @@ package com.illa.cashvan.core.app_preferences.data.repository
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Log
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
@@ -34,7 +33,6 @@ class PreferencesRepoImpl(
         encodeDefaults = true
     }
 
-    // Lazy initialization with fallback for devices where keystore fails
     private val securePreferences: SharedPreferences by lazy {
         try {
             val masterKey = MasterKey.Builder(context)
@@ -49,9 +47,6 @@ class PreferencesRepoImpl(
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
         } catch (e: Exception) {
-            // Fallback to regular SharedPreferences if keystore fails
-            // This can happen on some devices with keystore issues
-            Log.e("PreferencesRepo", "EncryptedSharedPreferences failed, using fallback", e)
             context.getSharedPreferences("fallback_cash_van_prefs", Context.MODE_PRIVATE)
         }
     }
@@ -67,9 +62,7 @@ class PreferencesRepoImpl(
     ) {
         val jsonString = json.encodeToString(serializer, value)
         if (encrypt) {
-            encryptedSharedPreferences.edit()
-                .putString(key, jsonString)
-                .apply()
+            encryptedSharedPreferences.edit().putString(key, jsonString).apply()
         } else {
             setValue(key, jsonString)
         }
@@ -193,7 +186,7 @@ class PreferencesRepoImpl(
     override suspend fun doesPreferenceExist(key: String): Flow<Boolean> {
         return context.dataStore.data.map { preferences ->
             preferences.contains(stringPreferencesKey(key)) ||
-            encryptedSharedPreferences.contains(key)
+                    encryptedSharedPreferences.contains(key)
         }
     }
 
@@ -207,7 +200,6 @@ class PreferencesRepoImpl(
             preferences.remove(floatPreferencesKey(key))
             preferences.remove(doublePreferencesKey(key))
         }
-
         encryptedSharedPreferences.edit().remove(key).apply()
     }
 

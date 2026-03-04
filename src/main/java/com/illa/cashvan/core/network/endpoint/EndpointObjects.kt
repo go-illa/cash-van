@@ -5,7 +5,6 @@ import io.ktor.http.Parameters
 
 object ApiEndpoints {
 
-    // Auth endpoints
     object Auth {
         fun signIn() = RequestConfiguration(
             path = "auth/login",
@@ -29,7 +28,6 @@ object ApiEndpoints {
         )
     }
 
-    // Profile endpoints
     object Profile {
         fun getProfile(salesAgentId: String) = RequestConfiguration(
             path = "sales_agents/$salesAgentId",
@@ -42,7 +40,6 @@ object ApiEndpoints {
         )
     }
 
-    // Plans endpoints
     object Plans {
         fun getPlans() = RequestConfiguration(
             path = "plans",
@@ -71,7 +68,6 @@ object ApiEndpoints {
         )
     }
 
-    // Merchant endpoints
     object Merchant {
         fun createMerchant() = RequestConfiguration(
             path = "merchants",
@@ -117,7 +113,6 @@ object ApiEndpoints {
         )
     }
 
-    // Orders endpoints
     object Orders {
         fun getOrders(
             planId: String? = null,

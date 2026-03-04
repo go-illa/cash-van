@@ -67,9 +67,7 @@ class InventoryViewModel(
                         planProducts = emptyList()
                     )
                 }
-                is ApiResult.Loading -> {
-                    // Loading state is already set above
-                }
+                is ApiResult.Loading -> {}
             }
         }
     }

@@ -21,7 +21,6 @@ class ConnectivityViewModel(
     fun checkConnectivity() {
         viewModelScope.launch {
             _isRetrying.value = true
-            // Minimum visual feedback duration
             delay(300)
             networkConnectivityService.refreshConnectivity()
             _isRetrying.value = false

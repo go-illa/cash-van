@@ -294,7 +294,6 @@ data class ProductPriceCalculationResponse(
     val vat_percentage: Double? = null,
     val unit: UnitPriceDetails? = null,
     val total: TotalDetails? = null,
-    // Keep old fields for backward compatibility
     val base_price: Double? = null,
     val final_price: Double? = null,
     val quantity: Int? = null,
