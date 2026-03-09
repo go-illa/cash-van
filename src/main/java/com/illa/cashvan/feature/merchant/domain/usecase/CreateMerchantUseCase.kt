@@ -11,17 +11,29 @@ class CreateMerchantUseCase(
 ) {
     suspend fun invoke(
         name: String,
+        signName: String,
         phoneNumber: String,
-        latitude: String,
-        longitude: String,
-        planId: String
+        secondaryPhoneNumber: String?,
+        latitude: Double,
+        longitude: Double,
+        planId: Int,
+        merchantTypeId: String,
+        detailedAddress: String,
+        priceTier: String,
+        workingDays: Map<String, Boolean>
     ): ApiResult<CreateMerchantResponse> {
         val merchantData = MerchantData(
             name = name,
+            sign_name = signName,
             phone_number = phoneNumber,
+            secondary_phone = secondaryPhoneNumber,
+            merchant_type_id = merchantTypeId,
+            price_tier = priceTier,
+            location = detailedAddress,
             latitude = latitude,
             longitude = longitude,
-            plan_id = planId
+            plan_id = planId,
+            working_days = workingDays
         )
 
         val request = CreateMerchantRequest(merchant = merchantData)

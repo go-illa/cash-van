@@ -41,7 +41,7 @@ fun NoInternetScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xCC000000)), // 80% black overlay
+            .background(Color(0xCC000000)),
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -63,7 +63,6 @@ fun NoInternetScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // WiFi off icon
                 Icon(
                     imageVector = Icons.Default.WifiOff,
                     contentDescription = "No Internet",
@@ -73,7 +72,6 @@ fun NoInternetScreen(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Title
                 Text(
                     text = "لا يوجد اتصال بالإنترنت",
                     color = Color(0xFF1F2937),
@@ -85,7 +83,6 @@ fun NoInternetScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Description
                 Text(
                     text = "يرجى التحقق من الاتصال والمحاولة مرة أخرى",
                     color = Color(0xFF6B7280),
@@ -97,7 +94,6 @@ fun NoInternetScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Retry button
                 Button(
                     onClick = onRetry,
                     enabled = !isRetrying,

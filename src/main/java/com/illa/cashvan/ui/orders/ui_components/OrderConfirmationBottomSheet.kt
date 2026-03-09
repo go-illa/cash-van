@@ -52,14 +52,12 @@ fun OrderConfirmationBottomSheet(
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Success icon
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                // Background circle
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -76,7 +74,6 @@ fun OrderConfirmationBottomSheet(
                 )
             }
 
-            // Title
             Text(
                 text = "تم تسليم الأوردر بنجاح",
                 fontSize = 24.sp,
@@ -89,7 +86,6 @@ fun OrderConfirmationBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Subtitle
             Text(
                 text = "تم تسليم الأوردر بنجاح",
                 fontSize = 16.sp,
@@ -102,7 +98,6 @@ fun OrderConfirmationBottomSheet(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Back to home button
             Button(
                 onClick = onBackToHome,
                 modifier = Modifier

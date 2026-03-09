@@ -8,7 +8,6 @@ import com.illa.cashvan.feature.orders.domain.usecase.GetOngoingPlanUseCase
 import com.illa.cashvan.feature.plans.data.model.Plan
 import com.illa.cashvan.feature.plans.data.model.PlanProduct
 import com.illa.cashvan.feature.plans.domain.usecase.GetPlanProductsUseCase
-import com.illa.cashvan.feature.plans.domain.usecase.GetPlansUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -67,9 +66,7 @@ class InventoryViewModel(
                         planProducts = emptyList()
                     )
                 }
-                is ApiResult.Loading -> {
-                    // Loading state is already set above
-                }
+                is ApiResult.Loading -> {}
             }
         }
     }

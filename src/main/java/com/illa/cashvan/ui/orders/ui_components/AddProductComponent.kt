@@ -53,7 +53,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
-import com.illa.cashvan.data.MockData
 import org.koin.compose.koinInject
 
 data class Product(
@@ -327,7 +326,11 @@ fun AddProductComponent(
 @Preview(showBackground = true, locale = "ar")
 @Composable
 fun AddProductComponentPreview() {
-    val sampleProducts = MockData.getRandomProducts()
+    val sampleProducts = listOf(
+        Product(id = "1", name = "منتج أول", price = 25.0, unit = "قطعة"),
+        Product(id = "2", name = "منتج ثاني", price = 50.0, unit = "كرتون"),
+        Product(id = "3", name = "منتج ثالث", price = 100.0, unit = "كيس")
+    )
 
     MaterialTheme {
         Column(
@@ -338,7 +341,6 @@ fun AddProductComponentPreview() {
             AddProductComponent(
                 products = sampleProducts,
                 onAddToOrder = { product, quantity ->
-                    // Handle add to order
                 }
             )
         }

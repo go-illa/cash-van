@@ -2,7 +2,6 @@ package com.illa.cashvan.ui.orders
 
 import android.Manifest
 import android.os.Build
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,15 +11,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Print
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,8 +30,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -76,10 +71,9 @@ fun OrderScreen(
     viewModel: OrderViewModel = koinViewModel(),
     analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val orderItems = uiState.orders.map { it.toOrderItem() }
 
-    // Bluetooth permissions state for Android 12+ (need both CONNECT and SCAN)
     val bluetoothPermissionsState = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         rememberMultiplePermissionsState(
             listOf(
@@ -91,18 +85,15 @@ fun OrderScreen(
         null
     }
 
-    // Track pending print order ID for after permission is granted
     var pendingPrintOrderId by remember { mutableStateOf<String?>(null) }
 
-    // Handle print after permissions are granted
     LaunchedEffect(bluetoothPermissionsState?.allPermissionsGranted, pendingPrintOrderId) {
         if (bluetoothPermissionsState?.allPermissionsGranted == true && pendingPrintOrderId != null) {
-            viewModel.printInvoice(pendingPrintOrderId!!)
+            viewModel.printInvoice(pendingPrintOrderId ?: return@LaunchedEffect)
             pendingPrintOrderId = null
         }
     }
 
-    // Bottom sheet state
     var showCancelBottomSheet by remember { mutableStateOf(false) }
     var selectedOrderForCancel by remember { mutableStateOf<OrderItem?>(null) }
     val cancelBottomSheetState = rememberModalBottomSheetState(
@@ -111,7 +102,6 @@ fun OrderScreen(
     val scope = rememberCoroutineScope()
 
 
-    // Refresh orders when screen is shown
     LaunchedEffect(Unit) {
         viewModel.refresh()
     }
@@ -137,46 +127,6 @@ fun OrderScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // TEST PRINT BUTTON (for testing while backend engineer creates invoice API)
-            OutlinedButton(
-                onClick = {
-                    analyticsHelper.logEvent("test_print_invoice_clicked")
-                    // Check Bluetooth permissions on Android 12+
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        if (bluetoothPermissionsState?.allPermissionsGranted == true) {
-                            viewModel.testPrintInvoice()
-                        } else {
-                            // Request permissions - test print will need manual retry after permission
-                            bluetoothPermissionsState?.launchMultiplePermissionRequest()
-                        }
-                    } else {
-                        viewModel.testPrintInvoice()
-                    }
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color(0xFF0D3773)
-                ),
-                border = BorderStroke(1.dp, Color(0xFF0D3773))
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Print,
-                    contentDescription = "Test Print",
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "TEST PRINT INVOICE",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily(Font(R.font.zain_regular))
-                )
-            }
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -279,23 +229,19 @@ fun OrderScreen(
                                     showCancelBottomSheet = true
                                 },
                                 onSubmitClick = { orderItem ->
-                                    // Find the full order object from uiState
                                     val fullOrder = uiState.orders.find { it.id == orderItem.id }
                                     fullOrder?.let { viewModel.submitOrder(it) }
                                 },
                                 onPrintClick = { orderItem ->
                                     analyticsHelper.logEvent("order_print_invoice_clicked")
-                                    // Check Bluetooth permissions on Android 12+
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                         if (bluetoothPermissionsState?.allPermissionsGranted == true) {
                                             viewModel.printInvoice(orderItem.id)
                                         } else {
-                                            // Request permissions and save order ID for later
                                             pendingPrintOrderId = orderItem.id
                                             bluetoothPermissionsState?.launchMultiplePermissionRequest()
                                         }
                                     } else {
-                                        // No permission needed for older Android versions
                                         viewModel.printInvoice(orderItem.id)
                                     }
                                 },
@@ -307,7 +253,6 @@ fun OrderScreen(
             }
         }
 
-        // Only show FAB if there are orders
         if (orderItems.isNotEmpty() && !uiState.isLoading && uiState.error == null) {
             FloatingActionButton(
                 onClick = {
@@ -330,7 +275,6 @@ fun OrderScreen(
             }
         }
 
-        // Cancel order bottom sheet
         if (showCancelBottomSheet && selectedOrderForCancel != null) {
             CancelOrderBottomSheet(
                 sheetState = cancelBottomSheetState,
@@ -363,7 +307,6 @@ fun OrderScreen(
             )
         }
 
-        // Show print status message
         if (uiState.printStatus != null) {
             ErrorSnackbar(
                 message = uiState.printStatus ?: "",

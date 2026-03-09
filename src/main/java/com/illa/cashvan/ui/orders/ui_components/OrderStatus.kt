@@ -8,9 +8,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 
-/**
- * Represents different order statuses with their Arabic labels and colors
- */
 enum class OrderStatus(
     val apiValue: String,
     val arabicLabel: String,
@@ -48,18 +45,13 @@ enum class OrderStatus(
     );
 
     companion object {
-        /**
-         * Get OrderStatus from API status string value
-         * Returns ONGOING as default if status is unknown or null
-         * Handles both "fulfilled" and "completed" as the same status
-         */
         fun fromApiValue(status: String?): OrderStatus {
             return when (status?.lowercase()) {
                 "fulfilled", "completed" -> FULFILLED
                 "ongoing" -> ONGOING
                 "canceled" -> CANCELED
                 "partially_fulfilled" -> PARTIALLY_FULFILLED
-                else -> ONGOING // Default to ongoing for unknown statuses
+                else -> ONGOING
             }
         }
     }

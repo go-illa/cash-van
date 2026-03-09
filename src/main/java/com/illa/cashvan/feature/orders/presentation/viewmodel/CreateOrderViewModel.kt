@@ -17,6 +17,7 @@ import com.illa.cashvan.feature.orders.domain.usecase.GetPlanProductsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.SearchMerchantsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOrderByIdUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetCashVanProductTotalPriceUseCase
 import com.illa.cashvan.feature.printer.HoneywellPrinterManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,15 +25,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import android.util.Log
 import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
-import java.nio.charset.Charset
 
 data class CreateOrderUiState(
     val isLoading: Boolean = false,
     val currentPlan: OngoingPlanResponse? = null,
     val merchants: List<MerchantItem> = emptyList(),
     val products: List<PlanProduct> = emptyList(),
+    val allProducts: List<PlanProduct> = emptyList(),
     val selectedMerchant: MerchantItem? = null,
     val selectedProducts: Map<String, Int> = emptyMap(),
     val merchantSearchQuery: String = "",
@@ -43,7 +43,11 @@ data class CreateOrderUiState(
     val orderCreated: Boolean = false,
     val isPrinting: Boolean = false,
     val printStatus: String? = null,
-    val invoiceText: String? = null
+    val invoiceText: String? = null,
+    val productPrices: Map<String, ProductPriceInfo> = emptyMap(),
+    val loadingPriceForProducts: Set<String> = emptySet(),
+    val previewProductPrice: ProductPriceInfo? = null,
+    val isLoadingPreviewPrice: Boolean = false
 )
 
 class CreateOrderViewModel(
@@ -53,7 +57,8 @@ class CreateOrderViewModel(
     private val getPlanProductsUseCase: GetPlanProductsUseCase,
     private val createOrderUseCase: CreateOrderUseCase,
     private val getOrderByIdUseCase: GetOrderByIdUseCase,
-    private val getInvoiceContentUseCase: GetInvoiceContentUseCase
+    private val getInvoiceContentUseCase: GetInvoiceContentUseCase,
+    private val getCashVanProductTotalPriceUseCase: GetCashVanProductTotalPriceUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateOrderUiState())
@@ -61,6 +66,7 @@ class CreateOrderViewModel(
 
     private var merchantSearchJob: Job? = null
     private var productSearchJob: Job? = null
+    private var previewPriceJob: Job? = null
     private val printerManager: HoneywellPrinterManager by lazy {
         HoneywellPrinterManager(context)
     }
@@ -79,7 +85,6 @@ class CreateOrderViewModel(
                         isLoading = false,
                         currentPlan = result.data
                     )
-                    // Load initial products
                     loadProducts()
                 }
                 is ApiResult.Error -> {
@@ -98,16 +103,13 @@ class CreateOrderViewModel(
     fun searchMerchants(query: String) {
         _uiState.value = _uiState.value.copy(merchantSearchQuery = query)
 
-        // Cancel previous search
         merchantSearchJob?.cancel()
 
         merchantSearchJob = viewModelScope.launch {
-            // Debounce search
             delay(300)
 
             _uiState.value = _uiState.value.copy(isSearchingMerchants = true)
 
-            // Use empty string to fetch all merchants when query is empty
             val searchQuery = query.ifEmpty { "" }
 
             when (val result = searchMerchantsUseCase(searchQuery)) {
@@ -133,18 +135,17 @@ class CreateOrderViewModel(
     fun searchProducts(query: String) {
         _uiState.value = _uiState.value.copy(productSearchQuery = query)
 
-        // Cancel previous search
         productSearchJob?.cancel()
 
         val planId = _uiState.value.currentPlan?.id?.toString() ?: return
+        val priceTier = _uiState.value.selectedMerchant?.price_tier
 
         productSearchJob = viewModelScope.launch {
-            // Debounce search
             delay(300)
 
             _uiState.value = _uiState.value.copy(isSearchingProducts = true)
 
-            when (val result = getPlanProductsUseCase(planId, query.ifEmpty { null })) {
+            when (val result = getPlanProductsUseCase(planId, query.ifEmpty { null }, priceTier)) {
                 is ApiResult.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isSearchingProducts = false,
@@ -164,17 +165,18 @@ class CreateOrderViewModel(
         }
     }
 
-    private fun loadProducts() {
+    private fun loadProducts(priceTier: String? = null) {
         val planId = _uiState.value.currentPlan?.id?.toString() ?: return
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSearchingProducts = true)
 
-            when (val result = getPlanProductsUseCase(planId, null)) {
+            when (val result = getPlanProductsUseCase(planId, null, priceTier)) {
                 is ApiResult.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isSearchingProducts = false,
-                        products = result.data.plan_products
+                        products = result.data.plan_products,
+                        allProducts = result.data.plan_products
                     )
                 }
                 is ApiResult.Error -> {
@@ -195,12 +197,63 @@ class CreateOrderViewModel(
             selectedMerchant = merchant,
             merchantSearchQuery = merchant.name
         )
+        loadProducts(merchant.price_tier)
     }
 
     fun clearMerchant() {
         _uiState.value = _uiState.value.copy(
             selectedMerchant = null
         )
+        loadProducts(priceTier = null)
+    }
+
+    fun fetchPreviewPrice(planProductId: String, quantity: Int) {
+        val planId = _uiState.value.currentPlan?.id ?: return
+        val merchantId = _uiState.value.selectedMerchant?.id ?: return
+
+        previewPriceJob?.cancel()
+        _uiState.value = _uiState.value.copy(isLoadingPreviewPrice = true, previewProductPrice = null)
+
+        previewPriceJob = viewModelScope.launch {
+            delay(300)
+            when (val result = getCashVanProductTotalPriceUseCase(
+                planId = planId,
+                productId = planProductId,
+                merchantId = merchantId,
+                quantity = quantity
+            )) {
+                is ApiResult.Success -> {
+                    val priceResponse = result.data
+                    val priceInfo = if (priceResponse.unit != null && priceResponse.total != null) {
+                        ProductPriceInfo(
+                            basePrice = priceResponse.unit.base_price ?: 0.0,
+                            finalPrice = priceResponse.unit.final_price ?: 0.0,
+                            discountAmount = priceResponse.unit.discount_amount ?: 0.0,
+                            vatAmount = priceResponse.unit.vat_amount ?: 0.0,
+                            totalPrice = priceResponse.total.final_price ?: 0.0,
+                            vatPercentage = priceResponse.vat_percentage ?: 0.0
+                        )
+                    } else {
+                        ProductPriceInfo(
+                            basePrice = priceResponse.base_price ?: 0.0,
+                            finalPrice = priceResponse.final_price ?: 0.0,
+                            discountAmount = priceResponse.total_discount ?: 0.0,
+                            vatAmount = priceResponse.total_vat ?: 0.0,
+                            totalPrice = priceResponse.total_price ?: 0.0,
+                            vatPercentage = priceResponse.vat_percentage ?: 0.0
+                        )
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        previewProductPrice = priceInfo,
+                        isLoadingPreviewPrice = false
+                    )
+                }
+                is ApiResult.Error -> {
+                    _uiState.value = _uiState.value.copy(isLoadingPreviewPrice = false)
+                }
+                is ApiResult.Loading -> {}
+            }
+        }
     }
 
     fun addProductToOrder(planProductId: String, quantity: Int) {
@@ -213,7 +266,15 @@ class CreateOrderViewModel(
             }
         }
 
-        _uiState.value = _uiState.value.copy(selectedProducts = currentProducts)
+        _uiState.value = _uiState.value.copy(
+            selectedProducts = currentProducts,
+            previewProductPrice = null,
+            isLoadingPreviewPrice = false
+        )
+
+        if (_uiState.value.selectedMerchant != null) {
+            calculateProductPrice(planProductId, currentProducts[planProductId] ?: quantity)
+        }
     }
 
     fun updateProductQuantity(planProductId: String, quantity: Int) {
@@ -225,6 +286,10 @@ class CreateOrderViewModel(
         }
 
         _uiState.value = _uiState.value.copy(selectedProducts = currentProducts)
+
+        if (quantity > 0 && _uiState.value.selectedMerchant != null) {
+            calculateProductPrice(planProductId, quantity)
+        }
     }
 
     fun removeProduct(planProductId: String) {
@@ -232,6 +297,70 @@ class CreateOrderViewModel(
         currentProducts.remove(planProductId)
 
         _uiState.value = _uiState.value.copy(selectedProducts = currentProducts)
+    }
+
+    private fun calculateProductPrice(planProductId: String, quantity: Int) {
+        viewModelScope.launch {
+            val currentPlan = _uiState.value.currentPlan ?: return@launch
+            val selectedMerchant = _uiState.value.selectedMerchant ?: return@launch
+            val planId = currentPlan.id?.toString() ?: return@launch
+
+            val loadingProducts = _uiState.value.loadingPriceForProducts.toMutableSet()
+            loadingProducts.add(planProductId)
+            _uiState.value = _uiState.value.copy(
+                loadingPriceForProducts = loadingProducts
+            )
+
+            when (val result = getCashVanProductTotalPriceUseCase(
+                planId = planId,
+                productId = planProductId,
+                merchantId = selectedMerchant.id,
+                quantity = quantity
+            )) {
+                is ApiResult.Success -> {
+                    val priceResponse = result.data
+
+                    val priceInfo = if (priceResponse.unit != null && priceResponse.total != null) {
+                        ProductPriceInfo(
+                            basePrice = priceResponse.unit.base_price ?: 0.0,
+                            finalPrice = priceResponse.unit.final_price ?: 0.0,
+                            discountAmount = priceResponse.unit.discount_amount ?: 0.0,
+                            vatAmount = priceResponse.unit.vat_amount ?: 0.0,
+                            totalPrice = priceResponse.total.final_price ?: 0.0,
+                            vatPercentage = priceResponse.vat_percentage ?: 0.0
+                        )
+                    } else {
+                        ProductPriceInfo(
+                            basePrice = priceResponse.base_price ?: 0.0,
+                            finalPrice = priceResponse.final_price ?: 0.0,
+                            discountAmount = priceResponse.total_discount ?: 0.0,
+                            vatAmount = priceResponse.total_vat ?: 0.0,
+                            totalPrice = priceResponse.total_price ?: 0.0,
+                            vatPercentage = priceResponse.vat_percentage ?: 0.0
+                        )
+                    }
+
+                    val updatedPrices = _uiState.value.productPrices.toMutableMap()
+                    updatedPrices[planProductId] = priceInfo
+
+                    val updatedLoadingProducts = _uiState.value.loadingPriceForProducts.toMutableSet()
+                    updatedLoadingProducts.remove(planProductId)
+
+                    _uiState.value = _uiState.value.copy(
+                        productPrices = updatedPrices,
+                        loadingPriceForProducts = updatedLoadingProducts
+                    )
+                }
+                is ApiResult.Error -> {
+                    val updatedLoadingProducts = _uiState.value.loadingPriceForProducts.toMutableSet()
+                    updatedLoadingProducts.remove(planProductId)
+                    _uiState.value = _uiState.value.copy(
+                        loadingPriceForProducts = updatedLoadingProducts
+                    )
+                }
+                is ApiResult.Loading -> {}
+            }
+        }
     }
 
     fun createOrder() {
@@ -267,7 +396,6 @@ class CreateOrderViewModel(
                         orderCreated = true
                     )
 
-                    // Print invoice after successful order creation
                     printInvoice(result.data)
                 }
                 is ApiResult.Error -> {
@@ -294,7 +422,7 @@ class CreateOrderViewModel(
     fun resetState() {
         _uiState.value = _uiState.value.copy(
             merchants = emptyList(),
-            products = _uiState.value.products, // Keep products as they are loaded with plan
+            products = _uiState.value.products,
             selectedMerchant = null,
             selectedProducts = emptyMap(),
             merchantSearchQuery = "",
@@ -303,10 +431,6 @@ class CreateOrderViewModel(
         )
     }
 
-    /**
-     * Print invoice after order creation
-     * Fetches the invoice from the API and prints it
-     */
     private fun printInvoice(order: CreateOrderResponse) {
         viewModelScope.launch {
             try {
@@ -335,8 +459,6 @@ class CreateOrderViewModel(
 
                 val cpclBytes = CpclInvoiceFormatter.formatInvoiceAsCpclBytes(invoiceText)
 
-                Log.d("CreateOrderVM", "CPCL prepared – ${cpclBytes.size} bytes")
-
                 _uiState.value = _uiState.value.copy(printStatus = "جاري الطباعة...")
 
                 val printResult = printerManager.printInvoice(cpclBytes)
@@ -355,30 +477,10 @@ class CreateOrderViewModel(
                     isPrinting = false,
                     printStatus = "خطأ أثناء الطباعة: ${e.message}"
                 )
-                Log.e("CreateOrderVM", "Printing failed", e)
             }
         }
     }
 
-
-
-
-
-
-    /**
-     * Clear print status message
-     */
-    fun clearPrintStatus() {
-        _uiState.value = _uiState.value.copy(printStatus = null)
-    }
-
-
-
-
-
-    /**
-     * Cleanup resources
-     */
     override fun onCleared() {
         super.onCleared()
         printerManager.disconnect()

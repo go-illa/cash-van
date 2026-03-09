@@ -1,5 +1,6 @@
 package com.illa.cashvan.core.network.di
 
+import com.illa.cashvan.BuildConfig
 import com.illa.cashvan.core.app_preferences.domain.use_case.app_cache.ClearAppDataUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetRefreshTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetTokenUseCase
@@ -21,10 +22,10 @@ import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import android.util.Log
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
@@ -71,11 +72,19 @@ fun provideHttpClient(
             )
         }
 
-        if (sharedConfig.isDebug) {
-            install(Logging) {
-                logger = Logger.SIMPLE
-                level = LogLevel.ALL
+        install(Logging) {
+            logger = object : Logger {
+                override fun log(message: String) {
+                    val tag = "HttpClient"
+                    var offset = 0
+                    while (offset < message.length) {
+                        val end = minOf(offset + 3000, message.length)
+                        Log.d(tag, message.substring(offset, end))
+                        offset = end
+                    }
+                }
             }
+            level = LogLevel.ALL
         }
 
         defaultRequest {
@@ -83,6 +92,7 @@ fun provideHttpClient(
             header(HttpHeaders.ContentType, ContentType.Application.Json)
             val token = runBlocking(Dispatchers.IO) { getTokenUseCase().firstOrNull() }
             header(HttpHeaders.AcceptLanguage, getLanguage())
+            header("X-App-Version", BuildConfig.VERSION_CODE.toString())
             if (!token.isNullOrBlank()) {
                 header(HttpHeaders.Authorization, "Bearer $token")
             }
@@ -103,13 +113,10 @@ fun provideHttpClient(
 
                                     if (!refreshToken.isNullOrBlank()) {
                                         try {
-                                            // Make refresh request
                                             val refreshResponse = runBlocking(Dispatchers.IO) {
                                                 val refreshClient = HttpClient(Android) {
                                                     install(ContentNegotiation) {
-                                                        json(Json {
-                                                            ignoreUnknownKeys = true
-                                                        })
+                                                        json(Json { ignoreUnknownKeys = true })
                                                     }
                                                 }
 
@@ -123,7 +130,6 @@ fun provideHttpClient(
                                                 response
                                             }
 
-                                            // Save new tokens
                                             val newAccessToken = refreshResponse["access_token"]
                                             val newRefreshToken = refreshResponse["refresh_token"]
 
@@ -132,22 +138,16 @@ fun provideHttpClient(
                                                     saveTokenUseCase(newAccessToken)
                                                     saveRefreshTokenUseCase(newRefreshToken)
                                                 }
-                                                // Token refreshed successfully, let the request be retried
-                                                // by throwing the original exception
                                             } else {
-                                                // Refresh failed, clear data
                                                 runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
                                             }
                                         } catch (e: Exception) {
-                                            // Refresh failed, clear data
                                             runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
                                         }
                                     } else {
-                                        // No refresh token, clear data
                                         runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
                                     }
                                 } else {
-                                    // Refresh endpoint itself failed, clear data
                                     runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
                                 }
                             }

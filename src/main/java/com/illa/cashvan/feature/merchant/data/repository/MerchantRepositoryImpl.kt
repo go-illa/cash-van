@@ -4,6 +4,9 @@ import com.illa.cashvan.core.network.endpoint.ApiEndpoints
 import com.illa.cashvan.core.network.model.ApiResult
 import com.illa.cashvan.feature.merchant.data.model.CreateMerchantRequest
 import com.illa.cashvan.feature.merchant.data.model.CreateMerchantResponse
+import com.illa.cashvan.feature.merchant.data.model.GovernoratesResponse
+import com.illa.cashvan.feature.merchant.data.model.MerchantTypesResponse
+import com.illa.cashvan.feature.merchant.data.model.ReverseGeocodeResponse
 import com.illa.cashvan.feature.merchant.domain.repository.MerchantRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -31,6 +34,58 @@ class MerchantRepositoryImpl(
             ApiResult.Success(response)
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to create merchant")
+        }
+    }
+
+    override suspend fun getGovernorates(): ApiResult<GovernoratesResponse> {
+        return try {
+            val config = ApiEndpoints.Merchant.getGovernorates()
+            val versionedPath = "v${config.version}/${config.path}"
+
+            val response = httpClient.request(versionedPath) {
+                method = HttpMethod.Get
+            }.body<GovernoratesResponse>()
+
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Failed to get governorates")
+        }
+    }
+
+    override suspend fun getMerchantTypes(): ApiResult<MerchantTypesResponse> {
+        return try {
+            val config = ApiEndpoints.Merchant.getMerchantTypes()
+            val versionedPath = "v${config.version}/${config.path}"
+
+            val response = httpClient.request(versionedPath) {
+                method = HttpMethod.Get
+            }.body<MerchantTypesResponse>()
+
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Failed to get merchant types")
+        }
+    }
+
+    override suspend fun reverseGeocode(
+        latitude: String,
+        longitude: String
+    ): ApiResult<ReverseGeocodeResponse> {
+        return try {
+            val config = ApiEndpoints.Merchant.reverseGeocode(latitude, longitude)
+            val versionedPath = "v${config.version}/${config.path}"
+
+            val response = httpClient.request(versionedPath) {
+                method = HttpMethod.Get
+                url {
+                    parameters.append("latitude", latitude)
+                    parameters.append("longitude", longitude)
+                }
+            }.body<ReverseGeocodeResponse>()
+
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Failed to reverse geocode")
         }
     }
 }

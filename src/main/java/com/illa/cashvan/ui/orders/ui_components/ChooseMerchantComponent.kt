@@ -43,7 +43,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import com.illa.cashvan.R
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
-import com.illa.cashvan.data.MockData
 import org.koin.compose.koinInject
 
 data class Merchant(
@@ -199,7 +198,10 @@ fun ChooseMerchantComponent(
 @Preview(showBackground = true, locale = "ar")
 @Composable
 fun ChooseMerchantComponentPreview() {
-    val sampleMerchants = MockData.getRandomMerchants()
+    val sampleMerchants = listOf(
+        Merchant(id = "1", name = "محل أحمد للبقالة", phoneNumber = "01012345678", address = "شارع الجمهورية", code = "M-001"),
+        Merchant(id = "2", name = "سوبر ماركت النيل", phoneNumber = "01098765432", address = "ميدان التحرير", code = "M-002")
+    )
 
     Column(
         modifier = Modifier

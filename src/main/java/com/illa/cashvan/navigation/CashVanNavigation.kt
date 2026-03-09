@@ -9,19 +9,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation3.*
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.illa.cashvan.core.auth.presentation.viewmodel.AuthenticationViewModel
-import com.illa.cashvan.navigation.*
 import com.illa.cashvan.ui.home.HomeScreen
 import com.illa.cashvan.ui.inventory.InventoryScreen
+import com.illa.cashvan.ui.merchant.CreateMerchantScreen
 import com.illa.cashvan.ui.orders.CreateOrderScreen
 import com.illa.cashvan.ui.orders.OrderDetailsScreen
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.ui.profile.PersonalProfileScreen
 import com.illa.cashvan.ui.signin.SignInScreen
 import com.illa.cashvan.ui.splash.SplashScreen
+import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
@@ -39,13 +41,14 @@ fun CashVanNavigation(
     analyticsHelper: CashVanAnalyticsHelper = koinInject(),
     onLogout: () -> Unit = {}
 ) {
-    val authState by authenticationViewModel.authState.collectAsState()
+    val authState by authenticationViewModel.authState.collectAsStateWithLifecycle()
     val backStack = remember { mutableStateListOf<Any>(SplashKey) }
     val currentKey = backStack.lastOrNull() ?: SplashKey
     var splashComplete by remember { mutableStateOf(false) }
+    var merchantCreatedSignal by remember { mutableStateOf(0) }
 
     LaunchedEffect(Unit) {
-        kotlinx.coroutines.delay(3000)
+        delay(3000)
         splashComplete = true
     }
 
@@ -136,12 +139,31 @@ fun CashVanNavigation(
                     }
                     CreateOrderKey -> NavEntry(key) {
                         CreateOrderScreen(
+                            merchantCreatedSignal = merchantCreatedSignal,
+                            onAddMerchantClick = {
+                                backStack.add(CreateMerchantKey)
+                            },
                             onBackClick = {
                                 if (backStack.size > 1) {
                                     backStack.removeLastOrNull()
                                 }
                             },
                             onOrderCreated = {
+                                if (backStack.size > 1) {
+                                    backStack.removeLastOrNull()
+                                }
+                            }
+                        )
+                    }
+                    CreateMerchantKey -> NavEntry(key) {
+                        CreateMerchantScreen(
+                            onBackClick = {
+                                if (backStack.size > 1) {
+                                    backStack.removeLastOrNull()
+                                }
+                            },
+                            onMerchantCreated = {
+                                merchantCreatedSignal++
                                 if (backStack.size > 1) {
                                     backStack.removeLastOrNull()
                                 }

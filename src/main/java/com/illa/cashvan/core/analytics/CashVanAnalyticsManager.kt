@@ -1,11 +1,8 @@
 package com.illa.cashvan.core.analytics
 
-import timber.log.Timber
 import java.util.Collections
 
 class CashVanAnalyticsManager : CashVanAnalyticsHelper {
-    private val tag: String = this::class.java.simpleName
-
     private val listeners: MutableSet<CashVanAnalyticsHelper> = Collections.synchronizedSet(mutableSetOf())
 
     fun addListener(listener: CashVanAnalyticsHelper) {
@@ -22,9 +19,6 @@ class CashVanAnalyticsManager : CashVanAnalyticsHelper {
             try {
                 listener.identify(phoneNumber)
             } catch (e: Exception) {
-                Timber
-                    .tag(tag)
-                    .e(e, "${listener::class.java.simpleName} failed To identify user")
             }
         }
     }
@@ -34,9 +28,6 @@ class CashVanAnalyticsManager : CashVanAnalyticsHelper {
             try {
                 listener.logErrorEvent(event, params)
             } catch (e: Exception) {
-                Timber
-                    .tag(tag)
-                    .e(e, "${listener::class.java.simpleName} failed To log Error Event :$event")
             }
         }
     }
@@ -46,9 +37,6 @@ class CashVanAnalyticsManager : CashVanAnalyticsHelper {
             try {
                 listener.logEvent(event, params)
             } catch (e: Exception) {
-                Timber
-                    .tag(tag)
-                    .e(e, "${listener::class.java.simpleName} failed To log Event :$event")
             }
         }
     }

@@ -39,15 +39,12 @@ class NetworkConnectivityService(
 
         try {
             connectivityManager.registerNetworkCallback(request, networkCallback)
-
-            // Set initial state
             _connectivityStatus.value = if (isConnected()) {
                 ConnectivityStatus.Connected
             } else {
                 ConnectivityStatus.Disconnected
             }
         } catch (e: Exception) {
-            // Handle registration failure
             _connectivityStatus.value = ConnectivityStatus.Unknown
         }
     }
@@ -56,7 +53,6 @@ class NetworkConnectivityService(
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
         } catch (e: Exception) {
-            // Callback was not registered or already unregistered
         }
     }
 

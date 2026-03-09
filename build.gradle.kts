@@ -16,8 +16,8 @@ android {
         applicationId = "com.illa.cashvan"
         minSdk = 24
         targetSdk = 36
-        versionCode = 3
-        versionName = "2.1"
+        versionCode = 5
+        versionName = "2.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -138,6 +138,10 @@ dependencies {
 
     // Timber Logging
     implementation("com.jakewharton.timber:timber:5.0.1")
+
+    // Chucker - HTTP Inspector
+    debugImplementation("com.github.chuckerteam.chucker:library:4.0.0")
+    releaseImplementation("com.github.chuckerteam.chucker:library-no-op:4.0.0")
 
     // Honeywell Printer SDK - Multiple Command Languages
     implementation(files("libs/printer_library.jar"))

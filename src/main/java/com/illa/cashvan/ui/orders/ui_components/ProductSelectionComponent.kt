@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.feature.orders.data.model.PlanProduct
+import com.illa.cashvan.feature.orders.presentation.viewmodel.ProductPriceInfo
 import org.koin.compose.koinInject
 
 @SuppressLint("DefaultLocale")
@@ -55,7 +56,11 @@ fun ProductSelectionComponent(
     onProductSelected: (PlanProduct, Int) -> Unit,
     isLoading: Boolean = false,
     enabled: Boolean = true,
-    analyticsHelper: CashVanAnalyticsHelper = koinInject()
+    analyticsHelper: CashVanAnalyticsHelper = koinInject(),
+    onFetchPricePreview: (planProductId: String, quantity: Int) -> Unit = { _, _ -> },
+    previewPrice: ProductPriceInfo? = null,
+    isLoadingPreviewPrice: Boolean = false,
+    merchantSelected: Boolean = false
 ) {
     var selectedProduct by remember { mutableStateOf<PlanProduct?>(null) }
     var quantity by remember { mutableIntStateOf(1) }
@@ -72,7 +77,6 @@ fun ProductSelectionComponent(
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        // Product Searchable Dropdown
         SearchableDropdown(
             label = "المنتج",
             placeholder = "ابحث بكود المنتج أو الاسم",
@@ -82,6 +86,9 @@ fun ProductSelectionComponent(
             selectedItem = selectedProduct,
             onItemSelected = {
                 selectedProduct = it
+                if (merchantSelected) {
+                    onFetchPricePreview(it.id, quantity)
+                }
             },
             itemText = { "${it.product.name} (${it.product.frontdoor_code})" },
             isLoading = isLoading,
@@ -95,7 +102,6 @@ fun ProductSelectionComponent(
             analyticsHelper = analyticsHelper
         )
 
-        // Product Details & Quantity
         selectedProduct?.let { product ->
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -107,7 +113,8 @@ fun ProductSelectionComponent(
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "السعر:",
@@ -115,13 +122,26 @@ fun ProductSelectionComponent(
                         fontFamily = FontFamily(Font(R.font.zain_regular)),
                         color = Color(0xFF6B7280)
                     )
-                    Text(
-                        text = "${product.product_price} جنيه",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily(Font(R.font.zain_regular)),
-                        color = Color(0xFF111827)
-                    )
+                    if (isLoadingPreviewPrice && merchantSelected) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = Color(0xFF0D3773)
+                        )
+                    } else {
+                        val displayPrice = if (merchantSelected && previewPrice != null) {
+                            previewPrice.finalPrice
+                        } else {
+                            product.product_price.toDoubleOrNull() ?: 0.0
+                        }
+                        Text(
+                            text = "${String.format("%.2f", displayPrice)} جنيه",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color(0xFF111827)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -149,7 +169,8 @@ fun ProductSelectionComponent(
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "الإجمالي:",
@@ -158,20 +179,31 @@ fun ProductSelectionComponent(
                         fontFamily = FontFamily(Font(R.font.zain_regular)),
                         color = Color(0xFF6B7280)
                     )
-                    val totalPrice = (product.product_price.toDoubleOrNull() ?: 0.0) * quantity
-                    Text(
-                        text = "${String.format("%.2f", totalPrice)} جنيه",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily(Font(R.font.zain_regular)),
-                        color = Color(0xFF0D3773)
-                    )
+                    if (isLoadingPreviewPrice && merchantSelected) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = Color(0xFF0D3773)
+                        )
+                    } else {
+                        val totalPrice = if (merchantSelected && previewPrice != null) {
+                            previewPrice.totalPrice
+                        } else {
+                            (product.product_price.toDoubleOrNull() ?: 0.0) * quantity
+                        }
+                        Text(
+                            text = "${String.format("%.2f", totalPrice)} جنيه",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color(0xFF0D3773)
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Quantity Selector
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -199,6 +231,9 @@ fun ProductSelectionComponent(
                                     quantity--
                                     quantityText = quantity.toString()
                                     showQuantityError = false
+                                    if (merchantSelected) {
+                                        onFetchPricePreview(product.id, quantity)
+                                    }
                                 }
                             },
                         contentAlignment = Alignment.Center
@@ -222,6 +257,9 @@ fun ProductSelectionComponent(
                                     if (newQuantity <= product.calculatedAvailableQuantity) {
                                         quantity = newQuantity
                                         showQuantityError = false
+                                        if (merchantSelected) {
+                                            onFetchPricePreview(product.id, newQuantity)
+                                        }
                                     } else {
                                         showQuantityError = true
                                     }
@@ -277,6 +315,9 @@ fun ProductSelectionComponent(
                                     quantity++
                                     quantityText = quantity.toString()
                                     showQuantityError = false
+                                    if (merchantSelected) {
+                                        onFetchPricePreview(product.id, quantity)
+                                    }
                                 }
                             },
                         contentAlignment = Alignment.Center
@@ -294,7 +335,6 @@ fun ProductSelectionComponent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Add to Order Button
             Button(
                 onClick = {
                     onProductSelected(product, quantity)

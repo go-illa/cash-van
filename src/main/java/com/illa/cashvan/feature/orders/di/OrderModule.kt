@@ -10,17 +10,17 @@ import com.illa.cashvan.feature.orders.domain.usecase.GetPlanProductsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.SearchMerchantsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.UpdateOrderUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetProductTotalPriceUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetCashVanProductTotalPriceUseCase
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val orderModule = module {
-    // Repository
     single<OrderRepository> { OrderRepositoryImpl(get()) }
 
-    // Use Cases
-    factory { GetOrdersUseCase(get(),get()) }
+    factory { GetOrdersUseCase(get(), get()) }
     factory { GetOrderByIdUseCase(get()) }
     factory { CreateOrderUseCase(get()) }
     factory { UpdateOrderUseCase(get()) }
@@ -28,8 +28,9 @@ val orderModule = module {
     factory { SearchMerchantsUseCase(get()) }
     factory { GetPlanProductsUseCase(get()) }
     factory { GetInvoiceContentUseCase() }
+    factory { GetProductTotalPriceUseCase(get()) }
+    factory { GetCashVanProductTotalPriceUseCase(get()) }
 
-    // ViewModels
-    viewModel { OrderViewModel(get(), get(), get(), get(), get()) }
-    viewModel { CreateOrderViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { OrderViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { CreateOrderViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
 }

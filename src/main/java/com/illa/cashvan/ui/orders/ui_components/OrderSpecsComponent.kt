@@ -28,8 +28,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
-import com.illa.cashvan.data.MockData
-
 data class OrderSpecs(
     val orderNumber: String,
     val orderDate: String,
@@ -57,7 +55,6 @@ fun OrderSpecsComponentCompact(
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Order Number with Box Icon
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -79,7 +76,6 @@ fun OrderSpecsComponentCompact(
 
             }
 
-            // Time and Date Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -131,7 +127,7 @@ fun OrderSpecsComponentCompact(
 @Preview(showBackground = true, locale = "ar")
 @Composable
 fun OrderSpecsComponentCompactPreview() {
-    val sampleOrderSpecs = MockData.getRandomOrderSpecs()
+    val sampleOrderSpecs = OrderSpecs(orderNumber = "ORD-1042", orderDate = "2024-03-01", orderTime = "14:30")
 
     MaterialTheme {
         Column(

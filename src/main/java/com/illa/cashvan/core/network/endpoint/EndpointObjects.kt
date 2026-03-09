@@ -5,7 +5,6 @@ import io.ktor.http.Parameters
 
 object ApiEndpoints {
 
-    // Auth endpoints
     object Auth {
         fun signIn() = RequestConfiguration(
             path = "auth/login",
@@ -29,7 +28,6 @@ object ApiEndpoints {
         )
     }
 
-    // Profile endpoints
     object Profile {
         fun getProfile(salesAgentId: String) = RequestConfiguration(
             path = "sales_agents/$salesAgentId",
@@ -42,7 +40,6 @@ object ApiEndpoints {
         )
     }
 
-    // Plans endpoints
     object Plans {
         fun getPlans() = RequestConfiguration(
             path = "plans",
@@ -58,19 +55,19 @@ object ApiEndpoints {
             version = 2
         )
 
-        fun getPlanProducts(planId: String, query: String? = null) = RequestConfiguration(
+        fun getPlanProducts(planId: String, query: String? = null, priceTier: String? = null) = RequestConfiguration(
             path = "plans/$planId/plan_products",
             method = HttpMethod.Get,
             parameters = Parameters.build {
                 append("include", "product")
                 query?.let { append("q", it) }
+                priceTier?.let { append("f[plan_product_prices_price_tier_eq]", it) }
             },
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2
         )
     }
 
-    // Merchant endpoints
     object Merchant {
         fun createMerchant() = RequestConfiguration(
             path = "merchants",
@@ -88,9 +85,33 @@ object ApiEndpoints {
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2
         )
+
+        fun getGovernorates() = RequestConfiguration(
+            path = "governorates",
+            method = HttpMethod.Get,
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+
+        fun getMerchantTypes() = RequestConfiguration(
+            path = "merchant_types",
+            method = HttpMethod.Get,
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+
+        fun reverseGeocode(latitude: String, longitude: String) = RequestConfiguration(
+            path = "geocode/reverse",
+            method = HttpMethod.Get,
+            parameters = Parameters.build {
+                append("latitude", latitude)
+                append("longitude", longitude)
+            },
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
     }
 
-    // Orders endpoints
     object Orders {
         fun getOrders(
             planId: String? = null,
@@ -130,6 +151,36 @@ object ApiEndpoints {
             path = "orders/$orderId",
             method = HttpMethod.Put,
             parameterEncoding = ParameterEncoding.BODY,
+            version = 2
+        )
+
+        fun getProductTotalPrice(
+            planId: String,
+            productId: String,
+            orderId: String,
+            quantity: Int
+        ) = RequestConfiguration(
+            path = "plans/$planId/plan_products/$productId/pre_sell/plan_product_prices/$orderId/product_total_price",
+            method = HttpMethod.Get,
+            parameters = Parameters.build {
+                append("quantity", quantity.toString())
+            },
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+
+        fun getCashVanProductTotalPrice(
+            planId: String,
+            productId: String,
+            merchantId: String,
+            quantity: Int
+        ) = RequestConfiguration(
+            path = "plans/$planId/plan_products/$productId/cash_van/plan_product_prices/$merchantId/product_total_price",
+            method = HttpMethod.Get,
+            parameters = Parameters.build {
+                append("quantity", quantity.toString())
+            },
+            parameterEncoding = ParameterEncoding.QUERY,
             version = 2
         )
     }

@@ -9,6 +9,7 @@ import com.illa.cashvan.feature.orders.data.model.OngoingPlanResponse
 import com.illa.cashvan.feature.orders.data.model.Order
 import com.illa.cashvan.feature.orders.data.model.OrdersResponse
 import com.illa.cashvan.feature.orders.data.model.PlanProductsResponse
+import com.illa.cashvan.feature.orders.data.model.ProductPriceCalculationResponse
 import com.illa.cashvan.feature.orders.data.model.UpdateOrderRequest
 import com.illa.cashvan.feature.orders.domain.repository.OrderRepository
 import io.ktor.client.HttpClient
@@ -18,6 +19,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
+import kotlinx.coroutines.CancellationException
 
 class OrderRepositoryImpl(
     private val httpClient: HttpClient
@@ -91,14 +93,16 @@ class OrderRepositoryImpl(
             }.body<MerchantSearchResponse>()
 
             ApiResult.Success(response)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to search merchants")
         }
     }
 
-    override suspend fun getPlanProducts(planId: String, query: String?): ApiResult<PlanProductsResponse> {
+    override suspend fun getPlanProducts(planId: String, query: String?, priceTier: String?): ApiResult<PlanProductsResponse> {
         return try {
-            val config = ApiEndpoints.Plans.getPlanProducts(planId, query)
+            val config = ApiEndpoints.Plans.getPlanProducts(planId, query, priceTier)
             val versionedPath = "v${config.version}/${config.path}"
 
             val response = httpClient.request(versionedPath) {
@@ -109,6 +113,8 @@ class OrderRepositoryImpl(
             }.body<PlanProductsResponse>()
 
             ApiResult.Success(response)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to fetch plan products")
         }
@@ -145,6 +151,52 @@ class OrderRepositoryImpl(
             ApiResult.Success(response)
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to update order")
+        }
+    }
+
+    override suspend fun getProductTotalPrice(
+        planId: String,
+        productId: String,
+        orderId: String,
+        quantity: Int
+    ): ApiResult<ProductPriceCalculationResponse> {
+        return try {
+            val config = ApiEndpoints.Orders.getProductTotalPrice(planId, productId, orderId, quantity)
+            val versionedPath = "v${config.version}/${config.path}"
+
+            val response = httpClient.request(versionedPath) {
+                method = HttpMethod.Get
+                config.parameters?.forEach { key, values ->
+                    url.parameters.appendAll(key, values)
+                }
+            }.body<ProductPriceCalculationResponse>()
+
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Failed to calculate product price")
+        }
+    }
+
+    override suspend fun getCashVanProductTotalPrice(
+        planId: String,
+        productId: String,
+        merchantId: String,
+        quantity: Int
+    ): ApiResult<ProductPriceCalculationResponse> {
+        return try {
+            val config = ApiEndpoints.Orders.getCashVanProductTotalPrice(planId, productId, merchantId, quantity)
+            val versionedPath = "v${config.version}/${config.path}"
+
+            val response = httpClient.request(versionedPath) {
+                method = HttpMethod.Get
+                config.parameters?.forEach { key, values ->
+                    url.parameters.appendAll(key, values)
+                }
+            }.body<ProductPriceCalculationResponse>()
+
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Failed to calculate CashVan product price")
         }
     }
 }

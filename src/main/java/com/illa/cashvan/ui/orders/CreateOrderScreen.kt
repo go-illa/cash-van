@@ -26,7 +26,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -36,8 +35,8 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -57,7 +56,6 @@ import com.illa.cashvan.R
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
 import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.ui.common.SuccessSnackbar
-import com.illa.cashvan.ui.orders.ui_components.AddMerchantBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.OrderConfirmationBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.ProductSelectionComponent
 import com.illa.cashvan.ui.orders.ui_components.SearchableDropdown
@@ -68,24 +66,29 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun CreateOrderScreen(
     viewModel: CreateOrderViewModel = koinViewModel(),
+    merchantCreatedSignal: Int = 0,
+    onAddMerchantClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
     onOrderCreated: () -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    var showAddMerchantSheet by remember { mutableStateOf(false) }
     var showConfirmationBottomSheet by remember { mutableStateOf(false) }
-    val addMerchantSheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
-    val confirmationSheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
+    val confirmationSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(Unit) {
         viewModel.resetState()
+    }
+
+    LaunchedEffect(merchantCreatedSignal) {
+        if (merchantCreatedSignal > 0) {
+            viewModel.searchMerchants("")
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("تم إضافة التاجر بنجاح")
+            }
+        }
     }
 
     LaunchedEffect(uiState.error) {
@@ -158,8 +161,13 @@ fun CreateOrderScreen(
                     .padding(16.dp)
             ) {
                 val totalAmount = uiState.selectedProducts.entries.sumOf { (planProductId, quantity) ->
-                    val product = uiState.products.find { it.id == planProductId }
-                    product?.product_price?.toDoubleOrNull()?.times(quantity) ?: 0.0
+                    val priceInfo = uiState.productPrices[planProductId]
+                    if (priceInfo != null) {
+                        priceInfo.totalPrice
+                    } else {
+                        val product = uiState.allProducts.find { it.id == planProductId }
+                        product?.product_price?.toDoubleOrNull()?.times(quantity) ?: 0.0
+                    }
                 }
 
                 Row(
@@ -187,7 +195,7 @@ fun CreateOrderScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 val hasInvalidQuantity = uiState.selectedProducts.any { (planProductId, quantity) ->
-                    val product = uiState.products.find { it.id == planProductId }
+                    val product = uiState.allProducts.find { it.id == planProductId }
                     product == null || quantity > (product.cash_van_available_quantity ?: 0)
                 }
 
@@ -246,7 +254,6 @@ fun CreateOrderScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
-                // Plan Info
                 uiState.currentPlan?.let { plan ->
                     Column(
                         modifier = Modifier
@@ -274,7 +281,6 @@ fun CreateOrderScreen(
                     }
                 }
 
-                // Merchant Selection
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -295,7 +301,7 @@ fun CreateOrderScreen(
                         )
 
                         Button(
-                            onClick = { showAddMerchantSheet = true },
+                            onClick = onAddMerchantClick,
                             modifier = Modifier
                                 .height(40.dp)
                                 .border(width = 2.dp, color = Color(0xFF0D3773), RoundedCornerShape(size = 20.dp)),
@@ -342,7 +348,6 @@ fun CreateOrderScreen(
                     )
                 }
 
-                // Product Selection
                 ProductSelectionComponent(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -355,21 +360,28 @@ fun CreateOrderScreen(
                         viewModel.addProductToOrder(product.id, quantity)
                     },
                     isLoading = uiState.isSearchingProducts,
-                    enabled = !uiState.isLoading
+                    enabled = !uiState.isLoading,
+                    onFetchPricePreview = { planProductId, quantity ->
+                        viewModel.fetchPreviewPrice(planProductId, quantity)
+                    },
+                    previewPrice = uiState.previewProductPrice,
+                    isLoadingPreviewPrice = uiState.isLoadingPreviewPrice,
+                    merchantSelected = uiState.selectedMerchant != null
                 )
 
-                // Selected Products List
                 if (uiState.selectedProducts.isNotEmpty()) {
                     SelectedProductsList(
                         modifier = Modifier.fillMaxWidth(),
                         selectedProducts = uiState.selectedProducts,
-                        products = uiState.products,
+                        products = uiState.allProducts,
                         onQuantityChange = { planProductId, quantity ->
                             viewModel.updateProductQuantity(planProductId, quantity)
                         },
                         onRemoveProduct = { planProductId ->
                             viewModel.removeProduct(planProductId)
-                        }
+                        },
+                        productPrices = uiState.productPrices,
+                        loadingPriceForProducts = uiState.loadingPriceForProducts
                     )
                 }
 
@@ -377,26 +389,6 @@ fun CreateOrderScreen(
             }
         }
 
-        // Add Merchant Bottom Sheet
-        if (showAddMerchantSheet) {
-            ModalBottomSheet(
-                onDismissRequest = { showAddMerchantSheet = false },
-                sheetState = addMerchantSheetState
-            ) {
-                AddMerchantBottomSheet(
-                    onDismiss = { showAddMerchantSheet = false },
-                    onMerchantCreated = {
-                        showAddMerchantSheet = false
-                        viewModel.searchMerchants("")
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("تم إضافة التاجر بنجاح")
-                        }
-                    }
-                )
-            }
-        }
-
-        // Order Confirmation Bottom Sheet
         if (showConfirmationBottomSheet) {
             OrderConfirmationBottomSheet(
                 sheetState = confirmationSheetState,
