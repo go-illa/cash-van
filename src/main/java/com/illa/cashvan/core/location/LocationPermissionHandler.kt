@@ -2,7 +2,6 @@ package com.illa.cashvan.core.location
 
 import android.Manifest
 import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
 import com.google.accompanist.permissions.*
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -12,8 +11,6 @@ fun LocationPermissionHandler(
     onPermissionDenied: () -> Unit,
     content: @Composable (requestPermission: () -> Unit, isPermissionGranted: Boolean) -> Unit
 ) {
-    val context = LocalContext.current
-
     val locationPermissionsState = rememberMultiplePermissionsState(
         listOf(
             Manifest.permission.ACCESS_FINE_LOCATION,

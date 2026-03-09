@@ -91,7 +91,7 @@ class OrderViewModel(
         loadOrders(orderType = OrderType.PRE_SELL)
     }
 
-    fun loadOrders(date: String? = null, orderType: OrderType = _uiState.value.selectedTab) {
+    fun loadOrders(orderType: OrderType = _uiState.value.selectedTab) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
