@@ -165,7 +165,7 @@ fun CreateOrderScreen(
                     if (priceInfo != null) {
                         priceInfo.totalPrice
                     } else {
-                        val product = uiState.products.find { it.id == planProductId }
+                        val product = uiState.allProducts.find { it.id == planProductId }
                         product?.product_price?.toDoubleOrNull()?.times(quantity) ?: 0.0
                     }
                 }
@@ -195,7 +195,7 @@ fun CreateOrderScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 val hasInvalidQuantity = uiState.selectedProducts.any { (planProductId, quantity) ->
-                    val product = uiState.products.find { it.id == planProductId }
+                    val product = uiState.allProducts.find { it.id == planProductId }
                     product == null || quantity > (product.cash_van_available_quantity ?: 0)
                 }
 
@@ -373,7 +373,7 @@ fun CreateOrderScreen(
                     SelectedProductsList(
                         modifier = Modifier.fillMaxWidth(),
                         selectedProducts = uiState.selectedProducts,
-                        products = uiState.products,
+                        products = uiState.allProducts,
                         onQuantityChange = { planProductId, quantity ->
                             viewModel.updateProductQuantity(planProductId, quantity)
                         },

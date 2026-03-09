@@ -22,10 +22,10 @@ import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
+import android.util.Log
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.plugins.logging.SIMPLE
 import io.ktor.client.request.header
 import io.ktor.client.request.request
 import io.ktor.client.request.setBody
@@ -72,11 +72,19 @@ fun provideHttpClient(
             )
         }
 
-        if (sharedConfig.isDebug) {
-            install(Logging) {
-                logger = Logger.SIMPLE
-                level = LogLevel.ALL
+        install(Logging) {
+            logger = object : Logger {
+                override fun log(message: String) {
+                    val tag = "HttpClient"
+                    var offset = 0
+                    while (offset < message.length) {
+                        val end = minOf(offset + 3000, message.length)
+                        Log.d(tag, message.substring(offset, end))
+                        offset = end
+                    }
+                }
             }
+            level = LogLevel.ALL
         }
 
         defaultRequest {

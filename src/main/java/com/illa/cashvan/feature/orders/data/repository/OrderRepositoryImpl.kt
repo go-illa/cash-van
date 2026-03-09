@@ -19,6 +19,7 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
+import kotlinx.coroutines.CancellationException
 
 class OrderRepositoryImpl(
     private val httpClient: HttpClient
@@ -92,6 +93,8 @@ class OrderRepositoryImpl(
             }.body<MerchantSearchResponse>()
 
             ApiResult.Success(response)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to search merchants")
         }
@@ -110,6 +113,8 @@ class OrderRepositoryImpl(
             }.body<PlanProductsResponse>()
 
             ApiResult.Success(response)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to fetch plan products")
         }

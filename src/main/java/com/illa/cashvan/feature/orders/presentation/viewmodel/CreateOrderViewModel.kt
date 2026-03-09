@@ -32,6 +32,7 @@ data class CreateOrderUiState(
     val currentPlan: OngoingPlanResponse? = null,
     val merchants: List<MerchantItem> = emptyList(),
     val products: List<PlanProduct> = emptyList(),
+    val allProducts: List<PlanProduct> = emptyList(),
     val selectedMerchant: MerchantItem? = null,
     val selectedProducts: Map<String, Int> = emptyMap(),
     val merchantSearchQuery: String = "",
@@ -174,7 +175,8 @@ class CreateOrderViewModel(
                 is ApiResult.Success -> {
                     _uiState.value = _uiState.value.copy(
                         isSearchingProducts = false,
-                        products = result.data.plan_products
+                        products = result.data.plan_products,
+                        allProducts = result.data.plan_products
                     )
                 }
                 is ApiResult.Error -> {

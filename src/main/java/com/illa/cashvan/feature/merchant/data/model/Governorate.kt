@@ -10,9 +10,9 @@ data class GovernoratesResponse(
 @Serializable
 data class Governorate(
     val id: String,
-    val english_name: String,
-    val arabic_name: String,
-    val iso_code: String,
+    val english_name: String? = null,
+    val arabic_name: String? = null,
+    val iso_code: String? = null,
     val country_id: String,
     val created_at: String? = null,
     val updated_at: String? = null

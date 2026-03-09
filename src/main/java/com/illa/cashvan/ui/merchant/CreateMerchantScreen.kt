@@ -143,7 +143,7 @@ fun CreateMerchantScreen(
         val governorates = merchantUiState.governorates
         if (selectedGovernorate == null && !governorateName.isNullOrEmpty() && governorates.isNotEmpty()) {
             selectedGovernorate = governorates.find {
-                it.english_name.equals(governorateName, ignoreCase = true)
+                it.english_name?.equals(governorateName, ignoreCase = true) == true
             }
         }
     }
@@ -421,7 +421,7 @@ fun CreateMerchantScreen(
                         selectedLabel = selectedGovernorate?.arabic_name,
                         placeholder = "اختر المحافظة",
                         items = merchantUiState.governorates,
-                        itemLabel = { it.arabic_name },
+                        itemLabel = { it.arabic_name.orEmpty() },
                         onItemSelected = { selectedGovernorate = it }
                     )
                 }
