@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.illa.cashvan.core.app_preferences.domain.use_case.auth.IsUserLoggedInUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.auth.LogoutUseCase
+import com.illa.cashvan.core.session.SessionManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,7 +17,8 @@ data class AuthenticationState(
 
 class AuthenticationViewModel(
     private val isUserLoggedInUseCase: IsUserLoggedInUseCase,
-    private val logoutUseCase: LogoutUseCase
+    private val logoutUseCase: LogoutUseCase,
+    private val sessionManager: SessionManager
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow(AuthenticationState())
@@ -24,6 +26,15 @@ class AuthenticationViewModel(
 
     init {
         checkAuthenticationStatus()
+        observeForceLogout()
+    }
+
+    private fun observeForceLogout() {
+        viewModelScope.launch {
+            sessionManager.forceLogoutEvents.collect {
+                checkAuthenticationStatus()
+            }
+        }
     }
 
     private fun checkAuthenticationStatus() {

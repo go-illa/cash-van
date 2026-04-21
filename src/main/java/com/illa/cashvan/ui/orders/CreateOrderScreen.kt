@@ -1,7 +1,7 @@
 package com.illa.cashvan.ui.orders
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,13 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -26,13 +25,16 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +43,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,7 +59,6 @@ import com.illa.cashvan.R
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
 import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.ui.common.SuccessSnackbar
-import com.illa.cashvan.ui.orders.ui_components.OrderConfirmationBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.ProductSelectionComponent
 import com.illa.cashvan.ui.orders.ui_components.SearchableDropdown
 import com.illa.cashvan.ui.orders.ui_components.SelectedProductsList
@@ -75,8 +77,7 @@ fun CreateOrderScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    var showConfirmationBottomSheet by remember { mutableStateOf(false) }
-    val confirmationSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var orderSubmitted by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.resetState()
@@ -95,13 +96,6 @@ fun CreateOrderScreen(
         uiState.error?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearError()
-        }
-    }
-
-    LaunchedEffect(uiState.orderCreated) {
-        if (uiState.orderCreated) {
-            viewModel.resetOrderCreated()
-            showConfirmationBottomSheet = true
         }
     }
 
@@ -200,7 +194,11 @@ fun CreateOrderScreen(
                 }
 
                 Button(
-                    onClick = { viewModel.createOrder() },
+                    onClick = {
+                        orderSubmitted = true
+                        viewModel.createOrder()
+                        onOrderCreated()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
@@ -209,26 +207,18 @@ fun CreateOrderScreen(
                         disabledContainerColor = Color(0xFFE5E7EB)
                     ),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = uiState.selectedMerchant != null &&
+                    enabled = !orderSubmitted &&
+                              uiState.selectedMerchant != null &&
                               uiState.selectedProducts.isNotEmpty() &&
-                              !uiState.isLoading &&
                               !hasInvalidQuantity
                 ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text(
-                            text = "إتمام الطلب",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily(Font(R.font.zain_regular)),
-                            color = Color.White
-                        )
-                    }
+                    Text(
+                        text = "إتمام الطلب",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color.White
+                    )
                 }
             }
         }
@@ -284,52 +274,55 @@ fun CreateOrderScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(Color.White, RoundedCornerShape(12.dp))
-                        .padding(16.dp)
+                        .background(Color.White, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 23.dp, vertical = 24.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "اختيار التاجر",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily(Font(R.font.zain_regular)),
-                            color = Color.Black
-                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "اختيار التاجر",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color.Black
+                            )
+                            Text(
+                                text = " *",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color(0xFFE23636)
+                            )
+                        }
 
-                        Button(
+                        OutlinedButton(
                             onClick = onAddMerchantClick,
-                            modifier = Modifier
-                                .height(40.dp)
-                                .border(width = 2.dp, color = Color(0xFF0D3773), RoundedCornerShape(size = 20.dp)),
+                            modifier = Modifier.height(32.dp),
+                            shape = RoundedCornerShape(200.dp),
+                            border = BorderStroke(1.dp, Color(0xFF0D3773)),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color.Black
+                                contentColor = Color(0xFF0D3773)
                             )
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add",
-                                modifier = Modifier.size(16.dp),
-                                tint = Color(0xFF0D3773),
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "أضافة تاجر",
+                                text = "+ أضافة تاجر",
                                 fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily(Font(R.font.zain_regular)),
                                 color = Color(0xFF0D3773)
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(7.dp))
 
                     SearchableDropdown(
                         label = "",
-                        placeholder = "ابحث بالاسم او التليفون",
+                        placeholder = "أبحث بالاسم او رقم التيليفون",
                         searchQuery = uiState.merchantSearchQuery,
                         onSearchQueryChange = { viewModel.searchMerchants(it) },
                         items = uiState.merchants,
@@ -385,23 +378,45 @@ fun CreateOrderScreen(
                     )
                 }
 
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "الخصم المؤجل (اختياري)",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color.Black
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = uiState.rebateValue,
+                        onValueChange = { viewModel.updateRebateValue(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = {
+                            Text(
+                                text = "أدخل قيمة الخصم المؤجل",
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color(0xFF9CA3AF)
+                            )
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF0D3773),
+                            unfocusedBorderColor = Color(0xFFE5E7EB)
+                        )
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(100.dp))
             }
         }
 
-        if (showConfirmationBottomSheet) {
-            OrderConfirmationBottomSheet(
-                sheetState = confirmationSheetState,
-                onDismiss = {
-                    showConfirmationBottomSheet = false
-                    onOrderCreated()
-                },
-                onBackToHome = {
-                    showConfirmationBottomSheet = false
-                    onOrderCreated()
-                }
-            )
-        }
     }
 }
 

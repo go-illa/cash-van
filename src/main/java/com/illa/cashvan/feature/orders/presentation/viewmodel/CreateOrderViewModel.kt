@@ -1,8 +1,11 @@
 package com.illa.cashvan.feature.orders.presentation.viewmodel
 
 import android.content.Context
+import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.illa.cashvan.core.location.LocationData
+import com.illa.cashvan.core.location.LocationService
 import com.illa.cashvan.core.network.model.ApiResult
 import com.illa.cashvan.feature.orders.data.model.CreateOrderRequest
 import com.illa.cashvan.feature.orders.data.model.CreateOrderResponse
@@ -29,6 +32,7 @@ import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
 
 data class CreateOrderUiState(
     val isLoading: Boolean = false,
+    val userLocation: LocationData? = null,
     val currentPlan: OngoingPlanResponse? = null,
     val merchants: List<MerchantItem> = emptyList(),
     val products: List<PlanProduct> = emptyList(),
@@ -41,13 +45,15 @@ data class CreateOrderUiState(
     val isSearchingProducts: Boolean = false,
     val error: String? = null,
     val orderCreated: Boolean = false,
+    val orderCreationError: String? = null,
     val isPrinting: Boolean = false,
     val printStatus: String? = null,
     val invoiceText: String? = null,
     val productPrices: Map<String, ProductPriceInfo> = emptyMap(),
     val loadingPriceForProducts: Set<String> = emptySet(),
     val previewProductPrice: ProductPriceInfo? = null,
-    val isLoadingPreviewPrice: Boolean = false
+    val isLoadingPreviewPrice: Boolean = false,
+    val rebateValue: String = ""
 )
 
 class CreateOrderViewModel(
@@ -58,7 +64,8 @@ class CreateOrderViewModel(
     private val createOrderUseCase: CreateOrderUseCase,
     private val getOrderByIdUseCase: GetOrderByIdUseCase,
     private val getInvoiceContentUseCase: GetInvoiceContentUseCase,
-    private val getCashVanProductTotalPriceUseCase: GetCashVanProductTotalPriceUseCase
+    private val getCashVanProductTotalPriceUseCase: GetCashVanProductTotalPriceUseCase,
+    private val locationService: LocationService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateOrderUiState())
@@ -73,6 +80,36 @@ class CreateOrderViewModel(
 
     init {
         loadOngoingPlan()
+        loadUserLocation()
+    }
+
+    private fun loadUserLocation() {
+        viewModelScope.launch {
+            locationService.getCurrentLocation().fold(
+                onSuccess = { location ->
+                    _uiState.value = _uiState.value.copy(userLocation = location)
+                },
+                onFailure = {
+                    locationService.getLastKnownLocation().fold(
+                        onSuccess = { location ->
+                            _uiState.value = _uiState.value.copy(userLocation = location)
+                        },
+                        onFailure = {}
+                    )
+                }
+            )
+        }
+    }
+
+    private fun filterNearbyMerchants(merchants: List<MerchantItem>): List<MerchantItem> {
+        val userLocation = _uiState.value.userLocation ?: return merchants
+        val results = FloatArray(1)
+        return merchants.filter { merchant ->
+            val lat = merchant.latitude?.toDoubleOrNull() ?: return@filter false
+            val lng = merchant.longitude?.toDoubleOrNull() ?: return@filter false
+            Location.distanceBetween(userLocation.latitude, userLocation.longitude, lat, lng, results)
+            results[0] <= 100f
+        }
     }
 
     private fun loadOngoingPlan() {
@@ -112,22 +149,26 @@ class CreateOrderViewModel(
 
             val searchQuery = query.ifEmpty { "" }
 
-            when (val result = searchMerchantsUseCase(searchQuery)) {
-                is ApiResult.Success -> {
-                    _uiState.value = _uiState.value.copy(
-                        isSearchingMerchants = false,
-                        merchants = result.data.merchants
-                    )
+            try {
+                when (val result = searchMerchantsUseCase(searchQuery)) {
+                    is ApiResult.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            isSearchingMerchants = false,
+                            merchants = filterNearbyMerchants(result.data.merchants)
+                        )
+                    }
+                    is ApiResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isSearchingMerchants = false,
+                            error = result.message
+                        )
+                    }
+                    is ApiResult.Loading -> {
+                        _uiState.value = _uiState.value.copy(isSearchingMerchants = true)
+                    }
                 }
-                is ApiResult.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isSearchingMerchants = false,
-                        error = result.message
-                    )
-                }
-                is ApiResult.Loading -> {
-                    _uiState.value = _uiState.value.copy(isSearchingMerchants = true)
-                }
+            } finally {
+                _uiState.value = _uiState.value.copy(isSearchingMerchants = false)
             }
         }
     }
@@ -145,22 +186,29 @@ class CreateOrderViewModel(
 
             _uiState.value = _uiState.value.copy(isSearchingProducts = true)
 
-            when (val result = getPlanProductsUseCase(planId, query.ifEmpty { null }, priceTier)) {
-                is ApiResult.Success -> {
-                    _uiState.value = _uiState.value.copy(
-                        isSearchingProducts = false,
-                        products = result.data.plan_products
-                    )
+            try {
+                when (val result = getPlanProductsUseCase(planId, query.ifEmpty { null }, priceTier)) {
+                    is ApiResult.Success -> {
+                        val newProducts = result.data.plan_products
+                        val mergedAllProducts = (_uiState.value.allProducts + newProducts).distinctBy { it.id }
+                        _uiState.value = _uiState.value.copy(
+                            isSearchingProducts = false,
+                            products = newProducts,
+                            allProducts = mergedAllProducts
+                        )
+                    }
+                    is ApiResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isSearchingProducts = false,
+                            error = result.message
+                        )
+                    }
+                    is ApiResult.Loading -> {
+                        _uiState.value = _uiState.value.copy(isSearchingProducts = true)
+                    }
                 }
-                is ApiResult.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isSearchingProducts = false,
-                        error = result.message
-                    )
-                }
-                is ApiResult.Loading -> {
-                    _uiState.value = _uiState.value.copy(isSearchingProducts = true)
-                }
+            } finally {
+                _uiState.value = _uiState.value.copy(isSearchingProducts = false)
             }
         }
     }
@@ -366,14 +414,9 @@ class CreateOrderViewModel(
     fun createOrder() {
         val state = _uiState.value
 
-        if (state.currentPlan == null || state.selectedMerchant == null || state.selectedProducts.isEmpty()) {
-            _uiState.value = _uiState.value.copy(error = "Please select merchant and add products")
-            return
-        }
+        if (state.currentPlan == null || state.selectedMerchant == null || state.selectedProducts.isEmpty()) return
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-
             val orderItems = state.selectedProducts.map { (planProductId, quantity) ->
                 OrderItem(
                     plan_product_id = planProductId,
@@ -385,34 +428,36 @@ class CreateOrderViewModel(
                 order = OrderData(
                     plan_id = state.currentPlan.id ?: "",
                     merchant_id = state.selectedMerchant.id,
+                    rebate_value = state.rebateValue.toDoubleOrNull(),
                     order_items = orderItems
                 )
             )
 
             when (val result = createOrderUseCase(request)) {
                 is ApiResult.Success -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        orderCreated = true
-                    )
-
+                    _uiState.value = _uiState.value.copy(orderCreated = true)
                     printInvoice(result.data)
                 }
                 is ApiResult.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = result.message
-                    )
+                    _uiState.value = _uiState.value.copy(orderCreationError = result.message)
                 }
-                is ApiResult.Loading -> {
-                    _uiState.value = _uiState.value.copy(isLoading = true)
-                }
+                is ApiResult.Loading -> {}
             }
+        }
+    }
+
+    fun updateRebateValue(value: String) {
+        if (value.isEmpty() || value.toDoubleOrNull() != null) {
+            _uiState.value = _uiState.value.copy(rebateValue = value)
         }
     }
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    fun clearOrderCreationError() {
+        _uiState.value = _uiState.value.copy(orderCreationError = null)
     }
 
     fun resetOrderCreated() {

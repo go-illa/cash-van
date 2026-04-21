@@ -27,6 +27,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -298,6 +302,42 @@ private fun OrderDetailsContent(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 if (!orderDetailsState.isEditMode) {
+                    if (order.status == "ongoing" && order.order_type == "pre_sell") {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White, RoundedCornerShape(12.dp))
+                                .padding(16.dp)
+                        ) {
+                            Text(
+                                text = "الخصم المؤجل (اختياري)",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color.Black
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = orderDetailsState.rebateValue,
+                                onValueChange = { orderViewModel.updateRebateValue(it) },
+                                modifier = Modifier.fillMaxWidth(),
+                                placeholder = {
+                                    Text(
+                                        text = "أدخل قيمة الخصم المؤجل",
+                                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                        color = Color(0xFF9CA3AF)
+                                    )
+                                },
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                singleLine = true,
+                                shape = RoundedCornerShape(8.dp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = Color(0xFF0D3773),
+                                    unfocusedBorderColor = Color(0xFFE5E7EB)
+                                )
+                            )
+                        }
+                    }
                     PaymentSummaryCard(
                         paymentSummary = paymentSummary
                     )
@@ -533,6 +573,7 @@ private fun OrderDetailsContent(
         if (showConfirmationBottomSheet) {
             OrderConfirmationBottomSheet(
                 sheetState = confirmationSheetState,
+                isSuccess = true,
                 onDismiss = {
                     showConfirmationBottomSheet = false
                     onBackClick()

@@ -243,6 +243,7 @@ data class CreateOrderRequest(
 data class OrderData(
     val plan_id: String? = null,
     val merchant_id: String? = null,
+    val rebate_value: Double? = null,
     val order_items: List<OrderItem>
 )
 
@@ -276,6 +277,7 @@ data class UpdateOrderData(
     val status: String? = null,
     val cancellation_reason: String? = null,
     val cancellation_note: String? = null,
+    val rebate_value: Double? = null,
     val order_items: List<SubmitOrderItem>? = null
 )
 

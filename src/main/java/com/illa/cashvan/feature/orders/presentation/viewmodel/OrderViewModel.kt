@@ -64,7 +64,8 @@ data class OrderDetailsUiState(
     val deletedProductIds: Set<String> = emptySet(),
     val isUpdatingPrice: Boolean = false,
     val productPrices: Map<String, ProductPriceInfo> = emptyMap(),
-    val loadingPriceForProducts: Set<String> = emptySet()
+    val loadingPriceForProducts: Set<String> = emptySet(),
+    val rebateValue: String = ""
 )
 
 class OrderViewModel(
@@ -135,7 +136,8 @@ class OrderViewModel(
                 error = null,
                 isEditMode = false,
                 editedQuantities = emptyMap(),
-                deletedProductIds = emptySet()
+                deletedProductIds = emptySet(),
+                rebateValue = ""
             )
 
             when (val result = getOrderByIdUseCase(orderId)) {
@@ -182,6 +184,12 @@ class OrderViewModel(
         }
     }
 
+    fun updateRebateValue(value: String) {
+        if (value.isEmpty() || value.toDoubleOrNull() != null) {
+            _orderDetailsUiState.value = _orderDetailsUiState.value.copy(rebateValue = value)
+        }
+    }
+
     fun submitOrder(order: Order, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             val orderItems = order.order_plan_products?.map { planProduct ->
@@ -194,6 +202,7 @@ class OrderViewModel(
             val request = UpdateOrderRequest(
                 order = UpdateOrderData(
                     status = "submitted",
+                    rebate_value = _orderDetailsUiState.value.rebateValue.toDoubleOrNull(),
                     order_items = orderItems
                 )
             )

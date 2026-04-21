@@ -6,6 +6,7 @@ import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetRefreshTok
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.SaveAccessTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.SaveRefreshTokenUseCase
+import com.illa.cashvan.core.session.SessionManager
 import com.illa.cashvan.core.network.model.AppClientRequestException
 import com.illa.cashvan.core.network.model.AppRedirectResponseException
 import com.illa.cashvan.core.network.model.AppServerResponseException
@@ -43,7 +44,7 @@ import kotlin.time.Duration.Companion.seconds
 
 val networkModule = module {
     single { SharedConfig() }
-    single { provideHttpClient(get(), get(), get(), get(), get(), get()) }
+    single { provideHttpClient(get(), get(), get(), get(), get(), get(), get()) }
 }
 
 fun provideHttpClient(
@@ -52,7 +53,8 @@ fun provideHttpClient(
     getRefreshTokenUseCase: GetRefreshTokenUseCase,
     saveTokenUseCase: SaveAccessTokenUseCase,
     saveRefreshTokenUseCase: SaveRefreshTokenUseCase,
-    clearAppDataUseCase: ClearAppDataUseCase
+    clearAppDataUseCase: ClearAppDataUseCase,
+    sessionManager: SessionManager
 ): HttpClient {
     return HttpClient(Android) {
         expectSuccess = true
@@ -140,19 +142,24 @@ fun provideHttpClient(
                                                 }
                                             } else {
                                                 runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
+                                                sessionManager.triggerForceLogout()
                                             }
                                         } catch (e: Exception) {
                                             runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
+                                            sessionManager.triggerForceLogout()
                                         }
                                     } else {
                                         runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
+                                        sessionManager.triggerForceLogout()
                                     }
                                 } else {
                                     runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
+                                    sessionManager.triggerForceLogout()
                                 }
                             }
                             HttpStatusCode.Forbidden -> {
                                 runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
+                                sessionManager.triggerForceLogout()
                             }
                         }
                         AppClientRequestException(

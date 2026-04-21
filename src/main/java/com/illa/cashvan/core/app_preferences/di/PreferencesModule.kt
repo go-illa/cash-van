@@ -15,12 +15,15 @@ import com.illa.cashvan.core.app_preferences.domain.use_case.user.ClearUserUseCa
 import com.illa.cashvan.core.app_preferences.domain.use_case.user.GetUserUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.user.SaveUserUseCase
 import com.illa.cashvan.core.auth.presentation.viewmodel.AuthenticationViewModel
+import com.illa.cashvan.core.session.SessionManager
 import com.illa.cashvan.core.user.presentation.viewmodel.UserViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val preferencesModule = module {
+
+    single { SessionManager() }
 
     single<PreferencesRepo> { PreferencesRepoImpl(androidContext()) }
 
@@ -41,5 +44,5 @@ val preferencesModule = module {
     single { LogoutUseCase(get(), get()) }
 
     viewModel { UserViewModel(get()) }
-    viewModel { AuthenticationViewModel(get(), get()) }
+    viewModel { AuthenticationViewModel(get(), get(), get()) }
 }

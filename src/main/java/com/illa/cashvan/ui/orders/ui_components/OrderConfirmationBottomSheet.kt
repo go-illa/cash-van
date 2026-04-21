@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,6 +38,8 @@ import com.illa.cashvan.R
 @Composable
 fun OrderConfirmationBottomSheet(
     sheetState: SheetState,
+    isSuccess: Boolean,
+    errorMessage: String? = null,
     onDismiss: () -> Unit,
     onBackToHome: () -> Unit
 ) {
@@ -62,20 +65,20 @@ fun OrderConfirmationBottomSheet(
                     modifier = Modifier
                         .size(120.dp)
                         .background(
-                            color = Color(0xFFE8F5E9),
+                            color = if (isSuccess) Color(0xFFE8F5E9) else Color(0xFFFFEBEE),
                             shape = RoundedCornerShape(60.dp)
                         )
                 )
                 Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = "Order confirmed",
+                    imageVector = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.Error,
+                    contentDescription = if (isSuccess) "Order confirmed" else "Order failed",
                     modifier = Modifier.size(80.dp),
-                    tint = Color(0xFF4CAF50)
+                    tint = if (isSuccess) Color(0xFF4CAF50) else Color(0xFFF44336)
                 )
             }
 
             Text(
-                text = "تم تسليم الأوردر بنجاح",
+                text = if (isSuccess) "تم تسليم الأوردر بنجاح" else "فشل إنشاء الأوردر",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily(Font(R.font.zain_regular)),
@@ -87,7 +90,7 @@ fun OrderConfirmationBottomSheet(
             Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "تم تسليم الأوردر بنجاح",
+                text = if (isSuccess) "تم تسليم الأوردر بنجاح" else (errorMessage ?: "حدث خطأ، يرجى المحاولة مرة أخرى"),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Normal,
                 fontFamily = FontFamily(Font(R.font.zain_regular)),

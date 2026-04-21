@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -20,6 +21,8 @@ import com.illa.cashvan.ui.merchant.CreateMerchantScreen
 import com.illa.cashvan.ui.orders.CreateOrderScreen
 import com.illa.cashvan.ui.orders.OrderDetailsScreen
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
+import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
+import com.illa.cashvan.ui.orders.ui_components.OrderConfirmationBottomSheet
 import com.illa.cashvan.ui.profile.PersonalProfileScreen
 import com.illa.cashvan.ui.signin.SignInScreen
 import com.illa.cashvan.ui.splash.SplashScreen
@@ -38,14 +41,26 @@ data class BottomNavItem(
 @Composable
 fun CashVanNavigation(
     authenticationViewModel: AuthenticationViewModel = koinViewModel(),
+    createOrderViewModel: CreateOrderViewModel = koinViewModel(),
     analyticsHelper: CashVanAnalyticsHelper = koinInject(),
     onLogout: () -> Unit = {}
 ) {
     val authState by authenticationViewModel.authState.collectAsStateWithLifecycle()
+    val createOrderUiState by createOrderViewModel.uiState.collectAsStateWithLifecycle()
     val backStack = remember { mutableStateListOf<Any>(SplashKey) }
     val currentKey = backStack.lastOrNull() ?: SplashKey
     var splashComplete by remember { mutableStateOf(false) }
     var merchantCreatedSignal by remember { mutableStateOf(0) }
+    var showOrderResultSheet by remember { mutableStateOf(false) }
+    val orderResultSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    LaunchedEffect(createOrderUiState.orderCreated, createOrderUiState.orderCreationError) {
+        if ((createOrderUiState.orderCreated || createOrderUiState.orderCreationError != null) &&
+            currentKey == HomeKey
+        ) {
+            showOrderResultSheet = true
+        }
+    }
 
     LaunchedEffect(Unit) {
         delay(3000)
@@ -139,6 +154,7 @@ fun CashVanNavigation(
                     }
                     CreateOrderKey -> NavEntry(key) {
                         CreateOrderScreen(
+                            viewModel = createOrderViewModel,
                             merchantCreatedSignal = merchantCreatedSignal,
                             onAddMerchantClick = {
                                 backStack.add(CreateMerchantKey)
@@ -188,6 +204,24 @@ fun CashVanNavigation(
                         Text("Unknown route")
                     }
                 }
+            }
+        )
+    }
+
+    if (showOrderResultSheet) {
+        OrderConfirmationBottomSheet(
+            sheetState = orderResultSheetState,
+            isSuccess = createOrderUiState.orderCreated,
+            errorMessage = createOrderUiState.orderCreationError,
+            onDismiss = {
+                showOrderResultSheet = false
+                createOrderViewModel.resetOrderCreated()
+                createOrderViewModel.clearOrderCreationError()
+            },
+            onBackToHome = {
+                showOrderResultSheet = false
+                createOrderViewModel.resetOrderCreated()
+                createOrderViewModel.clearOrderCreationError()
             }
         )
     }

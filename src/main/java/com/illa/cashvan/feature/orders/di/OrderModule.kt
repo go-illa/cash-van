@@ -32,5 +32,5 @@ val orderModule = module {
     factory { GetCashVanProductTotalPriceUseCase(get()) }
 
     viewModel { OrderViewModel(get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { CreateOrderViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { CreateOrderViewModel(get(), get(), get(), get(), get(), get(), get(), get(), get()) }
 }

@@ -16,8 +16,8 @@ android {
         applicationId = "com.illa.cashvan"
         minSdk = 24
         targetSdk = 36
-        versionCode = 5
-        versionName = "2.3"
+        versionCode = 8
+        versionName = "2.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -49,6 +49,7 @@ android {
         }
 
         release {
+            isDebuggable = true
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -140,8 +141,7 @@ dependencies {
     implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Chucker - HTTP Inspector
-    debugImplementation("com.github.chuckerteam.chucker:library:4.0.0")
-    releaseImplementation("com.github.chuckerteam.chucker:library-no-op:4.0.0")
+    implementation("com.github.chuckerteam.chucker:library:4.0.0")
 
     // Honeywell Printer SDK - Multiple Command Languages
     implementation(files("libs/printer_library.jar"))

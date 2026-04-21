@@ -25,6 +25,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +67,11 @@ fun ProductSelectionComponent(
     var quantity by remember { mutableIntStateOf(1) }
     var quantityText by remember { mutableStateOf("1") }
     var showQuantityError by remember { mutableStateOf(false) }
+    var showMerchantError by remember { mutableStateOf(false) }
+
+    LaunchedEffect(merchantSelected) {
+        if (merchantSelected) showMerchantError = false
+    }
 
     Column(modifier = modifier) {
         Text(
@@ -81,12 +87,21 @@ fun ProductSelectionComponent(
             label = "المنتج",
             placeholder = "ابحث بكود المنتج أو الاسم",
             searchQuery = searchQuery,
-            onSearchQueryChange = onSearchQueryChange,
+            onSearchQueryChange = {
+                if (!merchantSelected) {
+                    showMerchantError = true
+                } else {
+                    onSearchQueryChange(it)
+                }
+            },
             items = products,
             selectedItem = selectedProduct,
             onItemSelected = {
-                selectedProduct = it
-                if (merchantSelected) {
+                if (!merchantSelected) {
+                    showMerchantError = true
+                } else {
+                    showMerchantError = false
+                    selectedProduct = it
                     onFetchPricePreview(it.id, quantity)
                 }
             },
@@ -94,13 +109,25 @@ fun ProductSelectionComponent(
             isLoading = isLoading,
             enabled = enabled,
             onExpanded = {
-                if (searchQuery.isEmpty()) {
+                if (!merchantSelected) {
+                    showMerchantError = true
+                } else if (searchQuery.isEmpty()) {
                     onSearchQueryChange("")
                 }
             },
             analyticsEventName = "select_product",
             analyticsHelper = analyticsHelper
         )
+
+        if (showMerchantError) {
+            Text(
+                text = "يرجى اختيار العميل أولاً",
+                fontSize = 12.sp,
+                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                color = Color(0xFFDC2626),
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
+            )
+        }
 
         selectedProduct?.let { product ->
             Spacer(modifier = Modifier.height(16.dp))
