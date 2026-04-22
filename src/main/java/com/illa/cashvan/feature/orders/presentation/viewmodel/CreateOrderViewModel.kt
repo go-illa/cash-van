@@ -1,11 +1,8 @@
 package com.illa.cashvan.feature.orders.presentation.viewmodel
 
 import android.content.Context
-import android.location.Location
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.illa.cashvan.core.location.LocationData
-import com.illa.cashvan.core.location.LocationService
 import com.illa.cashvan.core.network.model.ApiResult
 import com.illa.cashvan.feature.orders.data.model.CreateOrderRequest
 import com.illa.cashvan.feature.orders.data.model.CreateOrderResponse
@@ -32,9 +29,11 @@ import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
 
 data class CreateOrderUiState(
     val isLoading: Boolean = false,
-    val userLocation: LocationData? = null,
     val currentPlan: OngoingPlanResponse? = null,
     val merchants: List<MerchantItem> = emptyList(),
+    val merchantPage: Int = 1,
+    val hasMoreMerchants: Boolean = true,
+    val isLoadingMoreMerchants: Boolean = false,
     val products: List<PlanProduct> = emptyList(),
     val allProducts: List<PlanProduct> = emptyList(),
     val selectedMerchant: MerchantItem? = null,
@@ -64,8 +63,7 @@ class CreateOrderViewModel(
     private val createOrderUseCase: CreateOrderUseCase,
     private val getOrderByIdUseCase: GetOrderByIdUseCase,
     private val getInvoiceContentUseCase: GetInvoiceContentUseCase,
-    private val getCashVanProductTotalPriceUseCase: GetCashVanProductTotalPriceUseCase,
-    private val locationService: LocationService
+    private val getCashVanProductTotalPriceUseCase: GetCashVanProductTotalPriceUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateOrderUiState())
@@ -80,36 +78,6 @@ class CreateOrderViewModel(
 
     init {
         loadOngoingPlan()
-        loadUserLocation()
-    }
-
-    private fun loadUserLocation() {
-        viewModelScope.launch {
-            locationService.getCurrentLocation().fold(
-                onSuccess = { location ->
-                    _uiState.value = _uiState.value.copy(userLocation = location)
-                },
-                onFailure = {
-                    locationService.getLastKnownLocation().fold(
-                        onSuccess = { location ->
-                            _uiState.value = _uiState.value.copy(userLocation = location)
-                        },
-                        onFailure = {}
-                    )
-                }
-            )
-        }
-    }
-
-    private fun filterNearbyMerchants(merchants: List<MerchantItem>): List<MerchantItem> {
-        val userLocation = _uiState.value.userLocation ?: return merchants
-        val results = FloatArray(1)
-        return merchants.filter { merchant ->
-            val lat = merchant.latitude?.toDoubleOrNull() ?: return@filter false
-            val lng = merchant.longitude?.toDoubleOrNull() ?: return@filter false
-            Location.distanceBetween(userLocation.latitude, userLocation.longitude, lat, lng, results)
-            results[0] <= 100f
-        }
     }
 
     private fun loadOngoingPlan() {
@@ -138,7 +106,11 @@ class CreateOrderViewModel(
     }
 
     fun searchMerchants(query: String) {
-        _uiState.value = _uiState.value.copy(merchantSearchQuery = query)
+        _uiState.value = _uiState.value.copy(
+            merchantSearchQuery = query,
+            merchantPage = 1,
+            hasMoreMerchants = true
+        )
 
         merchantSearchJob?.cancel()
 
@@ -147,14 +119,13 @@ class CreateOrderViewModel(
 
             _uiState.value = _uiState.value.copy(isSearchingMerchants = true)
 
-            val searchQuery = query.ifEmpty { "" }
-
             try {
-                when (val result = searchMerchantsUseCase(searchQuery)) {
+                when (val result = searchMerchantsUseCase(query, page = 1)) {
                     is ApiResult.Success -> {
                         _uiState.value = _uiState.value.copy(
                             isSearchingMerchants = false,
-                            merchants = filterNearbyMerchants(result.data.merchants)
+                            merchants = result.data.merchants,
+                            hasMoreMerchants = result.data.merchants.size >= 20
                         )
                     }
                     is ApiResult.Error -> {
@@ -169,6 +140,35 @@ class CreateOrderViewModel(
                 }
             } finally {
                 _uiState.value = _uiState.value.copy(isSearchingMerchants = false)
+            }
+        }
+    }
+
+    fun loadMoreMerchants() {
+        val state = _uiState.value
+        if (!state.hasMoreMerchants || state.isLoadingMoreMerchants || state.isSearchingMerchants) return
+
+        val nextPage = state.merchantPage + 1
+        _uiState.value = state.copy(isLoadingMoreMerchants = true)
+
+        viewModelScope.launch {
+            try {
+                when (val result = searchMerchantsUseCase(state.merchantSearchQuery, page = nextPage)) {
+                    is ApiResult.Success -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoadingMoreMerchants = false,
+                            merchants = _uiState.value.merchants + result.data.merchants,
+                            merchantPage = nextPage,
+                            hasMoreMerchants = result.data.merchants.size >= 20
+                        )
+                    }
+                    is ApiResult.Error -> {
+                        _uiState.value = _uiState.value.copy(isLoadingMoreMerchants = false)
+                    }
+                    is ApiResult.Loading -> {}
+                }
+            } finally {
+                _uiState.value = _uiState.value.copy(isLoadingMoreMerchants = false)
             }
         }
     }
@@ -250,7 +250,11 @@ class CreateOrderViewModel(
 
     fun clearMerchant() {
         _uiState.value = _uiState.value.copy(
-            selectedMerchant = null
+            selectedMerchant = null,
+            selectedProducts = emptyMap(),
+            productPrices = emptyMap(),
+            productSearchQuery = "",
+            products = emptyList()
         )
         loadProducts(priceTier = null)
     }

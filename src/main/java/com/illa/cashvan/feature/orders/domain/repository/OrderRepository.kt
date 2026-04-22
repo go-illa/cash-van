@@ -19,7 +19,7 @@ interface OrderRepository {
     ): ApiResult<OrdersResponse>
     suspend fun getOrderById(orderId: String): ApiResult<Order>
     suspend fun getOngoingPlan(): ApiResult<OngoingPlanResponse?>
-    suspend fun searchMerchants(query: String): ApiResult<MerchantSearchResponse>
+    suspend fun searchMerchants(query: String, page: Int = 1, items: Int = 20): ApiResult<MerchantSearchResponse>
     suspend fun getPlanProducts(planId: String, query: String? = null, priceTier: String? = null): ApiResult<PlanProductsResponse>
     suspend fun createOrder(request: CreateOrderRequest): ApiResult<CreateOrderResponse>
     suspend fun updateOrder(orderId: String, request: UpdateOrderRequest): ApiResult<Order>

@@ -76,11 +76,13 @@ object ApiEndpoints {
             version = 2
         )
 
-        fun searchMerchants(query: String) = RequestConfiguration(
+        fun searchMerchants(query: String, page: Int = 1, items: Int = 20) = RequestConfiguration(
             path = "merchants",
             method = HttpMethod.Get,
             parameters = Parameters.build {
                 append("q", query)
+                append("page", page.toString())
+                append("items", items.toString())
             },
             parameterEncoding = ParameterEncoding.QUERY,
             version = 2

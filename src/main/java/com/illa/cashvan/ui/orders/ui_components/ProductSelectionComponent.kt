@@ -67,10 +67,14 @@ fun ProductSelectionComponent(
     var quantity by remember { mutableIntStateOf(1) }
     var quantityText by remember { mutableStateOf("1") }
     var showQuantityError by remember { mutableStateOf(false) }
-    var showMerchantError by remember { mutableStateOf(false) }
 
     LaunchedEffect(merchantSelected) {
-        if (merchantSelected) showMerchantError = false
+        if (!merchantSelected) {
+            selectedProduct = null
+            quantity = 1
+            quantityText = "1"
+            showQuantityError = false
+        }
     }
 
     Column(modifier = modifier) {
@@ -87,47 +91,26 @@ fun ProductSelectionComponent(
             label = "المنتج",
             placeholder = "ابحث بكود المنتج أو الاسم",
             searchQuery = searchQuery,
-            onSearchQueryChange = {
-                if (!merchantSelected) {
-                    showMerchantError = true
-                } else {
-                    onSearchQueryChange(it)
-                }
-            },
+            onSearchQueryChange = onSearchQueryChange,
             items = products,
             selectedItem = selectedProduct,
             onItemSelected = {
-                if (!merchantSelected) {
-                    showMerchantError = true
-                } else {
-                    showMerchantError = false
-                    selectedProduct = it
+                selectedProduct = it
+                if (merchantSelected) {
                     onFetchPricePreview(it.id, quantity)
                 }
             },
             itemText = { "${it.product.name} (${it.product.frontdoor_code})" },
             isLoading = isLoading,
-            enabled = enabled,
+            enabled = enabled && merchantSelected,
             onExpanded = {
-                if (!merchantSelected) {
-                    showMerchantError = true
-                } else if (searchQuery.isEmpty()) {
+                if (searchQuery.isEmpty()) {
                     onSearchQueryChange("")
                 }
             },
             analyticsEventName = "select_product",
             analyticsHelper = analyticsHelper
         )
-
-        if (showMerchantError) {
-            Text(
-                text = "يرجى اختيار العميل أولاً",
-                fontSize = 12.sp,
-                fontFamily = FontFamily(Font(R.font.zain_regular)),
-                color = Color(0xFFDC2626),
-                modifier = Modifier.padding(top = 4.dp, start = 4.dp)
-            )
-        }
 
         selectedProduct?.let { product ->
             Spacer(modifier = Modifier.height(16.dp))

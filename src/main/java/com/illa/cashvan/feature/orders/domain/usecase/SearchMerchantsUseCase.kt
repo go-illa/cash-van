@@ -7,7 +7,7 @@ import com.illa.cashvan.feature.orders.domain.repository.OrderRepository
 class SearchMerchantsUseCase(
     private val orderRepository: OrderRepository
 ) {
-    suspend operator fun invoke(query: String): ApiResult<MerchantSearchResponse> {
-        return orderRepository.searchMerchants(query)
+    suspend operator fun invoke(query: String, page: Int = 1, items: Int = 20): ApiResult<MerchantSearchResponse> {
+        return orderRepository.searchMerchants(query, page, items)
     }
 }

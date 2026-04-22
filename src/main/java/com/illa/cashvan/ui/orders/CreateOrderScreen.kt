@@ -337,6 +337,8 @@ fun CreateOrderScreen(
                             }
                         },
                         onClear = { viewModel.clearMerchant() },
+                        onLoadMore = { viewModel.loadMoreMerchants() },
+                        isLoadingMore = uiState.isLoadingMoreMerchants,
                         analyticsEventName = "select_merchant"
                     )
                 }

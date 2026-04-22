@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -28,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -59,6 +62,8 @@ fun <T> SearchableDropdown(
     enabled: Boolean = true,
     onExpanded: () -> Unit = {},
     onClear: () -> Unit = {},
+    onLoadMore: () -> Unit = {},
+    isLoadingMore: Boolean = false,
     analyticsEventName: String? = null,
     analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
@@ -117,16 +122,18 @@ fun <T> SearchableDropdown(
                                 )
                             }
                         }
-                        IconButton(onClick = {
-                            expanded = !expanded
-                            if (expanded) {
-                                onExpanded()
+                        IconButton(
+                            onClick = {
+                                if (enabled) {
+                                    expanded = !expanded
+                                    if (expanded) onExpanded()
+                                }
                             }
-                        }) {
+                        ) {
                             Icon(
                                 imageVector = Icons.Default.ArrowDropDown,
                                 contentDescription = if (expanded) "إخفاء" else "عرض",
-                                tint = Color(0xFF0D3773)
+                                tint = if (enabled) Color(0xFF0D3773) else Color(0xFF6B7280)
                             )
                         }
                     }
@@ -135,7 +142,13 @@ fun <T> SearchableDropdown(
                     focusedBorderColor = Color(0xFF0D3773),
                     unfocusedBorderColor = Color(0xFFD1D5DB),
                     focusedTextColor = Color(0xFF111827),
-                    unfocusedTextColor = Color(0xFF111827)
+                    unfocusedTextColor = Color(0xFF111827),
+                    disabledBorderColor = Color(0xFF6B7280),
+                    disabledTextColor = Color(0xFF6B7280),
+                    disabledPlaceholderColor = Color(0xFF6B7280),
+                    disabledLeadingIconColor = Color(0xFF6B7280),
+                    disabledTrailingIconColor = Color(0xFF6B7280),
+                    disabledContainerColor = Color(0xFFF9FAFB)
                 ),
                 shape = RoundedCornerShape(12.dp),
                 enabled = enabled,
@@ -166,12 +179,12 @@ fun <T> SearchableDropdown(
                     )
                 } else {
                     LazyColumn {
-                        items(items) { item ->
+                        itemsIndexed(items) { index, item ->
                             val isSelected = selectedItem != null && itemText(selectedItem) == itemText(item)
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable {
+                                    .clickable(enabled = enabled) {
                                         analyticsEventName?.let { eventName ->
                                             analyticsHelper.logEvent(
                                                 eventName,
@@ -193,6 +206,27 @@ fun <T> SearchableDropdown(
                                     color = if (isSelected) Color(0xFF0D3773) else Color(0xFF111827),
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
+                            }
+                            if (index == items.size - 1) {
+                                LaunchedEffect(items.size) {
+                                    onLoadMore()
+                                }
+                            }
+                        }
+                        if (isLoadingMore) {
+                            item {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(20.dp),
+                                        strokeWidth = 2.dp,
+                                        color = Color(0xFF0D3773)
+                                    )
+                                }
                             }
                         }
                     }
