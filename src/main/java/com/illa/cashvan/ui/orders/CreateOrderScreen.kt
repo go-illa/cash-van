@@ -361,7 +361,10 @@ fun CreateOrderScreen(
                     },
                     previewPrice = uiState.previewProductPrice,
                     isLoadingPreviewPrice = uiState.isLoadingPreviewPrice,
-                    merchantSelected = uiState.selectedMerchant != null
+                    merchantSelected = uiState.selectedMerchant != null,
+                    onLoadMore = { viewModel.loadMoreProducts() },
+                    isLoadingMore = uiState.isLoadingMoreProducts,
+                    onOpenDropdown = { viewModel.refreshProducts() }
                 )
 
                 if (uiState.selectedProducts.isNotEmpty()) {

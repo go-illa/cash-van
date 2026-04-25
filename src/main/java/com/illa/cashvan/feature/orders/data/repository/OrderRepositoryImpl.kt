@@ -100,9 +100,9 @@ class OrderRepositoryImpl(
         }
     }
 
-    override suspend fun getPlanProducts(planId: String, query: String?, priceTier: String?): ApiResult<PlanProductsResponse> {
+    override suspend fun getPlanProducts(planId: String, query: String?, priceTier: String?, page: Int, items: Int): ApiResult<PlanProductsResponse> {
         return try {
-            val config = ApiEndpoints.Plans.getPlanProducts(planId, query, priceTier)
+            val config = ApiEndpoints.Plans.getPlanProducts(planId, query, priceTier, page, items)
             val versionedPath = "v${config.version}/${config.path}"
 
             val response = httpClient.request(versionedPath) {

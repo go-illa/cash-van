@@ -55,11 +55,13 @@ object ApiEndpoints {
             version = 2
         )
 
-        fun getPlanProducts(planId: String, query: String? = null, priceTier: String? = null) = RequestConfiguration(
+        fun getPlanProducts(planId: String, query: String? = null, priceTier: String? = null, page: Int = 1, items: Int = 20) = RequestConfiguration(
             path = "plans/$planId/plan_products",
             method = HttpMethod.Get,
             parameters = Parameters.build {
                 append("include", "product")
+                append("page", page.toString())
+                append("items", items.toString())
                 query?.let { append("q", it) }
                 priceTier?.let { append("f[plan_product_prices_price_tier_eq]", it) }
             },

@@ -61,7 +61,10 @@ fun ProductSelectionComponent(
     onFetchPricePreview: (planProductId: String, quantity: Int) -> Unit = { _, _ -> },
     previewPrice: ProductPriceInfo? = null,
     isLoadingPreviewPrice: Boolean = false,
-    merchantSelected: Boolean = false
+    merchantSelected: Boolean = false,
+    onLoadMore: () -> Unit = {},
+    isLoadingMore: Boolean = false,
+    onOpenDropdown: () -> Unit = {}
 ) {
     var selectedProduct by remember { mutableStateOf<PlanProduct?>(null) }
     var quantity by remember { mutableIntStateOf(1) }
@@ -104,10 +107,10 @@ fun ProductSelectionComponent(
             isLoading = isLoading,
             enabled = enabled && merchantSelected,
             onExpanded = {
-                if (searchQuery.isEmpty()) {
-                    onSearchQueryChange("")
-                }
+                onOpenDropdown()
             },
+            onLoadMore = onLoadMore,
+            isLoadingMore = isLoadingMore,
             analyticsEventName = "select_product",
             analyticsHelper = analyticsHelper
         )

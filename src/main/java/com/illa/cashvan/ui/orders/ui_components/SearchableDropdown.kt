@@ -37,6 +37,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -92,7 +93,14 @@ fun <T> SearchableDropdown(
                     onSearchQueryChange(it)
                     if (!expanded) expanded = true
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused && !expanded) {
+                            expanded = true
+                            onExpanded()
+                        }
+                    },
                 placeholder = {
                     Text(
                         text = placeholder,

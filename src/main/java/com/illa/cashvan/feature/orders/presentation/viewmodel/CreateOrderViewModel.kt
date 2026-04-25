@@ -36,6 +36,9 @@ data class CreateOrderUiState(
     val isLoadingMoreMerchants: Boolean = false,
     val products: List<PlanProduct> = emptyList(),
     val allProducts: List<PlanProduct> = emptyList(),
+    val productPage: Int = 1,
+    val hasMoreProducts: Boolean = true,
+    val isLoadingMoreProducts: Boolean = false,
     val selectedMerchant: MerchantItem? = null,
     val selectedProducts: Map<String, Int> = emptyMap(),
     val merchantSearchQuery: String = "",
@@ -174,7 +177,11 @@ class CreateOrderViewModel(
     }
 
     fun searchProducts(query: String) {
-        _uiState.value = _uiState.value.copy(productSearchQuery = query)
+        _uiState.value = _uiState.value.copy(
+            productSearchQuery = query,
+            productPage = 1,
+            hasMoreProducts = true
+        )
 
         productSearchJob?.cancel()
 
@@ -187,14 +194,15 @@ class CreateOrderViewModel(
             _uiState.value = _uiState.value.copy(isSearchingProducts = true)
 
             try {
-                when (val result = getPlanProductsUseCase(planId, query.ifEmpty { null }, priceTier)) {
+                when (val result = getPlanProductsUseCase(planId, query.ifEmpty { null }, priceTier, page = 1)) {
                     is ApiResult.Success -> {
                         val newProducts = result.data.plan_products
                         val mergedAllProducts = (_uiState.value.allProducts + newProducts).distinctBy { it.id }
                         _uiState.value = _uiState.value.copy(
                             isSearchingProducts = false,
                             products = newProducts,
-                            allProducts = mergedAllProducts
+                            allProducts = mergedAllProducts,
+                            hasMoreProducts = newProducts.size >= 20
                         )
                     }
                     is ApiResult.Error -> {
@@ -213,18 +221,61 @@ class CreateOrderViewModel(
         }
     }
 
+    fun loadMoreProducts() {
+        val state = _uiState.value
+        if (!state.hasMoreProducts || state.isLoadingMoreProducts || state.isSearchingProducts) return
+
+        val nextPage = state.productPage + 1
+        val planId = state.currentPlan?.id?.toString() ?: return
+        val priceTier = state.selectedMerchant?.price_tier
+
+        _uiState.value = state.copy(isLoadingMoreProducts = true)
+
+        viewModelScope.launch {
+            try {
+                when (val result = getPlanProductsUseCase(planId, state.productSearchQuery.ifEmpty { null }, priceTier, page = nextPage)) {
+                    is ApiResult.Success -> {
+                        val newProducts = result.data.plan_products
+                        val mergedAll = (_uiState.value.allProducts + newProducts).distinctBy { it.id }
+                        _uiState.value = _uiState.value.copy(
+                            isLoadingMoreProducts = false,
+                            products = _uiState.value.products + newProducts,
+                            allProducts = mergedAll,
+                            productPage = nextPage,
+                            hasMoreProducts = newProducts.size >= 20
+                        )
+                    }
+                    is ApiResult.Error -> {
+                        _uiState.value = _uiState.value.copy(isLoadingMoreProducts = false)
+                    }
+                    is ApiResult.Loading -> {}
+                }
+            } finally {
+                _uiState.value = _uiState.value.copy(isLoadingMoreProducts = false)
+            }
+        }
+    }
+
+    fun refreshProducts() {
+        loadProducts(_uiState.value.selectedMerchant?.price_tier)
+    }
+
     private fun loadProducts(priceTier: String? = null) {
         val planId = _uiState.value.currentPlan?.id?.toString() ?: return
+
+        _uiState.value = _uiState.value.copy(productPage = 1, hasMoreProducts = true)
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isSearchingProducts = true)
 
-            when (val result = getPlanProductsUseCase(planId, null, priceTier)) {
+            when (val result = getPlanProductsUseCase(planId, null, priceTier, page = 1)) {
                 is ApiResult.Success -> {
+                    val products = result.data.plan_products
                     _uiState.value = _uiState.value.copy(
                         isSearchingProducts = false,
-                        products = result.data.plan_products,
-                        allProducts = result.data.plan_products
+                        products = products,
+                        allProducts = products,
+                        hasMoreProducts = products.size >= 20
                     )
                 }
                 is ApiResult.Error -> {
