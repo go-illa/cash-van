@@ -187,6 +187,7 @@ data class MerchantItem(
     val created_at: String? = null,
     val updated_at: String? = null,
     val name: String,
+    val sign_name: String? = null,
     val address: String? = null,
     val google_link: String? = null,
     val phone_number: String? = null,
@@ -196,7 +197,9 @@ data class MerchantItem(
     val creator_id: String? = null,
     val creator_type: String? = null,
     val price_tier: String? = null
-)
+) {
+    val displayName: String get() = sign_name ?: name
+}
 
 @Serializable
 data class PlanProductsResponse(
