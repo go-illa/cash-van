@@ -198,7 +198,7 @@ data class MerchantItem(
     val creator_type: String? = null,
     val price_tier: String? = null
 ) {
-    val displayName: String get() = sign_name ?: name
+    val displayName: String get() = sign_name?.takeIf { it.isNotBlank() } ?: name
 }
 
 @Serializable
