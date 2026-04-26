@@ -328,7 +328,7 @@ fun CreateOrderScreen(
                         items = uiState.merchants,
                         selectedItem = uiState.selectedMerchant,
                         onItemSelected = { viewModel.selectMerchant(it) },
-                        itemText = { it.name },
+                        itemText = { it.displayName },
                         isLoading = uiState.isSearchingMerchants,
                         enabled = !uiState.isLoading,
                         onExpanded = {

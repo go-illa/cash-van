@@ -294,7 +294,7 @@ class CreateOrderViewModel(
     fun selectMerchant(merchant: MerchantItem) {
         _uiState.value = _uiState.value.copy(
             selectedMerchant = merchant,
-            merchantSearchQuery = merchant.name
+            merchantSearchQuery = merchant.displayName
         )
         loadProducts(merchant.price_tier)
     }
