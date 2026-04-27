@@ -6,6 +6,8 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -37,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
@@ -66,9 +66,26 @@ fun <T> SearchableDropdown(
     onLoadMore: () -> Unit = {},
     isLoadingMore: Boolean = false,
     analyticsEventName: String? = null,
-    analyticsHelper: CashVanAnalyticsHelper = koinInject()
+    analyticsHelper: CashVanAnalyticsHelper = koinInject(),
+    collapseKey: Any? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+
+    LaunchedEffect(collapseKey) {
+        expanded = false
+    }
+
+    LaunchedEffect(interactionSource) {
+        interactionSource.interactions.collect { interaction ->
+            if (interaction is PressInteraction.Press && enabled) {
+                if (!expanded) {
+                    expanded = true
+                    onExpanded()
+                }
+            }
+        }
+    }
 
     Column(modifier = modifier) {
         Row(
@@ -93,14 +110,7 @@ fun <T> SearchableDropdown(
                     onSearchQueryChange(it)
                     if (!expanded) expanded = true
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .onFocusChanged { focusState ->
-                        if (focusState.isFocused && !expanded) {
-                            expanded = true
-                            onExpanded()
-                        }
-                    },
+                modifier = Modifier.fillMaxWidth(),
                 placeholder = {
                     Text(
                         text = placeholder,
@@ -160,7 +170,8 @@ fun <T> SearchableDropdown(
                 ),
                 shape = RoundedCornerShape(12.dp),
                 enabled = enabled,
-                singleLine = true
+                singleLine = true,
+                interactionSource = interactionSource
             )
         }
 

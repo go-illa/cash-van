@@ -53,7 +53,7 @@ fun PlanProduct.toInventoryItem(): InventoryItem {
 
     return InventoryItem(
         id = id,
-        name = product.name,
+        name = product.name ?: "",
         code = product.sku,
         totalQuantity = assignedQty,
         preSellAvailableQuantity = pre_sell_available_quantity,

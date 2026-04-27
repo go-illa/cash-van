@@ -61,10 +61,10 @@ data class OrderProduct(
     val created_at: String,
     val updated_at: String,
     val sku: String,
-    val frontdoor_code: String,
+    val frontdoor_code: String? = null,
     val price: String,
-    val name: String,
-    val description: String,
+    val name: String? = null,
+    val description: String? = null,
     val vat: Double? = null,
     val tax_code: String? = null
 )
@@ -177,6 +177,11 @@ data class OngoingPlanResponse(
 )
 
 @Serializable
+data class OngoingPlanWrapper(
+    val data: OngoingPlanResponse? = null
+)
+
+@Serializable
 data class MerchantSearchResponse(
     val merchants: List<MerchantItem>
 )
@@ -187,6 +192,7 @@ data class MerchantItem(
     val created_at: String? = null,
     val updated_at: String? = null,
     val name: String,
+    val sign_name: String? = null,
     val address: String? = null,
     val google_link: String? = null,
     val phone_number: String? = null,
@@ -196,7 +202,9 @@ data class MerchantItem(
     val creator_id: String? = null,
     val creator_type: String? = null,
     val price_tier: String? = null
-)
+) {
+    val displayName: String get() = sign_name ?: name
+}
 
 @Serializable
 data class PlanProductsResponse(
@@ -228,10 +236,10 @@ data class Product(
     val created_at: String,
     val updated_at: String,
     val sku: String,
-    val frontdoor_code: String,
+    val frontdoor_code: String? = null,
     val price: String,
-    val name: String,
-    val description: String
+    val name: String? = null,
+    val description: String? = null
 )
 
 @Serializable

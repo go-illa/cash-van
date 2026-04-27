@@ -103,7 +103,7 @@ fun ProductSelectionComponent(
                     onFetchPricePreview(it.id, quantity)
                 }
             },
-            itemText = { "${it.product.name} (${it.product.frontdoor_code})" },
+            itemText = { "${it.product.name ?: ""} (${it.product.frontdoor_code ?: ""})" },
             isLoading = isLoading,
             enabled = enabled && merchantSelected,
             onExpanded = {
@@ -112,7 +112,8 @@ fun ProductSelectionComponent(
             onLoadMore = onLoadMore,
             isLoadingMore = isLoadingMore,
             analyticsEventName = "select_product",
-            analyticsHelper = analyticsHelper
+            analyticsHelper = analyticsHelper,
+            collapseKey = merchantSelected
         )
 
         selectedProduct?.let { product ->

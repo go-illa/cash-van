@@ -234,6 +234,36 @@ fun CreateOrderScreen(
                     color = Color(0xFF0D3773)
                 )
             }
+        } else if (uiState.currentPlan == null && uiState.error != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = uiState.error ?: "خطأ في تحميل الخطة",
+                        fontSize = 16.sp,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color(0xFFDC2626),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { viewModel.retryLoadPlan() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D3773)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "إعادة المحاولة",
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color.White
+                        )
+                    }
+                }
+            }
         } else {
             Column(
                 modifier = Modifier
@@ -328,7 +358,7 @@ fun CreateOrderScreen(
                         items = uiState.merchants,
                         selectedItem = uiState.selectedMerchant,
                         onItemSelected = { viewModel.selectMerchant(it) },
-                        itemText = { it.name },
+                        itemText = { it.displayName },
                         isLoading = uiState.isSearchingMerchants,
                         enabled = !uiState.isLoading,
                         onExpanded = {

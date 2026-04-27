@@ -8,8 +8,8 @@ data class Product(
     val created_at: String,
     val updated_at: String,
     val sku: String,
-    val frontdoor_code: String,
+    val frontdoor_code: String? = null,
     val price: String,
-    val name: String,
-    val description: String
+    val name: String? = null,
+    val description: String? = null
 )

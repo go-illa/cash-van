@@ -65,7 +65,7 @@ class OrderRepositoryImpl(
         }
     }
 
-    override suspend fun getOngoingPlan(): ApiResult<OngoingPlanResponse> {
+    override suspend fun getOngoingPlan(): ApiResult<OngoingPlanResponse?> {
         return try {
             val config = ApiEndpoints.Plans.getOngoingPlan()
             val versionedPath = "v${config.version}/${config.path}"

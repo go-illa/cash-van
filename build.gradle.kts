@@ -16,8 +16,8 @@ android {
         applicationId = "com.illa.cashvan"
         minSdk = 24
         targetSdk = 36
-        versionCode = 8
-        versionName = "2.5"
+        versionCode = 10
+        versionName = "2.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -56,6 +56,9 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("debug")
+            configure<com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension> {
+                mappingFileUploadEnabled = false
+            }
         }
     }
     compileOptions {

@@ -111,7 +111,7 @@ private fun SelectedProductItem(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = product.product.name,
+                    text = product.product.name ?: "",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily(Font(R.font.zain_regular)),
@@ -119,7 +119,7 @@ private fun SelectedProductItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = product.product.frontdoor_code,
+                    text = product.product.frontdoor_code ?: "",
                     fontSize = 12.sp,
                     fontFamily = FontFamily(Font(R.font.zain_regular)),
                     color = Color(0xFF6B7280)
@@ -265,7 +265,7 @@ private fun SelectedProductItem(
             )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(  12.dp))
         Box(
             modifier = Modifier
                 .fillMaxWidth()

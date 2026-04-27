@@ -86,14 +86,18 @@ class CreateOrderViewModel(
     private fun loadOngoingPlan() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-
             when (val result = getOngoingPlanUseCase()) {
                 is ApiResult.Success -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        currentPlan = result.data
-                    )
-                    loadProducts()
+                    val plan = result.data
+                    if (plan?.id == null) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = "لا يوجد خطة جارية حالياً"
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(isLoading = false, currentPlan = plan)
+                        loadProducts(_uiState.value.selectedMerchant?.price_tier)
+                    }
                 }
                 is ApiResult.Error -> {
                     _uiState.value = _uiState.value.copy(
@@ -182,16 +186,13 @@ class CreateOrderViewModel(
             productPage = 1,
             hasMoreProducts = true
         )
-
         productSearchJob?.cancel()
-
         val planId = _uiState.value.currentPlan?.id?.toString() ?: return
         val priceTier = _uiState.value.selectedMerchant?.price_tier
+        _uiState.value = _uiState.value.copy(isSearchingProducts = true)
 
         productSearchJob = viewModelScope.launch {
             delay(300)
-
-            _uiState.value = _uiState.value.copy(isSearchingProducts = true)
 
             try {
                 when (val result = getPlanProductsUseCase(planId, query.ifEmpty { null }, priceTier, page = 1)) {
@@ -263,11 +264,9 @@ class CreateOrderViewModel(
     private fun loadProducts(priceTier: String? = null) {
         val planId = _uiState.value.currentPlan?.id?.toString() ?: return
 
-        _uiState.value = _uiState.value.copy(productPage = 1, hasMoreProducts = true)
+        _uiState.value = _uiState.value.copy(productPage = 1, hasMoreProducts = true, isSearchingProducts = true)
 
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isSearchingProducts = true)
-
             when (val result = getPlanProductsUseCase(planId, null, priceTier, page = 1)) {
                 is ApiResult.Success -> {
                     val products = result.data.plan_products
@@ -294,7 +293,7 @@ class CreateOrderViewModel(
     fun selectMerchant(merchant: MerchantItem) {
         _uiState.value = _uiState.value.copy(
             selectedMerchant = merchant,
-            merchantSearchQuery = merchant.name
+            merchantSearchQuery = merchant.displayName
         )
         loadProducts(merchant.price_tier)
     }
@@ -507,6 +506,10 @@ class CreateOrderViewModel(
         }
     }
 
+    fun retryLoadPlan() {
+        loadOngoingPlan()
+    }
+
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
@@ -521,14 +524,19 @@ class CreateOrderViewModel(
 
     fun resetState() {
         _uiState.value = _uiState.value.copy(
+            isLoading = true,
             merchants = emptyList(),
-            products = _uiState.value.products,
+            products = emptyList(),
+            allProducts = emptyList(),
+            currentPlan = null,
             selectedMerchant = null,
             selectedProducts = emptyMap(),
+            productPrices = emptyMap(),
             merchantSearchQuery = "",
             productSearchQuery = "",
             error = null
         )
+        loadOngoingPlan()
     }
 
     private fun printInvoice(order: CreateOrderResponse) {
