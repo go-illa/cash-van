@@ -9,7 +9,7 @@ import com.google.accompanist.permissions.*
 fun LocationPermissionHandler(
     onPermissionGranted: () -> Unit,
     onPermissionDenied: () -> Unit,
-    content: @Composable (requestPermission: () -> Unit, isPermissionGranted: Boolean) -> Unit
+    content: @Composable (requestPermission: () -> Unit, isPermissionGranted: Boolean, shouldShowRationale: Boolean) -> Unit
 ) {
     val locationPermissionsState = rememberMultiplePermissionsState(
         listOf(
@@ -28,6 +28,7 @@ fun LocationPermissionHandler(
 
     content(
         { locationPermissionsState.launchMultiplePermissionRequest() },
-        locationPermissionsState.allPermissionsGranted
+        locationPermissionsState.allPermissionsGranted,
+        locationPermissionsState.shouldShowRationale
     )
 }

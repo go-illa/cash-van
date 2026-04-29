@@ -93,7 +93,7 @@ fun AddMerchantBottomSheet(
         onPermissionDenied = {
             locationViewModel.onPermissionDenied()
         }
-    ) { requestPermission, isPermissionGranted ->
+    ) { requestPermission, isPermissionGranted, _ ->
         val context = LocalContext.current
         var showLocationDialog by remember { mutableStateOf(false) }
 

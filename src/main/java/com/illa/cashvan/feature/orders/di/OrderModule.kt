@@ -14,6 +14,7 @@ import com.illa.cashvan.feature.orders.domain.usecase.GetProductTotalPriceUseCas
 import com.illa.cashvan.feature.orders.domain.usecase.GetCashVanProductTotalPriceUseCase
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
+import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
@@ -32,5 +33,5 @@ val orderModule = module {
     factory { GetCashVanProductTotalPriceUseCase(get()) }
 
     viewModel { OrderViewModel(get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { CreateOrderViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { CreateOrderViewModel(androidContext(), get(), get(), get(), get(), get(), get(), get(), get()) }
 }

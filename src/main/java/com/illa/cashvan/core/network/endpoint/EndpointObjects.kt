@@ -90,6 +90,28 @@ object ApiEndpoints {
             version = 2
         )
 
+        fun searchNearestMerchants(
+            query: String,
+            latitude: Double,
+            longitude: Double,
+            radiusMeters: Int = 500,
+            page: Int = 1,
+            items: Int = 20
+        ) = RequestConfiguration(
+            path = "merchants/nearest",
+            method = HttpMethod.Get,
+            parameters = Parameters.build {
+                append("q", query)
+                append("latitude", latitude.toString())
+                append("longitude", longitude.toString())
+                append("radius_meters", radiusMeters.toString())
+                append("page", page.toString())
+                append("items", items.toString())
+            },
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+
         fun getGovernorates() = RequestConfiguration(
             path = "governorates",
             method = HttpMethod.Get,

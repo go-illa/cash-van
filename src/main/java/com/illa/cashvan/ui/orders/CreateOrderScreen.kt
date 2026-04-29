@@ -55,7 +55,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.platform.LocalContext
 import com.illa.cashvan.R
+import com.illa.cashvan.core.location.LocationPermissionHandler
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
 import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.ui.common.SuccessSnackbar
@@ -77,6 +83,7 @@ fun CreateOrderScreen(
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
     var orderSubmitted by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -98,6 +105,12 @@ fun CreateOrderScreen(
             viewModel.clearError()
         }
     }
+
+    LocationPermissionHandler(
+        onPermissionGranted = { viewModel.onLocationPermissionGranted() },
+        onPermissionDenied = { viewModel.onLocationPermissionDenied() }
+    ) { requestPermission, _, shouldShowRationale ->
+        LaunchedEffect(Unit) { requestPermission() }
 
     Scaffold(
         snackbarHost = {
@@ -350,27 +363,91 @@ fun CreateOrderScreen(
 
                     Spacer(modifier = Modifier.height(7.dp))
 
-                    SearchableDropdown(
-                        label = "",
-                        placeholder = "أبحث بالاسم او رقم التيليفون",
-                        searchQuery = uiState.merchantSearchQuery,
-                        onSearchQueryChange = { viewModel.searchMerchants(it) },
-                        items = uiState.merchants,
-                        selectedItem = uiState.selectedMerchant,
-                        onItemSelected = { viewModel.selectMerchant(it) },
-                        itemText = { it.displayName },
-                        isLoading = uiState.isSearchingMerchants,
-                        enabled = !uiState.isLoading,
-                        onExpanded = {
-                            if (uiState.merchantSearchQuery.isEmpty()) {
-                                viewModel.searchMerchants("")
+                    when {
+                        uiState.isGettingLocation -> {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color(0xFF0D3773)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "جاري تحديد الموقع...",
+                                    fontSize = 14.sp,
+                                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                    color = Color(0xFF6B7280)
+                                )
                             }
-                        },
-                        onClear = { viewModel.clearMerchant() },
-                        onLoadMore = { viewModel.loadMoreMerchants() },
-                        isLoadingMore = uiState.isLoadingMoreMerchants,
-                        analyticsEventName = "select_merchant"
-                    )
+                        }
+                        !uiState.locationGranted -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "يرجى تفعيل خدمة الموقع للبحث عن التجار القريبين",
+                                    fontSize = 13.sp,
+                                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                    color = Color(0xFF6B7280),
+                                    textAlign = TextAlign.Center
+                                )
+                                Button(
+                                    onClick = {
+                                        if (shouldShowRationale) {
+                                            requestPermission()
+                                        } else {
+                                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                                data = Uri.fromParts("package", context.packageName, null)
+                                            }
+                                            context.startActivity(intent)
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D3773)),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = if (shouldShowRationale) "تفعيل الموقع" else "فتح الإعدادات",
+                                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                        color = Color.White,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+                        }
+                        else -> {
+                            SearchableDropdown(
+                                label = "",
+                                placeholder = "أبحث بالاسم او رقم التيليفون",
+                                searchQuery = uiState.merchantSearchQuery,
+                                onSearchQueryChange = { viewModel.searchMerchants(it) },
+                                items = uiState.merchants,
+                                selectedItem = uiState.selectedMerchant,
+                                onItemSelected = { viewModel.selectMerchant(it) },
+                                itemText = { it.displayName },
+                                isLoading = uiState.isSearchingMerchants,
+                                enabled = !uiState.isLoading,
+                                onExpanded = {
+                                    if (uiState.merchantSearchQuery.isEmpty()) {
+                                        viewModel.searchMerchants("")
+                                    }
+                                },
+                                onClear = { viewModel.clearMerchant() },
+                                onLoadMore = { viewModel.loadMoreMerchants() },
+                                isLoadingMore = uiState.isLoadingMoreMerchants,
+                                analyticsEventName = "select_merchant"
+                            )
+                        }
+                    }
                 }
 
                 ProductSelectionComponent(
@@ -452,6 +529,7 @@ fun CreateOrderScreen(
             }
         }
 
+    }
     }
 }
 

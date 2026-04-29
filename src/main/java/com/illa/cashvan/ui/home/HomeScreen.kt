@@ -22,7 +22,7 @@ fun HomeScreen(
         onPermissionDenied = {
             locationViewModel.onPermissionDenied()
         }
-    ) { requestPermission, isPermissionGranted ->
+    ) { requestPermission, isPermissionGranted, _ ->
         LaunchedEffect(Unit) {
             if (!isPermissionGranted) {
                 requestPermission()

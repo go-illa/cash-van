@@ -80,9 +80,9 @@ class OrderRepositoryImpl(
         }
     }
 
-    override suspend fun searchMerchants(query: String, page: Int, items: Int): ApiResult<MerchantSearchResponse> {
+    override suspend fun searchMerchants(query: String, latitude: Double, longitude: Double, page: Int, items: Int): ApiResult<MerchantSearchResponse> {
         return try {
-            val config = ApiEndpoints.Merchant.searchMerchants(query, page, items)
+            val config = ApiEndpoints.Merchant.searchNearestMerchants(query, latitude, longitude, page = page, items = items)
             val versionedPath = "v${config.version}/${config.path}"
 
             val response = httpClient.request(versionedPath) {

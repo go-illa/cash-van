@@ -18,6 +18,7 @@ import com.illa.cashvan.feature.orders.domain.usecase.SearchMerchantsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOrderByIdUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetCashVanProductTotalPriceUseCase
+import com.illa.cashvan.core.location.LocationService
 import com.illa.cashvan.feature.printer.HoneywellPrinterManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -55,11 +56,16 @@ data class CreateOrderUiState(
     val loadingPriceForProducts: Set<String> = emptySet(),
     val previewProductPrice: ProductPriceInfo? = null,
     val isLoadingPreviewPrice: Boolean = false,
-    val rebateValue: String = ""
+    val rebateValue: String = "",
+    val locationGranted: Boolean = false,
+    val isGettingLocation: Boolean = false,
+    val userLatitude: Double? = null,
+    val userLongitude: Double? = null
 )
 
 class CreateOrderViewModel(
     private val context: Context,
+    private val locationService: LocationService,
     private val getOngoingPlanUseCase: GetOngoingPlanUseCase,
     private val searchMerchantsUseCase: SearchMerchantsUseCase,
     private val getPlanProductsUseCase: GetPlanProductsUseCase,
@@ -113,6 +119,9 @@ class CreateOrderViewModel(
     }
 
     fun searchMerchants(query: String) {
+        val lat = _uiState.value.userLatitude ?: return
+        val lon = _uiState.value.userLongitude ?: return
+
         _uiState.value = _uiState.value.copy(
             merchantSearchQuery = query,
             merchantPage = 1,
@@ -127,7 +136,7 @@ class CreateOrderViewModel(
             _uiState.value = _uiState.value.copy(isSearchingMerchants = true)
 
             try {
-                when (val result = searchMerchantsUseCase(query, page = 1)) {
+                when (val result = searchMerchantsUseCase(query, lat, lon, page = 1)) {
                     is ApiResult.Success -> {
                         _uiState.value = _uiState.value.copy(
                             isSearchingMerchants = false,
@@ -155,12 +164,14 @@ class CreateOrderViewModel(
         val state = _uiState.value
         if (!state.hasMoreMerchants || state.isLoadingMoreMerchants || state.isSearchingMerchants) return
 
+        val lat = state.userLatitude ?: return
+        val lon = state.userLongitude ?: return
         val nextPage = state.merchantPage + 1
         _uiState.value = state.copy(isLoadingMoreMerchants = true)
 
         viewModelScope.launch {
             try {
-                when (val result = searchMerchantsUseCase(state.merchantSearchQuery, page = nextPage)) {
+                when (val result = searchMerchantsUseCase(state.merchantSearchQuery, lat, lon, page = nextPage)) {
                     is ApiResult.Success -> {
                         _uiState.value = _uiState.value.copy(
                             isLoadingMoreMerchants = false,
@@ -508,6 +519,42 @@ class CreateOrderViewModel(
 
     fun retryLoadPlan() {
         loadOngoingPlan()
+    }
+
+    fun onLocationPermissionGranted() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isGettingLocation = true)
+            locationService.getCurrentLocation()
+                .onSuccess { location ->
+                    _uiState.value = _uiState.value.copy(
+                        isGettingLocation = false,
+                        locationGranted = true,
+                        userLatitude = location.latitude,
+                        userLongitude = location.longitude
+                    )
+                }
+                .onFailure {
+                    locationService.getLastKnownLocation()
+                        .onSuccess { location ->
+                            _uiState.value = _uiState.value.copy(
+                                isGettingLocation = false,
+                                locationGranted = true,
+                                userLatitude = location.latitude,
+                                userLongitude = location.longitude
+                            )
+                        }
+                        .onFailure {
+                            _uiState.value = _uiState.value.copy(
+                                isGettingLocation = false,
+                                error = "تعذر تحديد الموقع، يرجى المحاولة مجدداً"
+                            )
+                        }
+                }
+        }
+    }
+
+    fun onLocationPermissionDenied() {
+        _uiState.value = _uiState.value.copy(locationGranted = false, isGettingLocation = false)
     }
 
     fun clearError() {
