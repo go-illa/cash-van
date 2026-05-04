@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,6 +33,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,6 +61,7 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 import com.illa.cashvan.R
 import com.illa.cashvan.core.location.LocationPermissionHandler
@@ -74,6 +77,7 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun CreateOrderScreen(
     viewModel: CreateOrderViewModel = koinViewModel(),
+    paymentType: String? = null,
     merchantCreatedSignal: Int = 0,
     onAddMerchantClick: () -> Unit = {},
     onBackClick: () -> Unit = {},
@@ -87,7 +91,7 @@ fun CreateOrderScreen(
     var orderSubmitted by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        viewModel.resetState()
+        viewModel.resetState(paymentType = paymentType)
     }
 
     LaunchedEffect(merchantCreatedSignal) {
@@ -109,8 +113,73 @@ fun CreateOrderScreen(
     LocationPermissionHandler(
         onPermissionGranted = { viewModel.onLocationPermissionGranted() },
         onPermissionDenied = { viewModel.onLocationPermissionDenied() }
-    ) { requestPermission, _, shouldShowRationale ->
-        LaunchedEffect(Unit) { requestPermission() }
+    ) { requestPermission, isPermissionGranted, _ ->
+        var showLocationDialog by remember { mutableStateOf(false) }
+        var navigatedToSettings by rememberSaveable { mutableStateOf(false) }
+
+        LaunchedEffect(isPermissionGranted) {
+            if (!isPermissionGranted && !navigatedToSettings) showLocationDialog = true
+        }
+
+        if (showLocationDialog && !uiState.locationGranted) {
+            AlertDialog(
+                onDismissRequest = { showLocationDialog = false },
+                title = {
+                    Text(
+                        text = "تحديد الموقع مطلوب",
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Text(
+                        text = if (!isPermissionGranted)
+                            "يجب السماح بالوصول للموقع لعرض التجار القريبين. يرجى تفعيل صلاحية الموقع."
+                        else
+                            "تعذر تحديد موقعك. تأكد من تفعيل خدمة الموقع في جهازك وحاول مرة أخرى.",
+                        fontFamily = FontFamily(Font(R.font.zain_regular))
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (!isPermissionGranted) requestPermission()
+                            else viewModel.onLocationPermissionGranted()
+                            showLocationDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D3773))
+                    ) {
+                        Text(
+                            text = if (!isPermissionGranted) "السماح" else "إعادة المحاولة",
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color.White
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            navigatedToSettings = true
+                            val intent = if (isPermissionGranted) {
+                                Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                            } else {
+                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                }
+                            }
+                            context.startActivity(intent)
+                            showLocationDialog = false
+                        }
+                    ) {
+                        Text(
+                            text = "فتح الإعدادات",
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color(0xFF0D3773)
+                        )
+                    }
+                }
+            )
+        }
 
     Scaffold(
         snackbarHost = {
@@ -403,20 +472,14 @@ fun CreateOrderScreen(
                                 )
                                 Button(
                                     onClick = {
-                                        if (shouldShowRationale) {
-                                            requestPermission()
-                                        } else {
-                                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
-                                                data = Uri.fromParts("package", context.packageName, null)
-                                            }
-                                            context.startActivity(intent)
-                                        }
+                                        navigatedToSettings = false
+                                        showLocationDialog = true
                                     },
                                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D3773)),
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
                                     Text(
-                                        text = if (shouldShowRationale) "تفعيل الموقع" else "فتح الإعدادات",
+                                        text = "تفعيل الموقع",
                                         fontFamily = FontFamily(Font(R.font.zain_regular)),
                                         color = Color.White,
                                         fontSize = 14.sp

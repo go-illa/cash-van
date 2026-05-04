@@ -23,9 +23,12 @@ import com.illa.cashvan.ui.orders.OrderDetailsScreen
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
 import com.illa.cashvan.ui.orders.ui_components.OrderConfirmationBottomSheet
+import com.illa.cashvan.ui.orders.ui_components.PaymentTypeDialog
 import com.illa.cashvan.ui.profile.PersonalProfileScreen
 import com.illa.cashvan.ui.signin.SignInScreen
 import com.illa.cashvan.ui.splash.SplashScreen
+import com.illa.cashvan.ui.visit.CreateVisitWithoutOrderScreen
+import com.illa.cashvan.ui.visit.VisitWithoutOrderDetailsScreen
 import kotlinx.coroutines.delay
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -53,6 +56,7 @@ fun CashVanNavigation(
     var merchantCreatedSignal by remember { mutableStateOf(0) }
     var showOrderResultSheet by remember { mutableStateOf(false) }
     val orderResultSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showPaymentTypeDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(createOrderUiState.orderCreated, createOrderUiState.orderCreationError) {
         if ((createOrderUiState.orderCreated || createOrderUiState.orderCreationError != null) &&
@@ -130,10 +134,19 @@ fun CashVanNavigation(
                     HomeKey -> NavEntry(key) {
                         HomeScreen(
                             onCreateOrderClick = {
-                                backStack.add(CreateOrderKey)
+                                backStack.add(CreateOrderKey())
+                            },
+                            onCreateVisitWithOrder = {
+                                showPaymentTypeDialog = true
+                            },
+                            onCreateVisitWithoutOrder = {
+                                backStack.add(CreateVisitWithoutOrderKey)
                             },
                             onOrderDetailsClick = { orderId ->
                                 backStack.add(OrderDetailsKey(orderId))
+                            },
+                            onVisitDetailsClick = { visitId ->
+                                backStack.add(VisitWithoutOrderDetailsKey(visitId))
                             }
                         )
                     }
@@ -148,13 +161,14 @@ fun CashVanNavigation(
                     InventoryKey -> NavEntry(key) {
                         InventoryScreen(
                             onAddOrderClick = {
-                                backStack.add(CreateOrderKey)
+                                backStack.add(CreateOrderKey())
                             },
                         )
                     }
-                    CreateOrderKey -> NavEntry(key) {
+                    is CreateOrderKey -> NavEntry(key) {
                         CreateOrderScreen(
                             viewModel = createOrderViewModel,
+                            paymentType = key.paymentType,
                             merchantCreatedSignal = merchantCreatedSignal,
                             onAddMerchantClick = {
                                 backStack.add(CreateMerchantKey)
@@ -165,6 +179,21 @@ fun CashVanNavigation(
                                 }
                             },
                             onOrderCreated = {
+                                if (backStack.size > 1) {
+                                    backStack.removeLastOrNull()
+                                }
+                            }
+                        )
+                    }
+                    CreateVisitWithoutOrderKey -> NavEntry(key) {
+                        CreateVisitWithoutOrderScreen(
+                            visitViewModel = koinViewModel(),
+                            onBackClick = {
+                                if (backStack.size > 1) {
+                                    backStack.removeLastOrNull()
+                                }
+                            },
+                            onVisitCreated = {
                                 if (backStack.size > 1) {
                                     backStack.removeLastOrNull()
                                 }
@@ -200,6 +229,16 @@ fun CashVanNavigation(
                             }
                         )
                     }
+                    is VisitWithoutOrderDetailsKey -> NavEntry(key) {
+                        VisitWithoutOrderDetailsScreen(
+                            visitId = key.visitId,
+                            onBackClick = {
+                                if (backStack.size > 1) {
+                                    backStack.removeLastOrNull()
+                                }
+                            }
+                        )
+                    }
                     else -> NavEntry(Unit) {
                         Text("Unknown route")
                     }
@@ -222,6 +261,16 @@ fun CashVanNavigation(
                 showOrderResultSheet = false
                 createOrderViewModel.resetOrderCreated()
                 createOrderViewModel.clearOrderCreationError()
+            }
+        )
+    }
+
+    if (showPaymentTypeDialog) {
+        PaymentTypeDialog(
+            onDismiss = { showPaymentTypeDialog = false },
+            onPaymentTypeSelected = { paymentType ->
+                showPaymentTypeDialog = false
+                backStack.add(CreateOrderKey(paymentType = paymentType))
             }
         )
     }

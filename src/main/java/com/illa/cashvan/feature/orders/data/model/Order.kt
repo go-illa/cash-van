@@ -252,7 +252,10 @@ data class OrderData(
     val plan_id: String? = null,
     val merchant_id: String? = null,
     val rebate_value: Double? = null,
-    val order_items: List<OrderItem>
+    val order_items: List<OrderItem>,
+    val latitude: String? = null,
+    val longitude: String? = null,
+    val payment_type: String? = null
 )
 
 @Serializable

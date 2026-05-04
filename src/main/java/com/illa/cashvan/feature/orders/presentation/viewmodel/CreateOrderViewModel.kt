@@ -60,7 +60,8 @@ data class CreateOrderUiState(
     val locationGranted: Boolean = false,
     val isGettingLocation: Boolean = false,
     val userLatitude: Double? = null,
-    val userLongitude: Double? = null
+    val userLongitude: Double? = null,
+    val paymentType: String? = null
 )
 
 class CreateOrderViewModel(
@@ -494,7 +495,10 @@ class CreateOrderViewModel(
                     plan_id = state.currentPlan.id ?: "",
                     merchant_id = state.selectedMerchant.id,
                     rebate_value = state.rebateValue.toDoubleOrNull(),
-                    order_items = orderItems
+                    order_items = orderItems,
+                    latitude = state.userLatitude?.toString(),
+                    longitude = state.userLongitude?.toString(),
+                    payment_type = state.paymentType
                 )
             )
 
@@ -569,7 +573,7 @@ class CreateOrderViewModel(
         _uiState.value = _uiState.value.copy(orderCreated = false)
     }
 
-    fun resetState() {
+    fun resetState(paymentType: String? = null) {
         _uiState.value = _uiState.value.copy(
             isLoading = true,
             merchants = emptyList(),
@@ -581,7 +585,8 @@ class CreateOrderViewModel(
             productPrices = emptyMap(),
             merchantSearchQuery = "",
             productSearchQuery = "",
-            error = null
+            error = null,
+            paymentType = paymentType
         )
         loadOngoingPlan()
     }

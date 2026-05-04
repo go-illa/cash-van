@@ -210,4 +210,43 @@ object ApiEndpoints {
             version = 2
         )
     }
+
+    object Visits {
+        fun getNoOrderReasons() = RequestConfiguration(
+            path = "no_order_reasons",
+            method = HttpMethod.Get,
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+
+        fun createVisit() = RequestConfiguration(
+            path = "visits",
+            method = HttpMethod.Post,
+            parameterEncoding = ParameterEncoding.BODY,
+            version = 2
+        )
+
+        fun getVisits(page: Int = 1, items: Int = 20) = RequestConfiguration(
+            path = "visits",
+            method = HttpMethod.Get,
+            parameters = Parameters.build {
+                append("page", page.toString())
+                append("items", items.toString())
+                append("include", "merchant,sales_agent,no_order_reason,agent")
+                append("f[visit_type_eq]", "without_order")
+            },
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+
+        fun getVisitById(id: String) = RequestConfiguration(
+            path = "visits/$id",
+            method = HttpMethod.Get,
+            parameters = Parameters.build {
+                append("include", "merchant,sales_agent,no_order_reason,agent")
+            },
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+    }
 }

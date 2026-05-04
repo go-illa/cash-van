@@ -58,16 +58,26 @@ import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.ui.home.ui_components.EmptyOrdersComponent
 import com.illa.cashvan.ui.orders.ui_components.CancelOrderBottomSheet
+import com.illa.cashvan.ui.orders.ui_components.CreateVisitBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.OrderCardItem
 import com.illa.cashvan.ui.orders.ui_components.OrderItem
+import com.illa.cashvan.ui.visit.VisitWithoutOrderListTab
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
+
+enum class CashVanSubTab(val displayName: String) {
+    WITH_ORDER("زيارة مع طلب"),
+    WITHOUT_ORDER("زيارة بدون طلب")
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun OrderScreen(
     onAddOrderClick: () -> Unit = {},
+    onCreateVisitWithOrder: () -> Unit = {},
+    onCreateVisitWithoutOrder: () -> Unit = {},
     onOrderClick: (OrderItem) -> Unit = {},
+    onVisitDetailsClick: (String) -> Unit = {},
     viewModel: OrderViewModel = koinViewModel(),
     analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
@@ -96,10 +106,11 @@ fun OrderScreen(
 
     var showCancelBottomSheet by remember { mutableStateOf(false) }
     var selectedOrderForCancel by remember { mutableStateOf<OrderItem?>(null) }
-    val cancelBottomSheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
+    val cancelBottomSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    var showCreateVisitSheet by remember { mutableStateOf(false) }
+    val createVisitSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+    var cashVanSubTab by remember { mutableStateOf(CashVanSubTab.WITH_ORDER) }
 
 
     LaunchedEffect(Unit) {
@@ -166,98 +177,148 @@ fun OrderScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            when {
-                uiState.isLoading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(
-                            color = Color(0xFF0D3773)
+            if (uiState.selectedTab == OrderType.CASH_VAN) {
+                val subTabs = listOf(CashVanSubTab.WITH_ORDER, CashVanSubTab.WITHOUT_ORDER)
+                val subTabIndex = subTabs.indexOf(cashVanSubTab)
+                TabRow(
+                    selectedTabIndex = subTabIndex,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    containerColor = Color.Transparent,
+                    indicator = { tabPositions ->
+                        if (subTabIndex < tabPositions.size) {
+                            TabRowDefaults.SecondaryIndicator(
+                                modifier = Modifier.tabIndicatorOffset(tabPositions[subTabIndex]),
+                                color = Color(0xFF0D3773)
+                            )
+                        }
+                    },
+                    divider = {}
+                ) {
+                    subTabs.forEachIndexed { index, subTab ->
+                        Tab(
+                            selected = subTabIndex == index,
+                            onClick = { cashVanSubTab = subTab },
+                            text = {
+                                Text(
+                                    text = subTab.displayName,
+                                    fontSize = 14.sp,
+                                    fontWeight = if (subTabIndex == index) FontWeight.Bold else FontWeight.Normal,
+                                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                    color = if (subTabIndex == index) Color(0xFF0D3773) else Color(0xFF9E9E9E)
+                                )
+                            }
                         )
                     }
                 }
-                uiState.error != null -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (uiState.selectedTab == OrderType.CASH_VAN && cashVanSubTab == CashVanSubTab.WITHOUT_ORDER) {
+                Box(modifier = Modifier.weight(1f)) {
+                    VisitWithoutOrderListTab(
+                        onVisitClick = onVisitDetailsClick,
+                        onCreateClick = { showCreateVisitSheet = true }
+                    )
+                }
+            } else {
+                when {
+                    uiState.isLoading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "حدث خطأ في تحميل الطلبات",
-                                color = Color.Red,
-                                textAlign = TextAlign.Center
+                            CircularProgressIndicator(
+                                color = Color(0xFF0D3773)
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            IconButton(
-                                onClick = { viewModel.refresh() }
+                        }
+                    }
+                    uiState.error != null -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Refresh,
-                                    contentDescription = "إعادة تحميل",
-                                    tint = Color(0xFF0D3773)
+                                Text(
+                                    text = "حدث خطأ في تحميل الطلبات",
+                                    color = Color.Red,
+                                    textAlign = TextAlign.Center
                                 )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                IconButton(
+                                    onClick = { viewModel.refresh() }
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = "إعادة تحميل",
+                                        tint = Color(0xFF0D3773)
+                                    )
+                                }
                             }
                         }
                     }
-                }
-                orderItems.isEmpty() -> {
-                    EmptyOrdersComponent(
-                        modifier = Modifier.weight(1f),
-                        onCreateOrderClick = onAddOrderClick
-                    )
-                }
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(orderItems) { order ->
-                            OrderCardItem(
-                                order = order,
-                                onOrderClick = onOrderClick,
-                                onCancelClick = { orderItem ->
-                                    selectedOrderForCancel = orderItem
-                                    showCancelBottomSheet = true
-                                },
-                                onSubmitClick = { orderItem ->
-                                    val fullOrder = uiState.orders.find { it.id == orderItem.id }
-                                    fullOrder?.let { viewModel.submitOrder(it) }
-                                },
-                                onPrintClick = { orderItem ->
-                                    analyticsHelper.logEvent("order_print_invoice_clicked")
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                        if (bluetoothPermissionsState?.allPermissionsGranted == true) {
-                                            viewModel.printInvoice(orderItem.id)
+                    orderItems.isEmpty() -> {
+                        EmptyOrdersComponent(
+                            modifier = Modifier.weight(1f),
+                            onCreateOrderClick = { showCreateVisitSheet = true }
+                        )
+                    }
+                    else -> {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(orderItems) { order ->
+                                OrderCardItem(
+                                    order = order,
+                                    onOrderClick = onOrderClick,
+                                    onCancelClick = { orderItem ->
+                                        selectedOrderForCancel = orderItem
+                                        showCancelBottomSheet = true
+                                    },
+                                    onSubmitClick = { orderItem ->
+                                        val fullOrder = uiState.orders.find { it.id == orderItem.id }
+                                        fullOrder?.let { viewModel.submitOrder(it) }
+                                    },
+                                    onPrintClick = { orderItem ->
+                                        analyticsHelper.logEvent("order_print_invoice_clicked")
+                                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                            if (bluetoothPermissionsState?.allPermissionsGranted == true) {
+                                                viewModel.printInvoice(orderItem.id)
+                                            } else {
+                                                pendingPrintOrderId = orderItem.id
+                                                bluetoothPermissionsState?.launchMultiplePermissionRequest()
+                                            }
                                         } else {
-                                            pendingPrintOrderId = orderItem.id
-                                            bluetoothPermissionsState?.launchMultiplePermissionRequest()
+                                            viewModel.printInvoice(orderItem.id)
                                         }
-                                    } else {
-                                        viewModel.printInvoice(orderItem.id)
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            )
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
                         }
                     }
                 }
             }
         }
 
-        if (orderItems.isNotEmpty() && !uiState.isLoading && uiState.error == null) {
+        val showMainFab = orderItems.isNotEmpty() && !uiState.isLoading && uiState.error == null &&
+            !(uiState.selectedTab == OrderType.CASH_VAN && cashVanSubTab == CashVanSubTab.WITHOUT_ORDER)
+        if (showMainFab) {
             FloatingActionButton(
                 onClick = {
                     analyticsHelper.logEvent("plus_icon")
-                    onAddOrderClick()
+                    showCreateVisitSheet = true
                 },
                 modifier = Modifier
                     .align(Alignment.BottomStart)
@@ -304,6 +365,21 @@ fun OrderScreen(
                     }
                 },
                 orderNumber = selectedOrderForCancel?.orderNumber ?: ""
+            )
+        }
+
+        if (showCreateVisitSheet) {
+            CreateVisitBottomSheet(
+                sheetState = createVisitSheetState,
+                onDismiss = { showCreateVisitSheet = false },
+                onCreateWithOrder = {
+                    showCreateVisitSheet = false
+                    onCreateVisitWithOrder()
+                },
+                onCreateWithoutOrder = {
+                    showCreateVisitSheet = false
+                    onCreateVisitWithoutOrder()
+                }
             )
         }
 

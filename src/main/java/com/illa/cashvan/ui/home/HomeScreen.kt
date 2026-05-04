@@ -12,7 +12,10 @@ import org.koin.androidx.compose.koinViewModel
 @Composable
 fun HomeScreen(
     onCreateOrderClick: () -> Unit = {},
+    onCreateVisitWithOrder: () -> Unit = {},
+    onCreateVisitWithoutOrder: () -> Unit = {},
     onOrderDetailsClick: (String) -> Unit = {},
+    onVisitDetailsClick: (String) -> Unit = {},
     locationViewModel: LocationViewModel = koinViewModel()
 ) {
     LocationPermissionHandler(
@@ -31,9 +34,12 @@ fun HomeScreen(
 
         OrderScreen(
             onAddOrderClick = onCreateOrderClick,
+            onCreateVisitWithOrder = onCreateVisitWithOrder,
+            onCreateVisitWithoutOrder = onCreateVisitWithoutOrder,
             onOrderClick = { order ->
                 onOrderDetailsClick(order.id)
-            }
+            },
+            onVisitDetailsClick = onVisitDetailsClick
         )
     }
 }
