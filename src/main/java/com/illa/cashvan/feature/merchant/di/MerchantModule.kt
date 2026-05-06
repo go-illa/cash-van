@@ -6,6 +6,7 @@ import com.illa.cashvan.feature.merchant.domain.usecase.CreateMerchantUseCase
 import com.illa.cashvan.feature.merchant.domain.usecase.GetGovernoratesUseCase
 import com.illa.cashvan.feature.merchant.domain.usecase.GetMerchantTypesUseCase
 import com.illa.cashvan.feature.merchant.domain.usecase.GetReverseGeocodeUseCase
+import com.illa.cashvan.feature.merchant.domain.usecase.UpdateMerchantUseCase
 import com.illa.cashvan.feature.merchant.presentation.viewmodel.MerchantViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
@@ -30,6 +31,10 @@ val merchantModule = module {
 
     single {
         GetReverseGeocodeUseCase(merchantRepository = get())
+    }
+
+    factory {
+        UpdateMerchantUseCase(merchantRepository = get())
     }
 
     viewModel {

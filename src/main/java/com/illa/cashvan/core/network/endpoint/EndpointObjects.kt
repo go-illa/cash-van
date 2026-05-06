@@ -94,7 +94,7 @@ object ApiEndpoints {
             query: String,
             latitude: Double,
             longitude: Double,
-            radiusMeters: Int = 500,
+            radiusMeters: Int = 200,
             page: Int = 1,
             items: Int = 20
         ) = RequestConfiguration(
@@ -123,6 +123,13 @@ object ApiEndpoints {
             path = "merchant_types",
             method = HttpMethod.Get,
             parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+
+        fun updateMerchant(merchantId: String) = RequestConfiguration(
+            path = "merchants/$merchantId",
+            method = HttpMethod.Put,
+            parameterEncoding = ParameterEncoding.BODY,
             version = 2
         )
 

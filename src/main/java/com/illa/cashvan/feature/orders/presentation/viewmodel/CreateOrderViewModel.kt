@@ -18,6 +18,7 @@ import com.illa.cashvan.feature.orders.domain.usecase.SearchMerchantsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOrderByIdUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetCashVanProductTotalPriceUseCase
+import com.illa.cashvan.feature.merchant.domain.usecase.UpdateMerchantUseCase
 import com.illa.cashvan.core.location.LocationService
 import com.illa.cashvan.feature.printer.HoneywellPrinterManager
 import kotlinx.coroutines.Job
@@ -61,7 +62,10 @@ data class CreateOrderUiState(
     val isGettingLocation: Boolean = false,
     val userLatitude: Double? = null,
     val userLongitude: Double? = null,
-    val paymentType: String? = null
+    val paymentType: String? = null,
+    val isUpdatingMerchantName: Boolean = false,
+    val updateMerchantNameError: String? = null,
+    val merchantNameUpdated: Boolean = false
 )
 
 class CreateOrderViewModel(
@@ -73,7 +77,8 @@ class CreateOrderViewModel(
     private val createOrderUseCase: CreateOrderUseCase,
     private val getOrderByIdUseCase: GetOrderByIdUseCase,
     private val getInvoiceContentUseCase: GetInvoiceContentUseCase,
-    private val getCashVanProductTotalPriceUseCase: GetCashVanProductTotalPriceUseCase
+    private val getCashVanProductTotalPriceUseCase: GetCashVanProductTotalPriceUseCase,
+    private val updateMerchantUseCase: UpdateMerchantUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateOrderUiState())
@@ -639,6 +644,38 @@ class CreateOrderViewModel(
                 )
             }
         }
+    }
+
+    fun updateMerchantSignName(signName: String) {
+        val merchant = _uiState.value.selectedMerchant ?: return
+        val lat = _uiState.value.userLatitude ?: return
+        val lon = _uiState.value.userLongitude ?: return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isUpdatingMerchantName = true, updateMerchantNameError = null)
+            when (val result = updateMerchantUseCase(merchant.id, signName, lat, lon)) {
+                is ApiResult.Success -> {
+                    val updated = merchant.copy(sign_name = result.data.sign_name)
+                    _uiState.value = _uiState.value.copy(
+                        isUpdatingMerchantName = false,
+                        selectedMerchant = updated,
+                        merchantSearchQuery = updated.displayName,
+                        merchantNameUpdated = true
+                    )
+                }
+                is ApiResult.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        isUpdatingMerchantName = false,
+                        updateMerchantNameError = result.message
+                    )
+                }
+                is ApiResult.Loading -> {}
+            }
+        }
+    }
+
+    fun clearMerchantNameUpdated() {
+        _uiState.value = _uiState.value.copy(merchantNameUpdated = false, updateMerchantNameError = null)
     }
 
     override fun onCleared() {

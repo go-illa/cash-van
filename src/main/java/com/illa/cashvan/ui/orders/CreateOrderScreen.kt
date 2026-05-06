@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -68,6 +69,7 @@ import com.illa.cashvan.core.location.LocationPermissionHandler
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
 import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.ui.common.SuccessSnackbar
+import com.illa.cashvan.ui.orders.ui_components.EditMerchantNameDialog
 import com.illa.cashvan.ui.orders.ui_components.ProductSelectionComponent
 import com.illa.cashvan.ui.orders.ui_components.SearchableDropdown
 import com.illa.cashvan.ui.orders.ui_components.SelectedProductsList
@@ -89,6 +91,14 @@ fun CreateOrderScreen(
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
     var orderSubmitted by remember { mutableStateOf(false) }
+    var showEditMerchantNameDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.merchantNameUpdated) {
+        if (uiState.merchantNameUpdated) {
+            showEditMerchantNameDialog = false
+            viewModel.clearMerchantNameUpdated()
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.resetState(paymentType = paymentType)
@@ -177,6 +187,19 @@ fun CreateOrderScreen(
                             color = Color(0xFF0D3773)
                         )
                     }
+                }
+            )
+        }
+
+        if (showEditMerchantNameDialog) {
+            EditMerchantNameDialog(
+                currentSignName = uiState.selectedMerchant?.sign_name ?: uiState.selectedMerchant?.name ?: "",
+                isLoading = uiState.isUpdatingMerchantName,
+                error = uiState.updateMerchantNameError,
+                onConfirm = { viewModel.updateMerchantSignName(it) },
+                onDismiss = {
+                    showEditMerchantNameDialog = false
+                    viewModel.clearMerchantNameUpdated()
                 }
             )
         }
@@ -509,6 +532,28 @@ fun CreateOrderScreen(
                                 isLoadingMore = uiState.isLoadingMoreMerchants,
                                 analyticsEventName = "select_merchant"
                             )
+                            if (uiState.selectedMerchant != null) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(onClick = { showEditMerchantNameDialog = true }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp),
+                                            tint = Color(0xFF0D3773)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "تعديل اسم التاجر",
+                                            fontSize = 13.sp,
+                                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                            color = Color(0xFF0D3773)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

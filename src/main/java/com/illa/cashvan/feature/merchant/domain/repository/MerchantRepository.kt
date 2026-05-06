@@ -6,10 +6,17 @@ import com.illa.cashvan.feature.merchant.data.model.CreateMerchantResponse
 import com.illa.cashvan.feature.merchant.data.model.GovernoratesResponse
 import com.illa.cashvan.feature.merchant.data.model.MerchantTypesResponse
 import com.illa.cashvan.feature.merchant.data.model.ReverseGeocodeResponse
+import com.illa.cashvan.feature.merchant.data.model.UpdateMerchantResponse
 
 interface MerchantRepository {
     suspend fun createMerchant(request: CreateMerchantRequest): ApiResult<CreateMerchantResponse>
     suspend fun getGovernorates(): ApiResult<GovernoratesResponse>
     suspend fun getMerchantTypes(): ApiResult<MerchantTypesResponse>
     suspend fun reverseGeocode(latitude: String, longitude: String): ApiResult<ReverseGeocodeResponse>
+    suspend fun updateMerchant(
+        merchantId: String,
+        signName: String,
+        latitude: Double,
+        longitude: Double
+    ): ApiResult<UpdateMerchantResponse>
 }

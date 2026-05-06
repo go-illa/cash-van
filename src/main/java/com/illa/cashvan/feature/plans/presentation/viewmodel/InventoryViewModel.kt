@@ -16,9 +16,12 @@ import kotlinx.coroutines.launch
 data class InventoryUiState(
     val isLoading: Boolean = false,
     val planProducts: List<PlanProduct> = emptyList(),
-    val plan: OngoingPlanResponse?=null,
+    val plan: OngoingPlanResponse? = null,
     val selectedPlan: Plan? = null,
-    val error: String? = null
+    val error: String? = null,
+    val currentPage: Int = 1,
+    val hasMoreProducts: Boolean = true,
+    val isLoadingMore: Boolean = false
 )
 
 class InventoryViewModel(
@@ -76,14 +79,19 @@ class InventoryViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(
                 isLoading = true,
-                error = null
+                error = null,
+                currentPage = 1,
+                hasMoreProducts = true
             )
 
-            when (val result = getPlanProductsUseCase(planId)) {
+            when (val result = getPlanProductsUseCase(planId, page = 1)) {
                 is ApiResult.Success -> {
+                    val products = result.data.plan_products
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        planProducts = result.data.plan_products,
+                        planProducts = products,
+                        currentPage = 1,
+                        hasMoreProducts = products.size >= 20,
                         error = null
                     )
                 }
@@ -93,8 +101,34 @@ class InventoryViewModel(
                         error = result.message
                     )
                 }
-                is ApiResult.Loading -> {
+                is ApiResult.Loading -> {}
+            }
+        }
+    }
+
+    fun loadMorePlanProducts() {
+        val state = _uiState.value
+        val planId = state.plan?.id ?: return
+        if (!state.hasMoreProducts || state.isLoadingMore || state.isLoading) return
+
+        val nextPage = state.currentPage + 1
+        viewModelScope.launch {
+            _uiState.value = state.copy(isLoadingMore = true)
+
+            when (val result = getPlanProductsUseCase(planId, page = nextPage)) {
+                is ApiResult.Success -> {
+                    val newProducts = result.data.plan_products
+                    _uiState.value = _uiState.value.copy(
+                        isLoadingMore = false,
+                        planProducts = _uiState.value.planProducts + newProducts,
+                        currentPage = nextPage,
+                        hasMoreProducts = newProducts.size >= 20
+                    )
                 }
+                is ApiResult.Error -> {
+                    _uiState.value = _uiState.value.copy(isLoadingMore = false)
+                }
+                is ApiResult.Loading -> {}
             }
         }
     }

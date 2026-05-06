@@ -22,9 +22,9 @@ class PlansRepositoryImpl(
         }
     }
 
-    override suspend fun getPlanProducts(planId: String): ApiResult<PlanProductsResponse> {
+    override suspend fun getPlanProducts(planId: String, page: Int, items: Int): ApiResult<PlanProductsResponse> {
         return try {
-            val response = client.request(ApiEndpoints.Plans.getPlanProducts(planId)).body<PlanProductsResponse>()
+            val response = client.request(ApiEndpoints.Plans.getPlanProducts(planId, page = page, items = items)).body<PlanProductsResponse>()
             ApiResult.Success(response)
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to fetch plan products")

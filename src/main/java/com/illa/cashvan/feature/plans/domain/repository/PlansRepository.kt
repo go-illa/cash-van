@@ -6,5 +6,5 @@ import com.illa.cashvan.feature.plans.data.model.PlansResponse
 
 interface PlansRepository {
     suspend fun getPlans(): ApiResult<PlansResponse>
-    suspend fun getPlanProducts(planId: String): ApiResult<PlanProductsResponse>
+    suspend fun getPlanProducts(planId: String, page: Int = 1, items: Int = 20): ApiResult<PlanProductsResponse>
 }

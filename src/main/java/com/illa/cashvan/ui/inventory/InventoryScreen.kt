@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -19,7 +20,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -148,7 +151,20 @@ fun InventoryScreen(
                             modifier = Modifier.weight(1f)
                         )
                     } else {
+                        val listState = rememberLazyListState()
+                        val shouldLoadMore by remember {
+                            derivedStateOf {
+                                val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+                                lastVisible >= inventoryItems.size - 3
+                            }
+                        }
+                        LaunchedEffect(shouldLoadMore) {
+                            if (shouldLoadMore && uiState.hasMoreProducts && !uiState.isLoadingMore) {
+                                viewModel.loadMorePlanProducts()
+                            }
+                        }
                         LazyColumn(
+                            state = listState,
                             modifier = Modifier.weight(1f),
                         ) {
                             items(inventoryItems.size) { index ->
@@ -156,6 +172,21 @@ fun InventoryScreen(
                                     item = inventoryItems[index],
                                     modifier = Modifier.fillMaxWidth()
                                 )
+                            }
+                            if (uiState.isLoadingMore) {
+                                item {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            color = Color(0xFF0D3773),
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

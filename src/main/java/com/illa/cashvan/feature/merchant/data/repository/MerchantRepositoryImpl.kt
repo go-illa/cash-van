@@ -7,6 +7,9 @@ import com.illa.cashvan.feature.merchant.data.model.CreateMerchantResponse
 import com.illa.cashvan.feature.merchant.data.model.GovernoratesResponse
 import com.illa.cashvan.feature.merchant.data.model.MerchantTypesResponse
 import com.illa.cashvan.feature.merchant.data.model.ReverseGeocodeResponse
+import com.illa.cashvan.feature.merchant.data.model.UpdateMerchantData
+import com.illa.cashvan.feature.merchant.data.model.UpdateMerchantRequest
+import com.illa.cashvan.feature.merchant.data.model.UpdateMerchantResponse
 import com.illa.cashvan.feature.merchant.domain.repository.MerchantRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -64,6 +67,32 @@ class MerchantRepositoryImpl(
             ApiResult.Success(response)
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to get merchant types")
+        }
+    }
+
+    override suspend fun updateMerchant(
+        merchantId: String,
+        signName: String,
+        latitude: Double,
+        longitude: Double
+    ): ApiResult<UpdateMerchantResponse> {
+        return try {
+            val config = ApiEndpoints.Merchant.updateMerchant(merchantId)
+            val versionedPath = "v${config.version}/${config.path}"
+
+            val response = httpClient.request(versionedPath) {
+                method = HttpMethod.Put
+                url {
+                    parameters.append("latitude", latitude.toString())
+                    parameters.append("longitude", longitude.toString())
+                }
+                contentType(ContentType.Application.Json)
+                setBody(UpdateMerchantRequest(UpdateMerchantData(signName)))
+            }.body<UpdateMerchantResponse>()
+
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Failed to update merchant")
         }
     }
 
