@@ -17,6 +17,7 @@ import com.illa.cashvan.feature.orders.domain.usecase.UpdateOrderUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetProductTotalPriceUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetCashVanProductTotalPriceUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.VoidInvoiceUseCase
 import com.illa.cashvan.feature.printer.CpclInvoiceFormatter
 import com.illa.cashvan.feature.printer.HoneywellPrinterManager
 import com.illa.cashvan.core.utils.WhatsAppHelper
@@ -65,7 +66,8 @@ data class OrderDetailsUiState(
     val isUpdatingPrice: Boolean = false,
     val productPrices: Map<String, ProductPriceInfo> = emptyMap(),
     val loadingPriceForProducts: Set<String> = emptySet(),
-    val rebateValue: String = ""
+    val rebateValue: String = "",
+    val isVoidingInvoice: Boolean = false
 )
 
 class OrderViewModel(
@@ -75,7 +77,8 @@ class OrderViewModel(
     private val updateOrderUseCase: UpdateOrderUseCase,
     private val getInvoiceContentUseCase: GetInvoiceContentUseCase,
     private val getProductTotalPriceUseCase: GetProductTotalPriceUseCase,
-    private val getCashVanProductTotalPriceUseCase: GetCashVanProductTotalPriceUseCase
+    private val getCashVanProductTotalPriceUseCase: GetCashVanProductTotalPriceUseCase,
+    private val voidInvoiceUseCase: VoidInvoiceUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OrderUiState())
@@ -507,6 +510,29 @@ class OrderViewModel(
         _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
             error = null
         )
+    }
+
+    fun voidInvoice(orderId: String, onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            _orderDetailsUiState.value = _orderDetailsUiState.value.copy(isVoidingInvoice = true, error = null)
+            when (val result = voidInvoiceUseCase(orderId)) {
+                is ApiResult.Success -> {
+                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+                        isVoidingInvoice = false,
+                        successMessage = "تم إلغاء الفاتورة بنجاح"
+                    )
+                    loadOrderById(orderId)
+                    onSuccess()
+                }
+                is ApiResult.Error -> {
+                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+                        isVoidingInvoice = false,
+                        error = result.message
+                    )
+                }
+                is ApiResult.Loading -> {}
+            }
+        }
     }
 
     fun saveEditedOrder(onSuccess: () -> Unit = {}) {

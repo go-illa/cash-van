@@ -10,6 +10,7 @@ import com.illa.cashvan.feature.orders.data.model.OrdersResponse
 import com.illa.cashvan.feature.orders.data.model.PlanProductsResponse
 import com.illa.cashvan.feature.orders.data.model.ProductPriceCalculationResponse
 import com.illa.cashvan.feature.orders.data.model.UpdateOrderRequest
+import com.illa.cashvan.feature.orders.data.model.VoidInvoiceResponse
 
 interface OrderRepository {
     suspend fun getOrders(
@@ -35,4 +36,5 @@ interface OrderRepository {
         merchantId: String,
         quantity: Int
     ): ApiResult<ProductPriceCalculationResponse>
+    suspend fun voidInvoice(orderId: String): ApiResult<VoidInvoiceResponse>
 }

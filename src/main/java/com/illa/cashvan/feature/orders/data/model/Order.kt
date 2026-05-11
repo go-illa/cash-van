@@ -20,7 +20,9 @@ data class Order(
     val locus_code: String? = null,
     val order_plan_products: List<OrderPlanProduct>? = null,
     val merchant: Merchant? = null,
-    val invoice_attachment: InvoiceAttachment? = null
+    val invoice_attachment: InvoiceAttachment? = null,
+    val invoice_voided_at: String? = null,
+    val reopen_count: Int? = null
 )
 
 @Serializable
@@ -297,6 +299,36 @@ data class SubmitOrderItem(
     val plan_product_id: String,
     val sold_quantity: Int = 0,
     val _destroy: Boolean? = null
+)
+
+@Serializable
+data class VoidInvoiceResponse(
+    val id: String,
+    val created_at: String? = null,
+    val updated_at: String? = null,
+    val plan_id: String? = null,
+    val formatted_code: String? = null,
+    val creator_id: String? = null,
+    val creator_type: String? = null,
+    val total_sold_quantity: Int? = null,
+    val total_income: String? = null,
+    val order_type: String? = null,
+    val payment_type: String? = null,
+    val status: String? = null,
+    val status_at: String? = null,
+    val cancellation_reason: String? = null,
+    val cancellation_note: String? = null,
+    val locus_code: String? = null,
+    val rebate_value: String? = null,
+    val ongoing_at: String? = null,
+    val canceled_at: String? = null,
+    val fulfilled_at: String? = null,
+    val partially_fulfilled_at: String? = null,
+    val unfulfilled_at: String? = null,
+    val plan_id_history: List<String>? = null,
+    val invoice_voided_at: String? = null,
+    val reopen_count: Int? = null,
+    val plan_id_history_count: Int? = null
 )
 
 @Serializable

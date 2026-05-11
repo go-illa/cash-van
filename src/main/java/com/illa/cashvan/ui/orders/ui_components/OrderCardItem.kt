@@ -56,7 +56,8 @@ data class OrderItem(
     val date: String,
     val products: List<OrderProductItem> = emptyList(),
     val status: String? = null,
-    val orderType: String? = null
+    val orderType: String? = null,
+    val hasVoidedInvoice: Boolean = false
 )
 
 
@@ -107,29 +108,51 @@ fun OrderCardItem(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     val orderStatus = OrderStatus.fromApiValue(order.status)
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(orderStatus.backgroundColor)
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(orderStatus.backgroundColor)
+                                .padding(horizontal = 12.dp, vertical = 4.dp)
                         ) {
-                            Icon(
-                                imageVector = orderStatus.icon,
-                                tint = orderStatus.color,
-                                contentDescription = ""
-                            )
-                            Text(
-                                text = orderStatus.arabicLabel,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily(Font(R.font.zain_regular)),
-                                color = orderStatus.color
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = orderStatus.icon,
+                                    tint = orderStatus.color,
+                                    contentDescription = ""
+                                )
+                                Text(
+                                    text = orderStatus.arabicLabel,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                    color = orderStatus.color
+                                )
+                            }
+                        }
 
+                        if (order.hasVoidedInvoice) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color(0xFFFFF3E0))
+                                    .border(1.dp, Color(0xFFF57C00), RoundedCornerShape(8.dp))
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = "تم إلغاء فاتورة",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                    color = Color(0xFFF57C00)
+                                )
+                            }
                         }
                     }
                 }

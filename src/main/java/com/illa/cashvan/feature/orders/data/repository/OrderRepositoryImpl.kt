@@ -11,6 +11,7 @@ import com.illa.cashvan.feature.orders.data.model.OrdersResponse
 import com.illa.cashvan.feature.orders.data.model.PlanProductsResponse
 import com.illa.cashvan.feature.orders.data.model.ProductPriceCalculationResponse
 import com.illa.cashvan.feature.orders.data.model.UpdateOrderRequest
+import com.illa.cashvan.feature.orders.data.model.VoidInvoiceResponse
 import com.illa.cashvan.feature.orders.domain.repository.OrderRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -174,6 +175,20 @@ class OrderRepositoryImpl(
             ApiResult.Success(response)
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to calculate product price")
+        }
+    }
+
+    override suspend fun voidInvoice(orderId: String): ApiResult<VoidInvoiceResponse> {
+        return try {
+            val config = ApiEndpoints.Orders.voidInvoice(orderId)
+            val versionedPath = "v${config.version}/${config.path}"
+            val response = httpClient.request(versionedPath) {
+                method = HttpMethod.Post
+                contentType(ContentType.Application.Json)
+            }.body<VoidInvoiceResponse>()
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Failed to void invoice")
         }
     }
 

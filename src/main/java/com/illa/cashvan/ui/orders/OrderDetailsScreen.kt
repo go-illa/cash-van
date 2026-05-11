@@ -60,6 +60,7 @@ import com.illa.cashvan.ui.common.CashVanHeader
 import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.ui.common.SuccessSnackbar
 import com.illa.cashvan.ui.orders.ui_components.CancelOrderBottomSheet
+import com.illa.cashvan.ui.orders.ui_components.VoidInvoiceConfirmationDialog
 import com.illa.cashvan.ui.orders.ui_components.EditableOrderItem
 import com.illa.cashvan.ui.orders.ui_components.EditableOrderItemCard
 import com.illa.cashvan.ui.orders.ui_components.MerchantDetailsComponent
@@ -175,6 +176,7 @@ private fun OrderDetailsContent(
 
     var showCancelBottomSheet by remember { mutableStateOf(false) }
     var showConfirmationBottomSheet by remember { mutableStateOf(false) }
+    var showVoidInvoiceDialog by remember { mutableStateOf(false) }
     val cancelSheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
@@ -545,6 +547,37 @@ private fun OrderDetailsContent(
                                 fontFamily = FontFamily(Font(R.font.zain_regular))
                             )
                         }
+
+                        OutlinedButton(
+                            onClick = { showVoidInvoiceDialog = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFFDC3545)
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                Color(0xFFDC3545)
+                            ),
+                            enabled = !orderDetailsState.isVoidingInvoice
+                        ) {
+                            if (orderDetailsState.isVoidingInvoice) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    color = Color(0xFFDC3545),
+                                    strokeWidth = 2.dp
+                                )
+                            } else {
+                                Text(
+                                    text = "إلغاء الفاتورة",
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily(Font(R.font.zain_regular))
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -581,6 +614,16 @@ private fun OrderDetailsContent(
                 onBackToHome = {
                     showConfirmationBottomSheet = false
                     onBackClick()
+                }
+            )
+        }
+
+        if (showVoidInvoiceDialog) {
+            VoidInvoiceConfirmationDialog(
+                onDismiss = { showVoidInvoiceDialog = false },
+                onConfirm = {
+                    showVoidInvoiceDialog = false
+                    orderViewModel.voidInvoice(order.id)
                 }
             )
         }

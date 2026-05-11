@@ -33,7 +33,8 @@ fun Order.toOrderItem(): OrderItem {
         date = formattedTime.toString(),
         products = products,
         status = status,
-        orderType = order_type
+        orderType = order_type,
+        hasVoidedInvoice = invoice_voided_at != null || (reopen_count ?: 0) > 0
     )
 }
 

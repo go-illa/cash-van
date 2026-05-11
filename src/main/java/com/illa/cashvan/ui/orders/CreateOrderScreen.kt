@@ -1,5 +1,6 @@
 package com.illa.cashvan.ui.orders
 
+import android.R.attr.fontFamily
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -532,28 +533,27 @@ fun CreateOrderScreen(
                                 isLoadingMore = uiState.isLoadingMoreMerchants,
                                 analyticsEventName = "select_merchant"
                             )
-//                            if (uiState.selectedMerchant != null) {
-//                                Row(
-//                                    modifier = Modifier.fillMaxWidth(),
-//                                    horizontalArrangement = Arrangement.End
-//                                ) {
-//                                    TextButton(onClick = { showEditMerchantNameDialog = true }) {
-//                                        Icon(
-//                                            imageVector = Icons.Default.Edit,
-//                                            contentDescription = null,
-//                                            modifier = Modifier.size(14.dp),
-//                                            tint = Color(0xFF0D3773)
-//                                        )
-//                                        Spacer(modifier = Modifier.width(4.dp))
-//                                        Text(
-//                                            text = "تعديل اسم التاجر",
-//                                            fontSize = 13.sp,
-//                                            fontFamily = FontFamily(Font(R.font.zain_regular)),
-//                                            color = Color(0xFF0D3773)
-//                                        )
-//                                    }
-//                                }
-//                            }
+                            if (uiState.selectedMerchant != null) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(onClick = { showEditMerchantNameDialog = true }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp),
+                                            tint = Color(0xFF0D3773)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "تعديل اسم التاجر",
+                                            fontSize = 13.sp,
+                                            fontFamily = FontFamily(Font(R.font.zain_regular)),color = Color(0xFF0D3773)
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }

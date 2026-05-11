@@ -202,6 +202,13 @@ object ApiEndpoints {
             version = 2
         )
 
+        fun voidInvoice(orderId: String) = RequestConfiguration(
+            path = "orders/$orderId/void_invoice",
+            method = HttpMethod.Post,
+            parameterEncoding = ParameterEncoding.BODY,
+            version = 2
+        )
+
         fun getCashVanProductTotalPrice(
             planId: String,
             productId: String,

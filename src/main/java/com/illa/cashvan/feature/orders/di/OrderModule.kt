@@ -12,6 +12,7 @@ import com.illa.cashvan.feature.orders.domain.usecase.UpdateOrderUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetProductTotalPriceUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetCashVanProductTotalPriceUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.VoidInvoiceUseCase
 import com.illa.cashvan.feature.merchant.domain.usecase.UpdateMerchantUseCase
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
@@ -32,7 +33,8 @@ val orderModule = module {
     factory { GetInvoiceContentUseCase() }
     factory { GetProductTotalPriceUseCase(get()) }
     factory { GetCashVanProductTotalPriceUseCase(get()) }
+    factory { VoidInvoiceUseCase(get()) }
 
-    viewModel { OrderViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { OrderViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { CreateOrderViewModel(androidContext(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
 }
