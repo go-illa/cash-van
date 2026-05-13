@@ -66,6 +66,8 @@ import com.illa.cashvan.R
 import com.illa.cashvan.core.location.LocationPermissionHandler
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
 import com.illa.cashvan.ui.common.ErrorSnackbar
+import com.illa.cashvan.ui.common.ProximityBannerVariant
+import com.illa.cashvan.ui.common.ProximityInfoBanner
 import com.illa.cashvan.ui.common.SuccessSnackbar
 import com.illa.cashvan.ui.orders.ui_components.EditMerchantNameDialog
 import com.illa.cashvan.ui.orders.ui_components.ProductSelectionComponent
@@ -531,6 +533,15 @@ fun CreateOrderScreen(
                                 isLoadingMore = uiState.isLoadingMoreMerchants,
                                 analyticsEventName = "select_merchant"
                             )
+                            val showEmptyResults = uiState.merchantSearchQuery.isNotEmpty()
+                                    && uiState.merchants.isEmpty()
+                                    && !uiState.isSearchingMerchants
+                            Spacer(modifier = Modifier.height(8.dp))
+                            if (showEmptyResults) {
+                                ProximityInfoBanner(variant = ProximityBannerVariant.EMPTY_RESULTS)
+                            } else if (uiState.selectedMerchant == null) {
+                                ProximityInfoBanner(variant = ProximityBannerVariant.INITIAL_HINT)
+                            }
                             if (uiState.selectedMerchant != null) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),

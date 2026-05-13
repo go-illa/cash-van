@@ -59,6 +59,8 @@ import com.illa.cashvan.R
 import com.illa.cashvan.core.location.LocationPermissionHandler
 import com.illa.cashvan.feature.visit.presentation.viewmodel.CreateVisitViewModel
 import com.illa.cashvan.ui.common.ErrorSnackbar
+import com.illa.cashvan.ui.common.ProximityBannerVariant
+import com.illa.cashvan.ui.common.ProximityInfoBanner
 import com.illa.cashvan.ui.orders.ui_components.SearchableDropdown
 import org.koin.androidx.compose.koinViewModel
 
@@ -339,6 +341,15 @@ fun CreateVisitWithoutOrderScreen(
                                 onLoadMore = { visitViewModel.loadMoreMerchants() },
                                 isLoadingMore = uiState.isLoadingMoreMerchants
                             )
+                            val showEmptyResults = uiState.merchantSearchQuery.isNotEmpty()
+                                    && uiState.merchants.isEmpty()
+                                    && !uiState.isSearchingMerchants
+                            Spacer(modifier = Modifier.height(8.dp))
+                            if (showEmptyResults) {
+                                ProximityInfoBanner(variant = ProximityBannerVariant.EMPTY_RESULTS)
+                            } else if (uiState.selectedMerchant == null) {
+                                ProximityInfoBanner(variant = ProximityBannerVariant.INITIAL_HINT)
+                            }
                         }
                     }
                 }

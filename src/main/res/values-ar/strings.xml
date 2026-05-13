@@ -46,4 +46,8 @@
     <string name="empty_inventory_title">لا يوجد مخزون بالعربة الآن</string>
     <string name="empty_inventory_subtitle">بمجرد إضافة طلبات للرحلة سيتم إظهار الأصناف هنا</string>
 
+    <!-- Merchant Proximity Awareness -->
+    <string name="merchant_proximity_initial_hint">التجار هيظهروا لما تكون قريب منهم. خليك قريب 200 متر من موقع التاجر.</string>
+    <string name="merchant_proximity_empty_results">مفيش تجار قريبين منك. اقترب من موقع التاجر (قرب 200 متر) وحاول تاني.</string>
+
 </resources>

@@ -548,34 +548,36 @@ private fun OrderDetailsContent(
                             )
                         }
 
-                        OutlinedButton(
-                            onClick = { showVoidInvoiceDialog = true },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color(0xFFDC3545)
-                            ),
-                            border = androidx.compose.foundation.BorderStroke(
-                                1.dp,
-                                Color(0xFFDC3545)
-                            ),
-                            enabled = !orderDetailsState.isVoidingInvoice
-                        ) {
-                            if (orderDetailsState.isVoidingInvoice) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(18.dp),
-                                    color = Color(0xFFDC3545),
-                                    strokeWidth = 2.dp
-                                )
-                            } else {
-                                Text(
-                                    text = "إلغاء الفاتورة",
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily(Font(R.font.zain_regular))
-                                )
+                        if (order.order_type != "cash_van") {
+                            OutlinedButton(
+                                onClick = { showVoidInvoiceDialog = true },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Color(0xFFDC3545)
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(
+                                    1.dp,
+                                    Color(0xFFDC3545)
+                                ),
+                                enabled = !orderDetailsState.isVoidingInvoice
+                            ) {
+                                if (orderDetailsState.isVoidingInvoice) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        color = Color(0xFFDC3545),
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Text(
+                                        text = "إلغاء الفاتورة",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily(Font(R.font.zain_regular))
+                                    )
+                                }
                             }
                         }
                     }
