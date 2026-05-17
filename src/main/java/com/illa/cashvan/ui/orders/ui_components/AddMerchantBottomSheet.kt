@@ -357,6 +357,7 @@ fun AddMerchantBottomSheet(
                             latitude = location.latitude,
                             longitude = location.longitude,
                             planId = merchantViewModel.getFirstPlanId() ?: 0,
+                            routeId = merchantUiState.routes.firstOrNull()?.id ?: "",
                             merchantTypeId = "",
                             detailedAddress = "",
                             priceTier = "retail",

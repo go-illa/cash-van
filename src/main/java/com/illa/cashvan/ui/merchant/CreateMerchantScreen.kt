@@ -71,6 +71,7 @@ import com.illa.cashvan.core.location.LocationPermissionHandler
 import com.illa.cashvan.core.location.LocationViewModel
 import com.illa.cashvan.feature.merchant.data.model.Governorate
 import com.illa.cashvan.feature.merchant.data.model.MerchantType
+import com.illa.cashvan.feature.merchant.data.model.Route
 import com.illa.cashvan.feature.merchant.presentation.viewmodel.MerchantViewModel
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -99,6 +100,7 @@ fun CreateMerchantScreen(
     var selectedMerchantType by remember { mutableStateOf<MerchantType?>(null) }
     var selectedPriceTier by remember { mutableStateOf<Pair<String, String>?>(null) }
     var selectedVisitDays by remember { mutableStateOf(setOf<String>()) }
+    var selectedRoute by remember { mutableStateOf<Route?>(null) }
 
     val merchantUiState by merchantViewModel.uiState.collectAsStateWithLifecycle()
     val locationUiState by locationViewModel.uiState.collectAsStateWithLifecycle()
@@ -123,6 +125,10 @@ fun CreateMerchantScreen(
         )
     }
 
+    LaunchedEffect(Unit) {
+        merchantViewModel.reloadData()
+    }
+
     LaunchedEffect(locationUiState.locationData) {
         locationUiState.locationData?.let { location ->
             merchantViewModel.loadReverseGeocode(
@@ -145,6 +151,12 @@ fun CreateMerchantScreen(
             selectedGovernorate = governorates.find {
                 it.english_name?.equals(governorateName, ignoreCase = true) == true
             }
+        }
+    }
+
+    LaunchedEffect(merchantUiState.routes) {
+        if (merchantUiState.routes.size == 1) {
+            selectedRoute = merchantUiState.routes.first()
         }
     }
 
@@ -241,6 +253,7 @@ fun CreateMerchantScreen(
             selectedMerchantType != null &&
             selectedPriceTier != null &&
             selectedVisitDays.isNotEmpty() &&
+            selectedRoute != null &&
             locationUiState.locationData != null &&
             !merchantUiState.isLoading
 
@@ -309,6 +322,7 @@ fun CreateMerchantScreen(
                                     latitude = location.latitude,
                                     longitude = location.longitude,
                                     planId = merchantViewModel.getFirstPlanId() ?: 0,
+                                    routeId = selectedRoute?.id ?: "",
                                     merchantTypeId = selectedMerchantType?.id ?: "",
                                     detailedAddress = address,
                                     priceTier = selectedPriceTier?.first ?: "",
@@ -371,7 +385,7 @@ fun CreateMerchantScreen(
                         selectedLabel = selectedMerchantType?.description,
                         placeholder = "اختر نوع التاجر",
                         items = merchantUiState.merchantTypes,
-                        itemLabel = { it.description },
+                        itemLabel = { it.description?:"" },
                         onItemSelected = { selectedMerchantType = it }
                     )
                     Spacer(Modifier.height(14.dp))
@@ -482,6 +496,18 @@ fun CreateMerchantScreen(
                             )
                         }
                     }
+                    Spacer(Modifier.height(14.dp))
+                    val isSingleRoute = merchantUiState.routes.size == 1
+                    MerchantDropdownField(
+                        label = "المسار",
+                        isRequired = !isSingleRoute,
+                        selectedLabel = selectedRoute?.name,
+                        placeholder = "اختر المسار",
+                        items = merchantUiState.routes,
+                        itemLabel = { it.name },
+                        onItemSelected = { selectedRoute = it },
+                        enabled = !isSingleRoute
+                    )
                 }
 
             }
@@ -580,7 +606,8 @@ private fun <T> MerchantDropdownField(
     placeholder: String,
     items: List<T>,
     itemLabel: (T) -> String,
-    onItemSelected: (T) -> Unit
+    onItemSelected: (T) -> Unit,
+    enabled: Boolean = true
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -600,13 +627,14 @@ private fun <T> MerchantDropdownField(
         Spacer(Modifier.height(7.dp))
         ExposedDropdownMenuBox(
             expanded = expanded,
-            onExpandedChange = { expanded = !expanded },
+            onExpandedChange = { if (enabled) expanded = !expanded },
             modifier = Modifier.fillMaxWidth()
         ) {
             OutlinedTextField(
                 value = selectedLabel ?: placeholder,
                 onValueChange = {},
                 readOnly = true,
+                enabled = enabled,
                 trailingIcon = {
                     ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
                 },
@@ -624,7 +652,10 @@ private fun <T> MerchantDropdownField(
                     focusedBorderColor = Color.Gray,
                     unfocusedBorderColor = borderColor,
                     unfocusedContainerColor = Color.White,
-                    focusedContainerColor = Color.White
+                    focusedContainerColor = Color.White,
+                    disabledBorderColor = borderColor,
+                    disabledContainerColor = Color(0xFFF5F5F5),
+                    disabledTextColor = Color.Gray
                 )
             )
             ExposedDropdownMenu(

@@ -62,6 +62,7 @@ import androidx.compose.ui.unit.sp
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.widget.Toast
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
@@ -113,6 +114,14 @@ fun CreateOrderScreen(
             coroutineScope.launch {
                 snackbarHostState.showSnackbar("تم إضافة التاجر بنجاح")
             }
+        }
+    }
+
+    LaunchedEffect(uiState.noPlanFound) {
+        if (uiState.noPlanFound) {
+            viewModel.clearNoPlanFound()
+            Toast.makeText(context, "لا يوجد خطة جارية حالياً", Toast.LENGTH_SHORT).show()
+            onBackClick()
         }
     }
 

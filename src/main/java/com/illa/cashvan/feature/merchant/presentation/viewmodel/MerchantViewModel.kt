@@ -6,10 +6,12 @@ import com.illa.cashvan.core.network.model.ApiResult
 import com.illa.cashvan.feature.merchant.data.model.CreateMerchantResponse
 import com.illa.cashvan.feature.merchant.data.model.Governorate
 import com.illa.cashvan.feature.merchant.data.model.MerchantType
+import com.illa.cashvan.feature.merchant.data.model.Route
 import com.illa.cashvan.feature.merchant.domain.usecase.CreateMerchantUseCase
 import com.illa.cashvan.feature.merchant.domain.usecase.GetGovernoratesUseCase
 import com.illa.cashvan.feature.merchant.domain.usecase.GetMerchantTypesUseCase
 import com.illa.cashvan.feature.merchant.domain.usecase.GetReverseGeocodeUseCase
+import com.illa.cashvan.feature.merchant.domain.usecase.GetRoutesUseCase
 import com.illa.cashvan.feature.plans.data.model.Plan
 import com.illa.cashvan.feature.plans.domain.usecase.GetPlansUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +33,9 @@ data class CreateMerchantUiState(
     val merchantTypes: List<MerchantType> = emptyList(),
     val isMerchantTypesLoading: Boolean = false,
     val merchantTypesError: String? = null,
+    val routes: List<Route> = emptyList(),
+    val isRoutesLoading: Boolean = false,
+    val routesError: String? = null,
     val reverseGeocodeAddress: String? = null,
     val reverseGeocodeGovernorateName: String? = null,
     val isReverseGeocodeLoading: Boolean = false
@@ -41,7 +46,8 @@ class MerchantViewModel(
     private val getPlansUseCase: GetPlansUseCase,
     private val getGovernoratesUseCase: GetGovernoratesUseCase,
     private val getMerchantTypesUseCase: GetMerchantTypesUseCase,
-    private val getReverseGeocodeUseCase: GetReverseGeocodeUseCase
+    private val getReverseGeocodeUseCase: GetReverseGeocodeUseCase,
+    private val getRoutesUseCase: GetRoutesUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CreateMerchantUiState())
@@ -51,6 +57,7 @@ class MerchantViewModel(
         getPlans()
         getGovernorates()
         getMerchantTypes()
+        getRoutes()
     }
 
     fun createMerchant(
@@ -61,6 +68,7 @@ class MerchantViewModel(
         latitude: Double,
         longitude: Double,
         planId: Int,
+        routeId: String,
         merchantTypeId: String,
         detailedAddress: String,
         priceTier: String,
@@ -83,6 +91,7 @@ class MerchantViewModel(
                 latitude = latitude,
                 longitude = longitude,
                 planId = planId,
+                routeId = routeId,
                 merchantTypeId = merchantTypeId,
                 detailedAddress = detailedAddress,
                 priceTier = priceTier,
@@ -174,6 +183,26 @@ class MerchantViewModel(
         }
     }
 
+    fun getRoutes() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isRoutesLoading = true, routesError = null)
+
+            when (val result = getRoutesUseCase()) {
+                is ApiResult.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        isRoutesLoading = false,
+                        routes = result.data.routes,
+                        routesError = null
+                    )
+                }
+                is ApiResult.Error -> {
+                    _uiState.value = _uiState.value.copy(isRoutesLoading = false, routesError = result.message)
+                }
+                is ApiResult.Loading -> {}
+            }
+        }
+    }
+
     fun loadReverseGeocode(latitude: String, longitude: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isReverseGeocodeLoading = true)
@@ -200,5 +229,12 @@ class MerchantViewModel(
 
     fun resetState() {
         _uiState.value = CreateMerchantUiState()
+    }
+
+    fun reloadData() {
+        getPlans()
+        getGovernorates()
+        getMerchantTypes()
+        getRoutes()
     }
 }
