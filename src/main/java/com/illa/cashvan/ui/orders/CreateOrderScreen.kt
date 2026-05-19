@@ -206,9 +206,10 @@ fun CreateOrderScreen(
         if (showEditMerchantNameDialog) {
             EditMerchantNameDialog(
                 currentSignName = uiState.selectedMerchant?.sign_name ?: uiState.selectedMerchant?.name ?: "",
+                currentPhoneNumber = uiState.selectedMerchant?.phone_number,
                 isLoading = uiState.isUpdatingMerchantName,
                 error = uiState.updateMerchantNameError,
-                onConfirm = { viewModel.updateMerchantSignName(it) },
+                onConfirm = { signName, phoneNumber -> viewModel.updateMerchantSignName(signName, phoneNumber) },
                 onDismiss = {
                     showEditMerchantNameDialog = false
                     viewModel.clearMerchantNameUpdated()

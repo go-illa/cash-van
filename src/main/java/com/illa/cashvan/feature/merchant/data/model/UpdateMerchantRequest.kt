@@ -6,4 +6,7 @@ import kotlinx.serialization.Serializable
 data class UpdateMerchantRequest(val merchant: UpdateMerchantData)
 
 @Serializable
-data class UpdateMerchantData(val sign_name: String)
+data class UpdateMerchantData(
+    val sign_name: String,
+    val phone_number: String? = null
+)
