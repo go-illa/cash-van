@@ -347,12 +347,13 @@ fun OrderScreen(
                         selectedOrderForCancel = null
                     }
                 },
-                onConfirm = { reason, note ->
+                onConfirm = { reason, note, subReason ->
                     selectedOrderForCancel?.let { order ->
                         viewModel.cancelOrder(
                             orderId = order.id,
                             reason = reason,
                             note = note,
+                            subReason = subReason,
                             onSuccess = {
                                 scope.launch {
                                     cancelBottomSheetState.hide()
@@ -387,6 +388,16 @@ fun OrderScreen(
             ErrorSnackbar(
                 message = uiState.printStatus ?: "",
                 onDismiss = { viewModel.clearPrintStatus() },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(16.dp)
+            )
+        }
+
+        if (uiState.cancellationError != null) {
+            ErrorSnackbar(
+                message = uiState.cancellationError ?: "",
+                onDismiss = { viewModel.clearCancellationError() },
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp)

@@ -286,7 +286,7 @@ private fun OrderDetailsContent(
                         isLoadingPrice = planProductId in orderDetailsState.loadingPriceForProducts
                     )
 
-                    if (orderDetailsState.isEditMode && order.order_type == "pre_sell") {
+                    if (orderDetailsState.isEditMode) {
                         EditableOrderItemCard(
                             item = item,
                             onQuantityChange = { id, qty ->
@@ -477,6 +477,46 @@ private fun OrderDetailsContent(
                 }
             }
 
+            if (order.status == "ongoing" && order.order_type == "cash_van") {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(2.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                orderViewModel.submitOrder(order) {
+                                    showConfirmationBottomSheet = true
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(40.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF0D3773)
+                            )
+                        ) {
+                            Text(
+                                text = "تسليم الاوردر",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular))
+                            )
+                        }
+                    }
+                }
+            }
+
             if (order.status == "fulfilled" || order.status == "partially_fulfilled") {
                 Card(
                     modifier = Modifier
@@ -548,7 +588,7 @@ private fun OrderDetailsContent(
                             )
                         }
 
-                        if (order.order_type != "cash_van") {
+                        if (!orderDetailsState.isEditMode) {
                             OutlinedButton(
                                 onClick = { showVoidInvoiceDialog = true },
                                 modifier = Modifier
@@ -580,6 +620,73 @@ private fun OrderDetailsContent(
                                 }
                             }
                         }
+
+                        if (order.order_type == "cash_van") {
+                            if (orderDetailsState.isEditMode) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    OutlinedButton(
+                                        onClick = { orderViewModel.exitEditMode() },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(40.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            contentColor = Color(0xFF6B7280)
+                                        ),
+                                        border = androidx.compose.foundation.BorderStroke(
+                                            1.dp,
+                                            Color(0xFF6B7280)
+                                        )
+                                    ) {
+                                        Text(
+                                            text = "إلغاء",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = FontFamily(Font(R.font.zain_regular))
+                                        )
+                                    }
+
+                                    Button(
+                                        onClick = { orderViewModel.saveEditedOrder() },
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(40.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color(0xFF0D3773)
+                                        )
+                                    ) {
+                                        Text(
+                                            text = "حفظ",
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = FontFamily(Font(R.font.zain_regular))
+                                        )
+                                    }
+                                }
+                            } else {
+                                Button(
+                                    onClick = { orderViewModel.enterEditMode() },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(48.dp),
+                                    shape = RoundedCornerShape(8.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFF6B7280)
+                                    )
+                                ) {
+                                    Text(
+                                        text = "تعديل الأوردر",
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily(Font(R.font.zain_regular))
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -591,11 +698,12 @@ private fun OrderDetailsContent(
                 onDismiss = {
                     showCancelBottomSheet = false
                 },
-                onConfirm = { reason, note ->
+                onConfirm = { reason, note, subReason ->
                     orderViewModel.cancelOrder(
                         orderId = order.id,
                         reason = reason,
-                        note = note
+                        note = note,
+                        subReason = subReason
                     ) {
                         showCancelBottomSheet = false
                         onBackClick()

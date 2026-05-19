@@ -41,6 +41,7 @@ data class OrderUiState(
     val isLoading: Boolean = false,
     val orders: List<Order> = emptyList(),
     val error: String? = null,
+    val cancellationError: String? = null,
     val selectedTab: OrderType = OrderType.PRE_SELL,
     val isPrinting: Boolean = false,
     val printStatus: String? = null
@@ -67,7 +68,8 @@ data class OrderDetailsUiState(
     val productPrices: Map<String, ProductPriceInfo> = emptyMap(),
     val loadingPriceForProducts: Set<String> = emptySet(),
     val rebateValue: String = "",
-    val isVoidingInvoice: Boolean = false
+    val isVoidingInvoice: Boolean = false,
+    val isVoidingBeforeEdit: Boolean = false
 )
 
 class OrderViewModel(
@@ -164,13 +166,14 @@ class OrderViewModel(
         }
     }
 
-    fun cancelOrder(orderId: String, reason: String, note: String, onSuccess: () -> Unit = {}) {
+    fun cancelOrder(orderId: String, reason: String, note: String, subReason: String? = null, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             val request = UpdateOrderRequest(
                 order = UpdateOrderData(
                     status = "canceled",
                     cancellation_reason = reason,
-                    cancellation_note = note
+                    cancellation_note = note,
+                    cancellation_sub_reason = subReason,
                 )
             )
 
@@ -180,11 +183,16 @@ class OrderViewModel(
                     loadOrders()
                 }
                 is ApiResult.Error -> {
-                    _uiState.value = _uiState.value.copy(error = result.message)
+                    _uiState.value = _uiState.value.copy(cancellationError = result.message)
+                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(error = result.message)
                 }
                 is ApiResult.Loading -> {}
             }
         }
+    }
+
+    fun clearCancellationError() {
+        _uiState.value = _uiState.value.copy(cancellationError = null)
     }
 
     fun updateRebateValue(value: String) {
@@ -527,6 +535,25 @@ class OrderViewModel(
                 is ApiResult.Error -> {
                     _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
                         isVoidingInvoice = false,
+                        error = result.message
+                    )
+                }
+                is ApiResult.Loading -> {}
+            }
+        }
+    }
+
+    fun voidInvoiceAndEnterEditMode(orderId: String) {
+        viewModelScope.launch {
+            _orderDetailsUiState.value = _orderDetailsUiState.value.copy(isVoidingBeforeEdit = true, error = null)
+            when (val result = voidInvoiceUseCase(orderId)) {
+                is ApiResult.Success -> {
+                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(isVoidingBeforeEdit = false)
+                    enterEditMode()
+                }
+                is ApiResult.Error -> {
+                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
+                        isVoidingBeforeEdit = false,
                         error = result.message
                     )
                 }
