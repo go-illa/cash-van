@@ -367,11 +367,11 @@ class OrderViewModel(
             )
 
             val result = if (currentOrder.order_type == "cash_van") {
-                val priceId = orderPlanProduct.plan_product_price?.id ?: return@launch
+                val merchantId = currentOrder.merchant?.id ?: return@launch
                 getCashVanProductTotalPriceUseCase(
                     planId = planId,
                     productId = productId,
-                    merchantId = priceId,
+                    merchantId = merchantId,
                     quantity = quantity
                 )
             } else {
