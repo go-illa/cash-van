@@ -488,6 +488,11 @@ class CreateOrderViewModel(
 
         if (state.currentPlan == null || state.selectedMerchant == null || state.selectedProducts.isEmpty()) return
 
+        if (state.paymentType != null && state.selectedMerchant.phone_number.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(orderCreationError = "رقم هاتف التاجر مطلوب لإتمام طلب الكاش")
+            return
+        }
+
         viewModelScope.launch {
             val orderItems = state.selectedProducts.map { (planProductId, quantity) ->
                 OrderItem(
