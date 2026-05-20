@@ -22,6 +22,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "BASE_URL", "\"https://dsbs-api.illa.blue/api/v2/\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhsemdiaXZnZGNlc2lheW1iaWpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4NzY4MDksImV4cCI6MjA2OTQ1MjgwOX0.Cf79tTPSeSsvQT5rTuxiuUJ5b_yl2TD2MHxLzm8xedE\"")
     }
 
     flavorDimensions += "environment"
