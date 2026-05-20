@@ -60,6 +60,7 @@ data class OrderDetailsUiState(
     val isLoading: Boolean = false,
     val order: Order? = null,
     val error: String? = null,
+    val cancellationError: String? = null,
     val successMessage: String? = null,
     val isEditMode: Boolean = false,
     val editedQuantities: Map<String, Int> = emptyMap(),
@@ -184,7 +185,7 @@ class OrderViewModel(
                 }
                 is ApiResult.Error -> {
                     _uiState.value = _uiState.value.copy(cancellationError = result.message)
-                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(error = result.message)
+                    _orderDetailsUiState.value = _orderDetailsUiState.value.copy(cancellationError = result.message)
                 }
                 is ApiResult.Loading -> {}
             }
@@ -518,6 +519,10 @@ class OrderViewModel(
         _orderDetailsUiState.value = _orderDetailsUiState.value.copy(
             error = null
         )
+    }
+
+    fun clearOrderDetailsCancellationError() {
+        _orderDetailsUiState.value = _orderDetailsUiState.value.copy(cancellationError = null)
     }
 
     fun voidInvoice(orderId: String, onSuccess: () -> Unit = {}) {

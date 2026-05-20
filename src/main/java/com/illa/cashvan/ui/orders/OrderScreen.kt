@@ -285,6 +285,7 @@ fun OrderScreen(
                     scope.launch { cancelBottomSheetState.hide() }.invokeOnCompletion {
                         showCancelBottomSheet = false
                         selectedOrderForCancel = null
+                        viewModel.clearCancellationError()
                     }
                 },
                 onConfirm = { reason, note, subReason ->
@@ -303,7 +304,9 @@ fun OrderScreen(
                         )
                     }
                 },
-                orderNumber = selectedOrderForCancel?.orderNumber ?: ""
+                orderNumber = selectedOrderForCancel?.orderNumber ?: "",
+                error = uiState.cancellationError,
+                onClearError = { viewModel.clearCancellationError() }
             )
         }
 
@@ -332,15 +335,6 @@ fun OrderScreen(
             )
         }
 
-        if (uiState.cancellationError != null) {
-            ErrorSnackbar(
-                message = uiState.cancellationError ?: "",
-                onDismiss = { viewModel.clearCancellationError() },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-            )
-        }
     }
 }
 

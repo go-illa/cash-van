@@ -697,6 +697,7 @@ private fun OrderDetailsContent(
                 sheetState = cancelSheetState,
                 onDismiss = {
                     showCancelBottomSheet = false
+                    orderViewModel.clearOrderDetailsCancellationError()
                 },
                 onConfirm = { reason, note, subReason ->
                     orderViewModel.cancelOrder(
@@ -709,7 +710,9 @@ private fun OrderDetailsContent(
                         onBackClick()
                     }
                 },
-                orderNumber = order.formatted_code
+                orderNumber = order.formatted_code,
+                error = orderDetailsState.cancellationError,
+                onClearError = { orderViewModel.clearOrderDetailsCancellationError() }
             )
         }
 
@@ -801,6 +804,7 @@ private fun OrderDetailsContent(
                 )
             }
         }
+
     }
 }
 

@@ -57,7 +57,9 @@ fun CancelOrderBottomSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
     onConfirm: (reason: String, note: String, subReason: String?) -> Unit,
-    orderNumber: String
+    orderNumber: String,
+    error: String? = null,
+    onClearError: () -> Unit = {}
 ) {
     var selectedReason by remember { mutableStateOf<String?>(null) }
     var cancellationNote by remember { mutableStateOf("") }
@@ -291,6 +293,18 @@ fun CancelOrderBottomSheet(
                 )
             }
 
+            if (error != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = error,
+                    color = Color(0xFFDC3545),
+                    fontSize = 14.sp,
+                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.End
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             Column(
@@ -319,6 +333,7 @@ fun CancelOrderBottomSheet(
                 Button(
                     onClick = {
                         selectedReason?.let { reason ->
+                            onClearError()
                             onConfirm(
                                 reason,
                                 cancellationNote,
