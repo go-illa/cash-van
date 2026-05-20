@@ -71,7 +71,6 @@ import com.illa.cashvan.core.location.LocationPermissionHandler
 import com.illa.cashvan.core.location.LocationViewModel
 import com.illa.cashvan.feature.merchant.data.model.Governorate
 import com.illa.cashvan.feature.merchant.data.model.MerchantType
-import com.illa.cashvan.feature.merchant.data.model.Route
 import com.illa.cashvan.feature.merchant.presentation.viewmodel.MerchantViewModel
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
@@ -100,7 +99,7 @@ fun CreateMerchantScreen(
     var selectedMerchantType by remember { mutableStateOf<MerchantType?>(null) }
     var selectedPriceTier by remember { mutableStateOf<Pair<String, String>?>(null) }
     var selectedVisitDays by remember { mutableStateOf(setOf<String>()) }
-    var selectedRoute by remember { mutableStateOf<Route?>(null) }
+//    var selectedRoute by remember { mutableStateOf<Route?>(null) }
 
     val merchantUiState by merchantViewModel.uiState.collectAsStateWithLifecycle()
     val locationUiState by locationViewModel.uiState.collectAsStateWithLifecycle()
@@ -154,11 +153,11 @@ fun CreateMerchantScreen(
         }
     }
 
-    LaunchedEffect(merchantUiState.routes) {
-        if (merchantUiState.routes.size == 1) {
-            selectedRoute = merchantUiState.routes.first()
-        }
-    }
+//    LaunchedEffect(merchantUiState.routes) {
+//        if (merchantUiState.routes.size == 1) {
+//            selectedRoute = merchantUiState.routes.first()
+//        }
+//    }
 
     LaunchedEffect(merchantUiState.isSuccess) {
         if (merchantUiState.isSuccess) {
@@ -253,7 +252,7 @@ fun CreateMerchantScreen(
             selectedMerchantType != null &&
             selectedPriceTier != null &&
             selectedVisitDays.isNotEmpty() &&
-            selectedRoute != null &&
+//            selectedRoute != null &&
             locationUiState.locationData != null &&
             !merchantUiState.isLoading
 
@@ -322,7 +321,7 @@ fun CreateMerchantScreen(
                                     latitude = location.latitude,
                                     longitude = location.longitude,
                                     planId = merchantViewModel.getFirstPlanId() ?: 0,
-                                    routeId = selectedRoute?.id ?: "",
+//                                    routeId = selectedRoute?.id ?: "",
                                     merchantTypeId = selectedMerchantType?.id ?: "",
                                     detailedAddress = address,
                                     priceTier = selectedPriceTier?.first ?: "",
@@ -496,18 +495,18 @@ fun CreateMerchantScreen(
                             )
                         }
                     }
-                    Spacer(Modifier.height(14.dp))
-                    val isSingleRoute = merchantUiState.routes.size == 1
-                    MerchantDropdownField(
-                        label = "المسار",
-                        isRequired = !isSingleRoute,
-                        selectedLabel = selectedRoute?.name,
-                        placeholder = "اختر المسار",
-                        items = merchantUiState.routes,
-                        itemLabel = { it.name },
-                        onItemSelected = { selectedRoute = it },
-                        enabled = !isSingleRoute
-                    )
+//                    Spacer(Modifier.height(14.dp))
+//                    val isSingleRoute = merchantUiState.routes.size == 1
+//                    MerchantDropdownField(
+//                        label = "المسار",
+//                        isRequired = !isSingleRoute,
+//                        selectedLabel = selectedRoute?.name,
+//                        placeholder = "اختر المسار",
+//                        items = merchantUiState.routes,
+//                        itemLabel = { it.name },
+//                        onItemSelected = { selectedRoute = it },
+//                        enabled = !isSingleRoute
+//                    )
                 }
 
             }
