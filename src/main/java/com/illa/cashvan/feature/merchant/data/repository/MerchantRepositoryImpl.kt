@@ -7,6 +7,7 @@ import com.illa.cashvan.feature.merchant.data.model.CreateMerchantResponse
 import com.illa.cashvan.feature.merchant.data.model.GovernoratesResponse
 import com.illa.cashvan.feature.merchant.data.model.MerchantTypesResponse
 import com.illa.cashvan.feature.merchant.data.model.ReverseGeocodeResponse
+import com.illa.cashvan.feature.merchant.data.model.RoutesResponse
 import com.illa.cashvan.feature.merchant.data.model.UpdateMerchantData
 import com.illa.cashvan.feature.merchant.data.model.UpdateMerchantRequest
 import com.illa.cashvan.feature.merchant.data.model.UpdateMerchantResponse
@@ -37,6 +38,18 @@ class MerchantRepositoryImpl(
             ApiResult.Success(response)
         } catch (e: Exception) {
             ApiResult.Error(e, e.message ?: "Failed to create merchant")
+        }
+    }
+
+    override suspend fun getRoutes(): ApiResult<RoutesResponse> {
+        return try {
+            val config = ApiEndpoints.Merchant.getRoutes()
+            val response = httpClient.request("v${config.version}/${config.path}") {
+                method = HttpMethod.Get
+            }.body<RoutesResponse>()
+            ApiResult.Success(response)
+        } catch (e: Exception) {
+            ApiResult.Error(e, e.message ?: "Failed to get routes")
         }
     }
 

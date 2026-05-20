@@ -48,6 +48,7 @@ data class CreateOrderUiState(
     val isSearchingMerchants: Boolean = false,
     val isSearchingProducts: Boolean = false,
     val error: String? = null,
+    val noPlanFound: Boolean = false,
     val orderCreated: Boolean = false,
     val orderCreationError: String? = null,
     val isPrinting: Boolean = false,
@@ -104,7 +105,7 @@ class CreateOrderViewModel(
                     if (plan?.id == null) {
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            error = "لا يوجد خطة جارية حالياً"
+                            noPlanFound = true
                         )
                     } else {
                         _uiState.value = _uiState.value.copy(isLoading = false, currentPlan = plan)
@@ -570,6 +571,10 @@ class CreateOrderViewModel(
         _uiState.value = _uiState.value.copy(error = null)
     }
 
+    fun clearNoPlanFound() {
+        _uiState.value = _uiState.value.copy(noPlanFound = false)
+    }
+
     fun clearOrderCreationError() {
         _uiState.value = _uiState.value.copy(orderCreationError = null)
     }
@@ -591,6 +596,7 @@ class CreateOrderViewModel(
             merchantSearchQuery = "",
             productSearchQuery = "",
             error = null,
+            noPlanFound = false,
             paymentType = paymentType
         )
         loadOngoingPlan()

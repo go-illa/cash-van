@@ -133,6 +133,13 @@ object ApiEndpoints {
             version = 2
         )
 
+        fun getRoutes() = RequestConfiguration(
+            path = "routes",
+            method = HttpMethod.Get,
+            parameterEncoding = ParameterEncoding.QUERY,
+            version = 2
+        )
+
         fun reverseGeocode(latitude: String, longitude: String) = RequestConfiguration(
             path = "geocode/reverse",
             method = HttpMethod.Get,

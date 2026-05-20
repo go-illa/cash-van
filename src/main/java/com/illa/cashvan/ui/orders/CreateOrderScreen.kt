@@ -61,7 +61,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import android.widget.Toast
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalContext
 import com.illa.cashvan.R
 import com.illa.cashvan.core.location.LocationPermissionHandler
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
@@ -111,6 +117,14 @@ fun CreateOrderScreen(
             coroutineScope.launch {
                 snackbarHostState.showSnackbar("تم إضافة التاجر بنجاح")
             }
+        }
+    }
+
+    LaunchedEffect(uiState.noPlanFound) {
+        if (uiState.noPlanFound) {
+            viewModel.clearNoPlanFound()
+            Toast.makeText(context, "لا يوجد خطة جارية حالياً", Toast.LENGTH_SHORT).show()
+            onBackClick()
         }
     }
 
