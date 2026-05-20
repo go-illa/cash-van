@@ -57,7 +57,7 @@ class MerchantViewModel(
         getPlans()
         getGovernorates()
         getMerchantTypes()
-        getRoutes()
+//        getRoutes()
     }
 
     fun createMerchant(
@@ -68,7 +68,7 @@ class MerchantViewModel(
         latitude: Double,
         longitude: Double,
         planId: Int,
-        routeId: String,
+//        routeId: String,
         merchantTypeId: String,
         detailedAddress: String,
         priceTier: String,
@@ -91,7 +91,7 @@ class MerchantViewModel(
                 latitude = latitude,
                 longitude = longitude,
                 planId = planId,
-                routeId = routeId,
+//                routeId = routeId,
                 merchantTypeId = merchantTypeId,
                 detailedAddress = detailedAddress,
                 priceTier = priceTier,
@@ -235,6 +235,6 @@ class MerchantViewModel(
         getPlans()
         getGovernorates()
         getMerchantTypes()
-        getRoutes()
+//        getRoutes()
     }
 }

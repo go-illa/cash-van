@@ -16,8 +16,8 @@ android {
         applicationId = "com.illa.cashvan"
         minSdk = 24
         targetSdk = 36
-        versionCode = 12
-        versionName = "2.9"
+        versionCode = 13
+        versionName = "3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

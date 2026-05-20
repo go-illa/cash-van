@@ -3,6 +3,7 @@ package com.illa.cashvan.ui.orders
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -61,13 +62,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import android.content.Intent
-import android.net.Uri
-import android.provider.Settings
-import android.widget.Toast
-import androidx.compose.foundation.layout.width
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.illa.cashvan.R
 import com.illa.cashvan.core.location.LocationPermissionHandler
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
@@ -93,6 +88,7 @@ fun CreateOrderScreen(
     onOrderCreated: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()

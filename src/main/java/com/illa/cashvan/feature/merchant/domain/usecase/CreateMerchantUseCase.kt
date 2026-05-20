@@ -17,7 +17,7 @@ class CreateMerchantUseCase(
         latitude: Double,
         longitude: Double,
         planId: Int,
-        routeId: String,
+//        routeId: String,
         merchantTypeId: String,
         detailedAddress: String,
         priceTier: String,
@@ -34,7 +34,7 @@ class CreateMerchantUseCase(
             latitude = latitude,
             longitude = longitude,
             plan_id = planId,
-            route_id = routeId,
+//            route_id = routeId,
             working_days = workingDays
         )
 
