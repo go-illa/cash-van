@@ -31,7 +31,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,22 +45,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import kotlinx.coroutines.launch
 import com.illa.cashvan.R
+import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.feature.orders.presentation.mapper.toOrderItem
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderType
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
 import com.illa.cashvan.ui.common.ErrorSnackbar
-import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.ui.home.ui_components.EmptyOrdersComponent
 import com.illa.cashvan.ui.orders.ui_components.CancelOrderBottomSheet
 import com.illa.cashvan.ui.orders.ui_components.CreateVisitBottomSheet
+import com.illa.cashvan.ui.orders.ui_components.KpiCardsSection
 import com.illa.cashvan.ui.orders.ui_components.OrderCardItem
 import com.illa.cashvan.ui.orders.ui_components.OrderItem
 import com.illa.cashvan.ui.visit.VisitWithoutOrderListTab
+import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
@@ -112,113 +113,36 @@ fun OrderScreen(
     val scope = rememberCoroutineScope()
     var cashVanSubTab by remember { mutableStateOf(CashVanSubTab.WITH_ORDER) }
 
-
     LaunchedEffect(Unit) {
         viewModel.refresh()
     }
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
+    val tabs = listOf(OrderType.PRE_SELL, OrderType.CASH_VAN)
+    val selectedTabIndex = tabs.indexOf(uiState.selectedTab)
+    val subTabs = listOf(CashVanSubTab.WITH_ORDER, CashVanSubTab.WITHOUT_ORDER)
+    val subTabIndex = subTabs.indexOf(cashVanSubTab)
+    val isWithoutOrderTab = uiState.selectedTab == OrderType.CASH_VAN && cashVanSubTab == CashVanSubTab.WITHOUT_ORDER
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
             CashVanHeader()
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "طلبات اليوم",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily(Font(R.font.zain_regular)),
-                color = Color(0xFF1F252E),
-                textAlign = TextAlign.Start,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            val tabs = listOf(OrderType.PRE_SELL, OrderType.CASH_VAN)
-            val selectedTabIndex = tabs.indexOf(uiState.selectedTab)
-
-            TabRow(
-                selectedTabIndex = selectedTabIndex,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                containerColor = Color.Transparent,
-                indicator = { tabPositions ->
-                    if (selectedTabIndex < tabPositions.size) {
-                        TabRowDefaults.SecondaryIndicator(
-                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
-                            color = Color(0xFF0D3773)
-                        )
-                    }
-                },
-                divider = {}
-            ) {
-                tabs.forEachIndexed { index, orderType ->
-                    Tab(
-                        selected = selectedTabIndex == index,
-                        onClick = { viewModel.selectTab(orderType) },
-                        text = {
-                            Text(
-                                text = orderType.displayName,
-                                fontSize = 16.sp,
-                                fontWeight = if (selectedTabIndex == index) FontWeight.Bold else FontWeight.Normal,
-                                fontFamily = FontFamily(Font(R.font.zain_regular)),
-                                color = if (selectedTabIndex == index) Color(0xFF0D3773) else Color(0xFF9E9E9E)
-                            )
-                        }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (uiState.selectedTab == OrderType.CASH_VAN) {
-                val subTabs = listOf(CashVanSubTab.WITH_ORDER, CashVanSubTab.WITHOUT_ORDER)
-                val subTabIndex = subTabs.indexOf(cashVanSubTab)
-                TabRow(
-                    selectedTabIndex = subTabIndex,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    containerColor = Color.Transparent,
-                    indicator = { tabPositions ->
-                        if (subTabIndex < tabPositions.size) {
-                            TabRowDefaults.SecondaryIndicator(
-                                modifier = Modifier.tabIndicatorOffset(tabPositions[subTabIndex]),
-                                color = Color(0xFF0D3773)
-                            )
-                        }
-                    },
-                    divider = {}
-                ) {
-                    subTabs.forEachIndexed { index, subTab ->
-                        Tab(
-                            selected = subTabIndex == index,
-                            onClick = { cashVanSubTab = subTab },
-                            text = {
-                                Text(
-                                    text = subTab.displayName,
-                                    fontSize = 14.sp,
-                                    fontWeight = if (subTabIndex == index) FontWeight.Bold else FontWeight.Normal,
-                                    fontFamily = FontFamily(Font(R.font.zain_regular)),
-                                    color = if (subTabIndex == index) Color(0xFF0D3773) else Color(0xFF9E9E9E)
-                                )
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            if (uiState.selectedTab == OrderType.CASH_VAN && cashVanSubTab == CashVanSubTab.WITHOUT_ORDER) {
+            if (isWithoutOrderTab) {
+                KpiCardsSection(modifier = Modifier.fillMaxWidth().padding(4.dp))
+                Text(
+                    text = "طلبات اليوم",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                    color = Color(0xFF1F252E),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                MainTabRow(tabs, selectedTabIndex, onTabSelected = { viewModel.selectTab(it) })
+                Spacer(modifier = Modifier.height(8.dp))
+                SubTabRow(subTabs, subTabIndex, onSubTabSelected = { cashVanSubTab = it })
+                Spacer(modifier = Modifier.height(8.dp))
                 Box(modifier = Modifier.weight(1f)) {
                     VisitWithoutOrderListTab(
                         onVisitClick = onVisitDetailsClick,
@@ -226,59 +150,77 @@ fun OrderScreen(
                     )
                 }
             } else {
-                when {
-                    uiState.isLoading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                color = Color(0xFF0D3773)
-                            )
+                LazyColumn(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    item(key = "kpi") {
+                        KpiCardsSection(modifier = Modifier.fillMaxWidth().padding(4.dp))
+                    }
+                    item(key = "title") {
+                        Text(
+                            text = "طلبات اليوم",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color(0xFF1F252E),
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+                        )
+                    }
+                    item(key = "main_tabs") {
+                        MainTabRow(tabs, selectedTabIndex, onTabSelected = { viewModel.selectTab(it) })
+                    }
+                    if (uiState.selectedTab == OrderType.CASH_VAN) {
+                        item(key = "sub_tabs") {
+                            SubTabRow(subTabs, subTabIndex, onSubTabSelected = { cashVanSubTab = it })
                         }
                     }
-                    uiState.error != null -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "حدث خطأ في تحميل الطلبات",
-                                    color = Color.Red,
-                                    textAlign = TextAlign.Center
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                IconButton(
-                                    onClick = { viewModel.refresh() }
+                    when {
+                        uiState.isLoading -> {
+                            item(key = "loading") {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().height(300.dp),
+                                    contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Refresh,
-                                        contentDescription = "إعادة تحميل",
-                                        tint = Color(0xFF0D3773)
-                                    )
+                                    CircularProgressIndicator(color = Color(0xFF0D3773))
                                 }
                             }
                         }
-                    }
-                    orderItems.isEmpty() -> {
-                        EmptyOrdersComponent(
-                            modifier = Modifier.weight(1f),
-                            onCreateOrderClick = { showCreateVisitSheet = true }
-                        )
-                    }
-                    else -> {
-                        LazyColumn(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            items(orderItems) { order ->
+                        uiState.error != null -> {
+                            item(key = "error") {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().height(300.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = uiState.error.orEmpty(),
+                                            color = Color.Red,
+                                            textAlign = TextAlign.Center
+                                        )
+                                        Spacer(modifier = Modifier.height(16.dp))
+                                        IconButton(onClick = { viewModel.refresh() }) {
+                                            Icon(
+                                                imageVector = Icons.Default.Refresh,
+                                                contentDescription = "إعادة تحميل",
+                                                tint = Color(0xFF0D3773)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        orderItems.isEmpty() -> {
+                            item(key = "empty") {
+                                EmptyOrdersComponent(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    onCreateOrderClick = { showCreateVisitSheet = true }
+                                )
+                            }
+                        }
+                        else -> {
+                            items(orderItems, key = { it.id }) { order ->
                                 OrderCardItem(
                                     order = order,
                                     onOrderClick = onOrderClick,
@@ -312,9 +254,7 @@ fun OrderScreen(
             }
         }
 
-        val showMainFab = orderItems.isNotEmpty() && !uiState.isLoading && uiState.error == null &&
-            !(uiState.selectedTab == OrderType.CASH_VAN && cashVanSubTab == CashVanSubTab.WITHOUT_ORDER)
-        if (showMainFab) {
+        if (!isWithoutOrderTab && orderItems.isNotEmpty() && !uiState.isLoading && uiState.error == null) {
             FloatingActionButton(
                 onClick = {
                     analyticsHelper.logEvent("plus_icon")
@@ -340,9 +280,7 @@ fun OrderScreen(
             CancelOrderBottomSheet(
                 sheetState = cancelBottomSheetState,
                 onDismiss = {
-                    scope.launch {
-                        cancelBottomSheetState.hide()
-                    }.invokeOnCompletion {
+                    scope.launch { cancelBottomSheetState.hide() }.invokeOnCompletion {
                         showCancelBottomSheet = false
                         selectedOrderForCancel = null
                     }
@@ -354,9 +292,7 @@ fun OrderScreen(
                             reason = reason,
                             note = note,
                             onSuccess = {
-                                scope.launch {
-                                    cancelBottomSheetState.hide()
-                                }.invokeOnCompletion {
+                                scope.launch { cancelBottomSheetState.hide() }.invokeOnCompletion {
                                     showCancelBottomSheet = false
                                     selectedOrderForCancel = null
                                 }
@@ -390,6 +326,82 @@ fun OrderScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun MainTabRow(
+    tabs: List<OrderType>,
+    selectedIndex: Int,
+    onTabSelected: (OrderType) -> Unit
+) {
+    TabRow(
+        selectedTabIndex = selectedIndex,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        containerColor = Color.Transparent,
+        indicator = { tabPositions ->
+            if (selectedIndex < tabPositions.size) {
+                TabRowDefaults.SecondaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedIndex]),
+                    color = Color(0xFF0D3773)
+                )
+            }
+        },
+        divider = {}
+    ) {
+        tabs.forEachIndexed { index, orderType ->
+            Tab(
+                selected = selectedIndex == index,
+                onClick = { onTabSelected(orderType) },
+                text = {
+                    Text(
+                        text = orderType.displayName,
+                        fontSize = 16.sp,
+                        fontWeight = if (selectedIndex == index) FontWeight.Bold else FontWeight.Normal,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = if (selectedIndex == index) Color(0xFF0D3773) else Color(0xFF9E9E9E)
+                    )
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SubTabRow(
+    subTabs: List<CashVanSubTab>,
+    selectedIndex: Int,
+    onSubTabSelected: (CashVanSubTab) -> Unit
+) {
+    TabRow(
+        selectedTabIndex = selectedIndex,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        containerColor = Color.Transparent,
+        indicator = { tabPositions ->
+            if (selectedIndex < tabPositions.size) {
+                TabRowDefaults.SecondaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedIndex]),
+                    color = Color(0xFF0D3773)
+                )
+            }
+        },
+        divider = {}
+    ) {
+        subTabs.forEachIndexed { index, subTab ->
+            Tab(
+                selected = selectedIndex == index,
+                onClick = { onSubTabSelected(subTab) },
+                text = {
+                    Text(
+                        text = subTab.displayName,
+                        fontSize = 14.sp,
+                        fontWeight = if (selectedIndex == index) FontWeight.Bold else FontWeight.Normal,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = if (selectedIndex == index) Color(0xFF0D3773) else Color(0xFF9E9E9E)
+                    )
+                }
             )
         }
     }

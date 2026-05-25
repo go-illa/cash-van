@@ -8,7 +8,7 @@ data class Plan(
     val created_at: String,
     val updated_at: String,
     val formatted_code: String,
-    val infor_code: String,
+    val infor_code: String?,
     val status: String,
     val creator_id: String,
     val creator_type: String,

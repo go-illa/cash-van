@@ -11,4 +11,11 @@ class SessionManager {
     fun triggerForceLogout() {
         _forceLogoutEvents.tryEmit(Unit)
     }
+
+    private val _inactiveAgentEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    val inactiveAgentEvents: SharedFlow<Unit> = _inactiveAgentEvents.asSharedFlow()
+
+    fun triggerInactiveAgent() {
+        _inactiveAgentEvents.tryEmit(Unit)
+    }
 }

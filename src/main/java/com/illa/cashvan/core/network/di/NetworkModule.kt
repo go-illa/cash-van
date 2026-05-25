@@ -38,6 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
@@ -45,6 +46,37 @@ import kotlin.time.Duration.Companion.seconds
 val networkModule = module {
     single { SharedConfig() }
     single { provideHttpClient(get(), get(), get(), get(), get(), get(), get()) }
+    single(named("supabase")) { provideSupabaseHttpClient() }
+}
+
+fun provideSupabaseHttpClient(): HttpClient = HttpClient(Android) {
+    install(HttpTimeout) {
+        connectTimeoutMillis = 20.seconds.inWholeMilliseconds
+        socketTimeoutMillis = 30.seconds.inWholeMilliseconds
+    }
+    install(ContentNegotiation) {
+        json(Json { ignoreUnknownKeys = true; isLenient = true })
+    }
+    install(Logging) {
+        logger = object : Logger {
+            override fun log(message: String) {
+                val tag = "SupabaseClient"
+                var offset = 0
+                while (offset < message.length) {
+                    val end = minOf(offset + 3000, message.length)
+                    Log.d(tag, message.substring(offset, end))
+                    offset = end
+                }
+            }
+        }
+        level = LogLevel.ALL
+    }
+    defaultRequest {
+        url("https://hlzgbivgdcesiaymbijn.supabase.co/functions/v1/")
+        header(HttpHeaders.Authorization, "Bearer ${BuildConfig.SUPABASE_ANON_KEY}")
+        header(HttpHeaders.ContentType, ContentType.Application.Json)
+        header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+    }
 }
 
 fun provideHttpClient(
@@ -104,6 +136,7 @@ fun provideHttpClient(
             handleResponseExceptionWithRequest { exception, request ->
                 throw when (exception) {
                     is ClientRequestException -> {
+                        var customError: com.illa.cashvan.core.network.model.Error? = null
                         when (exception.response.status) {
                             HttpStatusCode.Unauthorized -> {
                                 val isRefreshEndpoint = request.url.encodedPath.contains("auth/refresh")
@@ -158,13 +191,15 @@ fun provideHttpClient(
                                 }
                             }
                             HttpStatusCode.Forbidden -> {
-                                runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
-                                sessionManager.triggerForceLogout()
+                                sessionManager.triggerInactiveAgent()
+                                customError = com.illa.cashvan.core.network.model.Error(
+                                    localizedMessage = "انت حسابك مش مربوط بحساب بري-سيل كلم المشرف بتاعك"
+                                )
                             }
                         }
                         AppClientRequestException(
                             exception.response,
-                            exception.response.getLocalizedError()
+                            customError ?: exception.response.getLocalizedError()
                         )
                     }
 

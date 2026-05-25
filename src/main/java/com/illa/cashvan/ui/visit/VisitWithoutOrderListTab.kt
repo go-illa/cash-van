@@ -90,7 +90,7 @@ fun VisitWithoutOrderListTab(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "حدث خطأ في تحميل الزيارات",
+                            text = state.error.orEmpty(),
                             color = Color.Red,
                             textAlign = TextAlign.Center,
                             fontFamily = zain
