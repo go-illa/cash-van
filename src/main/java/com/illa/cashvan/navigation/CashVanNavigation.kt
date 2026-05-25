@@ -15,6 +15,7 @@ import androidx.navigation3.*
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.illa.cashvan.core.auth.presentation.viewmodel.AuthenticationViewModel
+import com.illa.cashvan.core.session.SessionManager
 import com.illa.cashvan.ui.home.HomeScreen
 import com.illa.cashvan.ui.inventory.InventoryScreen
 import com.illa.cashvan.ui.merchant.CreateMerchantScreen
@@ -57,6 +58,7 @@ fun CashVanNavigation(
     var showOrderResultSheet by remember { mutableStateOf(false) }
     val orderResultSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showPaymentTypeDialog by remember { mutableStateOf(false) }
+    val sessionManager: SessionManager = koinInject()
 
     LaunchedEffect(createOrderUiState.orderCreated, createOrderUiState.orderCreationError) {
         if ((createOrderUiState.orderCreated || createOrderUiState.orderCreationError != null) &&
@@ -274,4 +276,5 @@ fun CashVanNavigation(
             }
         )
     }
+
 }

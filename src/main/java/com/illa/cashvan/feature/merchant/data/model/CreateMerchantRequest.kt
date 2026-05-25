@@ -19,6 +19,6 @@ data class MerchantData(
     val latitude: Double,
     val longitude: Double,
     val plan_id: Int,
-//    val route_id: String,
+    val route_id: String,
     val working_days: Map<String, Boolean>
 )

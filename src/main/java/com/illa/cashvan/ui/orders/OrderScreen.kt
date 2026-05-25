@@ -195,7 +195,7 @@ fun OrderScreen(
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Text(
-                                            text = "حدث خطأ في تحميل الطلبات",
+                                            text = uiState.error.orEmpty(),
                                             color = Color.Red,
                                             textAlign = TextAlign.Center
                                         )

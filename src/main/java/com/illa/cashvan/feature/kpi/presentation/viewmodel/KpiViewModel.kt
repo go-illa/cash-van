@@ -53,7 +53,8 @@ class KpiViewModel(
                 val message = when (e.response.status) {
                     HttpStatusCode.NotFound -> "لم يتم العثور على المندوب، تواصل مع المشرف"
                     HttpStatusCode.Conflict -> "حسابك غير مرتبط بعد، تواصل بالإدارة"
-                    else -> "حدث خطأ في تحميل مؤشرات الأداء"
+                    HttpStatusCode.Forbidden -> "انت حسابك مش مربوط بحساب بري-سيل كلم المشرف بتاعك"
+                    else -> e.message ?: "حدث خطأ في تحميل مؤشرات الأداء"
                 }
                 _uiState.value = _uiState.value.copy(isLoading = false, error = message)
             } catch (e: Exception) {
