@@ -136,6 +136,7 @@ fun provideHttpClient(
             handleResponseExceptionWithRequest { exception, request ->
                 throw when (exception) {
                     is ClientRequestException -> {
+                        var customError: com.illa.cashvan.core.network.model.Error? = null
                         when (exception.response.status) {
                             HttpStatusCode.Unauthorized -> {
                                 val isRefreshEndpoint = request.url.encodedPath.contains("auth/refresh")
@@ -190,13 +191,15 @@ fun provideHttpClient(
                                 }
                             }
                             HttpStatusCode.Forbidden -> {
-                                runBlocking(Dispatchers.IO) { clearAppDataUseCase() }
-                                sessionManager.triggerForceLogout()
+                                sessionManager.triggerInactiveAgent()
+                                customError = com.illa.cashvan.core.network.model.Error(
+                                    localizedMessage = "انت حسابك مش مربوط بحساب بري-سيل كلم المشرف بتاعك"
+                                )
                             }
                         }
                         AppClientRequestException(
                             exception.response,
-                            exception.response.getLocalizedError()
+                            customError ?: exception.response.getLocalizedError()
                         )
                     }
 

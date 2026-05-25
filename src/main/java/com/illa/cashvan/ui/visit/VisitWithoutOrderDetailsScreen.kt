@@ -109,7 +109,7 @@ fun VisitWithoutOrderDetailsScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "حدث خطأ في تحميل التفاصيل",
+                        text = state.error.orEmpty(),
                         color = Color.Red,
                         fontFamily = zain,
                         textAlign = TextAlign.Center
