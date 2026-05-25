@@ -20,7 +20,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -53,11 +56,17 @@ import com.illa.cashvan.R
 fun CancelOrderBottomSheet(
     sheetState: SheetState,
     onDismiss: () -> Unit,
-    onConfirm: (reason: String, note: String) -> Unit,
-    orderNumber: String
+    onConfirm: (reason: String, note: String, subReason: String?) -> Unit,
+    orderNumber: String,
+    error: String? = null,
+    onClearError: () -> Unit = {}
 ) {
     var selectedReason by remember { mutableStateOf<String?>(null) }
     var cancellationNote by remember { mutableStateOf("") }
+    var selectedSubReason by remember { mutableStateOf<String?>(null) }
+    var isSubReasonExpanded by remember { mutableStateOf(false) }
+
+    val subReasons = listOf("أوردر مزيف", "العميل قافل", "مافيش فلوس", "مش عايز الأوردر")
 
     val reasons = listOf(
         "شك في سلامة العبوة",
@@ -132,7 +141,15 @@ fun CancelOrderBottomSheet(
                 reasons.forEach { reason ->
                     FilterChip(
                         selected = selectedReason == reason,
-                        onClick = { selectedReason = reason },
+                        onClick = {
+                            selectedReason = reason
+                            if (reason == "رفض الاستلام") {
+                                isSubReasonExpanded = true
+                            } else {
+                                selectedSubReason = null
+                                isSubReasonExpanded = false
+                            }
+                        },
                         label = {
                             Text(
                                 text = reason,
@@ -153,6 +170,58 @@ fun CancelOrderBottomSheet(
                             color = if (selectedReason == reason) Color(0xFF0D3773) else Color(0xFFE0E0E0)
                         )
                     )
+                }
+            }
+
+            if (selectedReason == "رفض الاستلام") {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                ExposedDropdownMenuBox(
+                    expanded = isSubReasonExpanded,
+                    onExpandedChange = { isSubReasonExpanded = it }
+                ) {
+                    OutlinedTextField(
+                        value = selectedSubReason ?: "اختر السبب التفصيلي",
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = isSubReasonExpanded)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF0D3773),
+                            unfocusedBorderColor = Color(0xFFE0E0E0)
+                        ),
+                        textStyle = TextStyle(
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Right,
+                            color = if (selectedSubReason != null) Color(0xFF212121) else Color(0xFFBDBDBD)
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = isSubReasonExpanded,
+                        onDismissRequest = { isSubReasonExpanded = false }
+                    ) {
+                        subReasons.forEach { sub ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = sub,
+                                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                        fontSize = 14.sp
+                                    )
+                                },
+                                onClick = {
+                                    selectedSubReason = sub
+                                    isSubReasonExpanded = false
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -224,6 +293,18 @@ fun CancelOrderBottomSheet(
                 )
             }
 
+            if (error != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = error,
+                    color = Color(0xFFDC3545),
+                    fontSize = 14.sp,
+                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.End
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             Column(
@@ -252,7 +333,12 @@ fun CancelOrderBottomSheet(
                 Button(
                     onClick = {
                         selectedReason?.let { reason ->
-                            onConfirm(reason, cancellationNote)
+                            onClearError()
+                            onConfirm(
+                                reason,
+                                cancellationNote,
+                                if (reason == "رفض الاستلام") selectedSubReason else null
+                            )
                         }
                     },
                     modifier = Modifier
