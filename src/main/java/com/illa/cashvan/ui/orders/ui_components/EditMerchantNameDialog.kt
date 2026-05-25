@@ -3,14 +3,12 @@ package com.illa.cashvan.ui.orders.ui_components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -30,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -39,12 +38,14 @@ import com.illa.cashvan.R
 @Composable
 fun EditMerchantNameDialog(
     currentSignName: String,
+    currentPhoneNumber: String?,
     isLoading: Boolean,
     error: String?,
-    onConfirm: (String) -> Unit,
+    onConfirm: (signName: String, phoneNumber: String?) -> Unit,
     onDismiss: () -> Unit
 ) {
     var signName by remember { mutableStateOf(currentSignName) }
+    var phoneNumber by remember { mutableStateOf("") }
 
     Dialog(onDismissRequest = { if (!isLoading) onDismiss() }) {
         Card(
@@ -91,6 +92,35 @@ fun EditMerchantNameDialog(
                     enabled = !isLoading
                 )
 
+                if (currentPhoneNumber == null) {
+                    OutlinedTextField(
+                        value = phoneNumber,
+                        onValueChange = { phoneNumber = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = {
+                            Text(
+                                text = "رقم الهاتف",
+                                fontFamily = FontFamily(Font(R.font.zain_regular))
+                            )
+                        },
+                        placeholder = {
+                            Text(
+                                text = "أدخل رقم الهاتف",
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color(0xFF9CA3AF)
+                            )
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF0D3773),
+                            unfocusedBorderColor = Color(0xFFE5E7EB)
+                        ),
+                        enabled = !isLoading
+                    )
+                }
+
                 if (error != null) {
                     Text(
                         text = error,
@@ -107,7 +137,12 @@ fun EditMerchantNameDialog(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Button(
-                        onClick = { onConfirm(signName) },
+                        onClick = {
+                            onConfirm(
+                                signName,
+                                if (currentPhoneNumber == null && phoneNumber.isNotBlank()) phoneNumber else null
+                            )
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(48.dp),

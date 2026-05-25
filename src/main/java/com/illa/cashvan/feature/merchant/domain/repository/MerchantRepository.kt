@@ -19,6 +19,7 @@ interface MerchantRepository {
         merchantId: String,
         signName: String,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        phoneNumber: String? = null
     ): ApiResult<UpdateMerchantResponse>
 }
