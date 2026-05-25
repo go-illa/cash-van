@@ -254,7 +254,9 @@ fun OrderScreen(
             }
         }
 
-        if (!isWithoutOrderTab && orderItems.isNotEmpty() && !uiState.isLoading && uiState.error == null) {
+        val showMainFab = orderItems.isNotEmpty() && !uiState.isLoading && uiState.error == null &&
+            !(uiState.selectedTab == OrderType.CASH_VAN && cashVanSubTab == CashVanSubTab.WITHOUT_ORDER)
+        if (showMainFab) {
             FloatingActionButton(
                 onClick = {
                     analyticsHelper.logEvent("plus_icon")
@@ -283,14 +285,16 @@ fun OrderScreen(
                     scope.launch { cancelBottomSheetState.hide() }.invokeOnCompletion {
                         showCancelBottomSheet = false
                         selectedOrderForCancel = null
+                        viewModel.clearCancellationError()
                     }
                 },
-                onConfirm = { reason, note ->
+                onConfirm = { reason, note, subReason ->
                     selectedOrderForCancel?.let { order ->
                         viewModel.cancelOrder(
                             orderId = order.id,
                             reason = reason,
                             note = note,
+                            subReason = subReason,
                             onSuccess = {
                                 scope.launch { cancelBottomSheetState.hide() }.invokeOnCompletion {
                                     showCancelBottomSheet = false
@@ -300,7 +304,9 @@ fun OrderScreen(
                         )
                     }
                 },
-                orderNumber = selectedOrderForCancel?.orderNumber ?: ""
+                orderNumber = selectedOrderForCancel?.orderNumber ?: "",
+                error = uiState.cancellationError,
+                onClearError = { viewModel.clearCancellationError() }
             )
         }
 
@@ -328,6 +334,7 @@ fun OrderScreen(
                     .padding(16.dp)
             )
         }
+
     }
 }
 

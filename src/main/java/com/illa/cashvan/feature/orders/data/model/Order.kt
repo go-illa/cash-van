@@ -290,6 +290,7 @@ data class UpdateOrderData(
     val status: String? = null,
     val cancellation_reason: String? = null,
     val cancellation_note: String? = null,
+    val cancellation_sub_reason: String? = null,
     val rebate_value: Double? = null,
     val order_items: List<SubmitOrderItem>? = null
 )
