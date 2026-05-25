@@ -87,7 +87,8 @@ class MerchantRepositoryImpl(
         merchantId: String,
         signName: String,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        phoneNumber: String?
     ): ApiResult<UpdateMerchantResponse> {
         return try {
             val config = ApiEndpoints.Merchant.updateMerchant(merchantId)
@@ -100,7 +101,7 @@ class MerchantRepositoryImpl(
                     parameters.append("longitude", longitude.toString())
                 }
                 contentType(ContentType.Application.Json)
-                setBody(UpdateMerchantRequest(UpdateMerchantData(signName)))
+                setBody(UpdateMerchantRequest(UpdateMerchantData(signName, phoneNumber)))
             }.body<UpdateMerchantResponse>()
 
             ApiResult.Success(response)

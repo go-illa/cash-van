@@ -9,7 +9,8 @@ class UpdateMerchantUseCase(private val merchantRepository: MerchantRepository) 
         merchantId: String,
         signName: String,
         latitude: Double,
-        longitude: Double
+        longitude: Double,
+        phoneNumber: String? = null
     ): ApiResult<UpdateMerchantResponse> =
-        merchantRepository.updateMerchant(merchantId, signName, latitude, longitude)
+        merchantRepository.updateMerchant(merchantId, signName, latitude, longitude, phoneNumber)
 }
