@@ -661,10 +661,13 @@ class CreateOrderViewModel(
         val merchant = _uiState.value.selectedMerchant ?: return
         val lat = _uiState.value.userLatitude ?: return
         val lon = _uiState.value.userLongitude ?: return
+        val formattedPhone = phoneNumber?.takeIf { it.isNotBlank() }?.let {
+            if (it.startsWith("+")) it else "+2$it"
+        }
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isUpdatingMerchantName = true, updateMerchantNameError = null)
-            when (val result = updateMerchantUseCase(merchant.id, signName, lat, lon, phoneNumber)) {
+            when (val result = updateMerchantUseCase(merchant.id, signName, lat, lon, formattedPhone)) {
                 is ApiResult.Success -> {
                     val updated = merchant.copy(
                         sign_name = result.data.sign_name,
