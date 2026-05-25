@@ -1,16 +1,17 @@
 package com.illa.cashvan.core.network.di
 
+import android.util.Log
 import com.illa.cashvan.BuildConfig
 import com.illa.cashvan.core.app_preferences.domain.use_case.app_cache.ClearAppDataUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetRefreshTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.SaveAccessTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.SaveRefreshTokenUseCase
-import com.illa.cashvan.core.session.SessionManager
 import com.illa.cashvan.core.network.model.AppClientRequestException
 import com.illa.cashvan.core.network.model.AppRedirectResponseException
 import com.illa.cashvan.core.network.model.AppServerResponseException
 import com.illa.cashvan.core.network.util.getLocalizedError
+import com.illa.cashvan.core.session.SessionManager
 import com.illa.cashvan.core.utils.getLanguage
 import com.illa.cashvan.di.SharedConfig
 import io.ktor.client.HttpClient
@@ -23,7 +24,6 @@ import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import android.util.Log
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
@@ -47,6 +47,7 @@ val networkModule = module {
     single { SharedConfig() }
     single { provideHttpClient(get(), get(), get(), get(), get(), get(), get()) }
     single(named("supabase")) { provideSupabaseHttpClient() }
+    single(named("plain")) { providePlainHttpClient() }
 }
 
 fun provideSupabaseHttpClient(): HttpClient = HttpClient(Android) {
@@ -76,6 +77,13 @@ fun provideSupabaseHttpClient(): HttpClient = HttpClient(Android) {
         header(HttpHeaders.Authorization, "Bearer ${BuildConfig.SUPABASE_ANON_KEY}")
         header(HttpHeaders.ContentType, ContentType.Application.Json)
         header("apikey", BuildConfig.SUPABASE_ANON_KEY)
+    }
+}
+
+fun providePlainHttpClient(): HttpClient = HttpClient(Android) {
+    install(HttpTimeout) {
+        connectTimeoutMillis = 30_000
+        socketTimeoutMillis = 30_000
     }
 }
 

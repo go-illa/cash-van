@@ -2,6 +2,7 @@ package com.illa.cashvan.feature.kpi.data.repository
 
 import com.illa.cashvan.feature.kpi.data.model.AgentKpiRequest
 import com.illa.cashvan.feature.kpi.data.model.AgentKpiResponse
+import com.illa.cashvan.feature.kpi.domain.repository.KpiRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.post

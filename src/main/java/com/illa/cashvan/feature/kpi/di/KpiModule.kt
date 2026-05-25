@@ -1,7 +1,7 @@
 package com.illa.cashvan.feature.kpi.di
 
-import com.illa.cashvan.feature.kpi.data.repository.KpiRepository
 import com.illa.cashvan.feature.kpi.data.repository.KpiRepositoryImpl
+import com.illa.cashvan.feature.kpi.domain.repository.KpiRepository
 import com.illa.cashvan.feature.kpi.domain.usecase.GetAgentKpiUseCase
 import com.illa.cashvan.feature.kpi.presentation.viewmodel.KpiViewModel
 import org.koin.androidx.viewmodel.dsl.viewModel

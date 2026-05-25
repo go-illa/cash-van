@@ -18,6 +18,7 @@ import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewMod
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val orderModule = module {
@@ -30,7 +31,7 @@ val orderModule = module {
     factory { GetOngoingPlanUseCase(get()) }
     factory { SearchMerchantsUseCase(get()) }
     factory { GetPlanProductsUseCase(get()) }
-    factory { GetInvoiceContentUseCase() }
+    factory { GetInvoiceContentUseCase(get(named("plain"))) }
     factory { GetProductTotalPriceUseCase(get()) }
     factory { GetCashVanProductTotalPriceUseCase(get()) }
     factory { VoidInvoiceUseCase(get()) }

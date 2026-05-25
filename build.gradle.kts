@@ -96,16 +96,16 @@ dependencies {
     implementation("io.insert-koin:koin-androidx-navigation:3.5.3")
 
     // ViewModel Compose
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-    implementation("androidx.compose.runtime:runtime-livedata:1.5.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    implementation("androidx.compose.runtime:runtime-livedata")
 
     // Room Database
-    implementation("androidx.room:room-runtime:2.6.0")
-    implementation("androidx.room:room-ktx:2.6.0")
-    kapt("androidx.room:room-compiler:2.6.0")
+    implementation("androidx.room:room-runtime:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")
+    kapt("androidx.room:room-compiler:2.8.4")
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
     // Ktor Client
     implementation("io.ktor:ktor-client-android:2.3.7")
@@ -115,8 +115,8 @@ dependencies {
     implementation("io.ktor:ktor-client-auth:2.3.7")
 
     // DataStore
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
-    implementation("androidx.datastore:datastore-core:1.0.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.3")
+    implementation("androidx.datastore:datastore-core:1.1.3")
 
     // Security for encryption
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
@@ -125,10 +125,10 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
     // Permissions handling
-    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.37.0")
 
     // Firebase BOM
-    implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
+    implementation(platform("com.google.firebase:firebase-bom:34.13.0"))
 
     // Firebase services
     implementation("com.google.firebase:firebase-auth-ktx")
@@ -145,7 +145,7 @@ dependencies {
     implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Chucker - HTTP Inspector
-    implementation("com.github.chuckerteam.chucker:library:4.0.0")
+    implementation("com.github.chuckerteam.chucker:library:4.3.1")
 
     // Honeywell Printer SDK - Multiple Command Languages
     implementation(files("libs/printer_library.jar"))
