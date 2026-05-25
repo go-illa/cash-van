@@ -488,6 +488,11 @@ class CreateOrderViewModel(
 
         if (state.currentPlan == null || state.selectedMerchant == null || state.selectedProducts.isEmpty()) return
 
+        if (state.paymentType != null && state.selectedMerchant.phone_number.isNullOrBlank()) {
+            _uiState.value = _uiState.value.copy(orderCreationError = "رقم هاتف التاجر مطلوب لإتمام طلب الكاش")
+            return
+        }
+
         viewModelScope.launch {
             val orderItems = state.selectedProducts.map { (planProductId, quantity) ->
                 OrderItem(
@@ -652,16 +657,22 @@ class CreateOrderViewModel(
         }
     }
 
-    fun updateMerchantSignName(signName: String) {
+    fun updateMerchantSignName(signName: String, phoneNumber: String? = null) {
         val merchant = _uiState.value.selectedMerchant ?: return
         val lat = _uiState.value.userLatitude ?: return
         val lon = _uiState.value.userLongitude ?: return
+        val formattedPhone = phoneNumber?.takeIf { it.isNotBlank() }?.let {
+            if (it.startsWith("+")) it else "+2$it"
+        }
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isUpdatingMerchantName = true, updateMerchantNameError = null)
-            when (val result = updateMerchantUseCase(merchant.id, signName, lat, lon)) {
+            when (val result = updateMerchantUseCase(merchant.id, signName, lat, lon, formattedPhone)) {
                 is ApiResult.Success -> {
-                    val updated = merchant.copy(sign_name = result.data.sign_name)
+                    val updated = merchant.copy(
+                        sign_name = result.data.sign_name,
+                        phone_number = result.data.phone_number ?: merchant.phone_number
+                    )
                     _uiState.value = _uiState.value.copy(
                         isUpdatingMerchantName = false,
                         selectedMerchant = updated,

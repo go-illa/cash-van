@@ -4,9 +4,11 @@ import com.illa.cashvan.feature.orders.data.model.Order
 import com.illa.cashvan.ui.orders.ui_components.*
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.TimeZone
 
 fun Order.toOrderItem(): OrderItem {
     val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+        .apply { timeZone = TimeZone.getTimeZone("UTC") }
     val outputFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     val formattedTime = try {
@@ -40,6 +42,7 @@ fun Order.toOrderItem(): OrderItem {
 
 fun Order.toOrderSpecs(): OrderSpecs {
     val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+        .apply { timeZone = TimeZone.getTimeZone("UTC") }
     val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
 
