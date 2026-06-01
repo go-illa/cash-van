@@ -40,7 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.illa.cashvan.R
 import com.illa.cashvan.feature.orders.data.model.PlanProduct
-import com.illa.cashvan.feature.orders.presentation.viewmodel.ProductPriceInfo
+import com.illa.cashvan.feature.orders.presentation.mapper.ProductPriceInfo
 
 @Composable
 fun SelectedProductsList(

@@ -1,10 +1,41 @@
 package com.illa.cashvan.feature.orders.presentation.mapper
 
 import com.illa.cashvan.feature.orders.data.model.Order
+import com.illa.cashvan.feature.orders.data.model.ProductPriceCalculationResponse
 import com.illa.cashvan.ui.orders.ui_components.*
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
+
+data class ProductPriceInfo(
+    val basePrice: Double,
+    val finalPrice: Double,
+    val discountAmount: Double,
+    val vatAmount: Double,
+    val totalPrice: Double,
+    val vatPercentage: Double = 0.0
+)
+
+fun ProductPriceCalculationResponse.toProductPriceInfo(): ProductPriceInfo =
+    if (unit != null && total != null) {
+        ProductPriceInfo(
+            basePrice = unit.base_price ?: 0.0,
+            finalPrice = unit.final_price ?: 0.0,
+            discountAmount = unit.discount_amount ?: 0.0,
+            vatAmount = unit.vat_amount ?: 0.0,
+            totalPrice = total.final_price ?: 0.0,
+            vatPercentage = vat_percentage ?: 0.0
+        )
+    } else {
+        ProductPriceInfo(
+            basePrice = base_price ?: 0.0,
+            finalPrice = final_price ?: 0.0,
+            discountAmount = total_discount ?: 0.0,
+            vatAmount = total_vat ?: 0.0,
+            totalPrice = total_price ?: 0.0,
+            vatPercentage = vat_percentage ?: 0.0
+        )
+    }
 
 fun Order.toOrderItem(): OrderItem {
     val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())

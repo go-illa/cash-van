@@ -23,8 +23,7 @@ class VisitRepositoryImpl(
     override suspend fun getNoOrderReasons(): ApiResult<NoOrderReasonsResponse> {
         return try {
             val config = ApiEndpoints.Visits.getNoOrderReasons()
-            val versionedPath = "v${config.version}/${config.path}"
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
             }.body<NoOrderReasonsResponse>()
             ApiResult.Success(response)
@@ -36,8 +35,7 @@ class VisitRepositoryImpl(
     override suspend fun createVisit(request: CreateVisitRequest): ApiResult<CreateVisitResponse> {
         return try {
             val config = ApiEndpoints.Visits.createVisit()
-            val versionedPath = "v${config.version}/${config.path}"
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Post
                 contentType(ContentType.Application.Json)
                 setBody(request)
@@ -51,8 +49,7 @@ class VisitRepositoryImpl(
     override suspend fun getVisits(page: Int, items: Int): ApiResult<VisitsListResponse> {
         return try {
             val config = ApiEndpoints.Visits.getVisits(page, items)
-            val versionedPath = "v${config.version}/${config.path}"
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
                 config.parameters?.forEach { key, values ->
                     url.parameters.appendAll(key, values)
@@ -67,8 +64,7 @@ class VisitRepositoryImpl(
     override suspend fun getVisitById(id: String): ApiResult<VisitItem> {
         return try {
             val config = ApiEndpoints.Visits.getVisitById(id)
-            val versionedPath = "v${config.version}/${config.path}"
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
                 config.parameters?.forEach { key, values ->
                     url.parameters.appendAll(key, values)

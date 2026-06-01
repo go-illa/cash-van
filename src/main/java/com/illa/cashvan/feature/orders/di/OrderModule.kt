@@ -1,21 +1,23 @@
 package com.illa.cashvan.feature.orders.di
 
+import com.illa.cashvan.feature.merchant.domain.usecase.UpdateMerchantUseCase
 import com.illa.cashvan.feature.orders.data.repository.OrderRepositoryImpl
 import com.illa.cashvan.feature.orders.domain.repository.OrderRepository
 import com.illa.cashvan.feature.orders.domain.usecase.CreateOrderUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetCashVanProductTotalPriceUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOngoingPlanUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOrderByIdUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetOrdersUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.GetPlanProductsUseCase
+import com.illa.cashvan.feature.orders.domain.usecase.GetProductTotalPriceUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.SearchMerchantsUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.UpdateOrderUseCase
-import com.illa.cashvan.feature.orders.domain.usecase.GetInvoiceContentUseCase
-import com.illa.cashvan.feature.orders.domain.usecase.GetProductTotalPriceUseCase
-import com.illa.cashvan.feature.orders.domain.usecase.GetCashVanProductTotalPriceUseCase
 import com.illa.cashvan.feature.orders.domain.usecase.VoidInvoiceUseCase
-import com.illa.cashvan.feature.merchant.domain.usecase.UpdateMerchantUseCase
 import com.illa.cashvan.feature.orders.presentation.viewmodel.CreateOrderViewModel
-import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
+import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderDetailsViewModel
+import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderListViewModel
+import com.illa.cashvan.feature.printer.HoneywellPrinterManager
 import org.koin.android.ext.koin.androidContext
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.qualifier.named
@@ -23,6 +25,7 @@ import org.koin.dsl.module
 
 val orderModule = module {
     single<OrderRepository> { OrderRepositoryImpl(get()) }
+    single { HoneywellPrinterManager(androidContext()) }
 
     factory { GetOrdersUseCase(get(), get()) }
     factory { GetOrderByIdUseCase(get()) }
@@ -36,6 +39,7 @@ val orderModule = module {
     factory { GetCashVanProductTotalPriceUseCase(get()) }
     factory { VoidInvoiceUseCase(get()) }
 
-    viewModel { OrderViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { CreateOrderViewModel(androidContext(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { OrderListViewModel(androidContext(), get(), get(), get(), get(), get(named("plain")), get()) }
+    viewModel { OrderDetailsViewModel(get(), get(), get(), get(), get()) }
+    viewModel { CreateOrderViewModel(androidContext(), get(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
 }

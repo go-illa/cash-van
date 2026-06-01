@@ -51,8 +51,8 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.illa.cashvan.R
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.feature.orders.presentation.mapper.toOrderItem
+import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderListViewModel
 import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderType
-import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
 import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.ui.home.ui_components.EmptyOrdersComponent
@@ -79,7 +79,7 @@ fun OrderScreen(
     onCreateVisitWithoutOrder: () -> Unit = {},
     onOrderClick: (OrderItem) -> Unit = {},
     onVisitDetailsClick: (String) -> Unit = {},
-    viewModel: OrderViewModel = koinViewModel(),
+    viewModel: OrderListViewModel = koinViewModel(),
     analyticsHelper: CashVanAnalyticsHelper = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

@@ -39,8 +39,7 @@ class AuthRepositoryImpl(
             )
 
             val config = ApiEndpoints.Auth.signIn()
-            val versionedPath = "v${config.version}/${config.path}"
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Post
                 contentType(ContentType.Application.Json)
                 setBody(request)
@@ -65,8 +64,7 @@ class AuthRepositoryImpl(
             )
 
             val config = ApiEndpoints.Auth.logout()
-            val versionedPath = "v${config.version}/${config.path}"
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Delete
                 contentType(ContentType.Application.Json)
                 setBody(logoutRequest)
@@ -89,8 +87,7 @@ class AuthRepositoryImpl(
             )
 
             val config = ApiEndpoints.Auth.refreshToken()
-            val versionedPath = "v${config.version}/${config.path}"
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Post
                 contentType(ContentType.Application.Json)
                 setBody(refreshRequest)

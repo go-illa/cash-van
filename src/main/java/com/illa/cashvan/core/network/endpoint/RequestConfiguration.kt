@@ -23,7 +23,9 @@ data class RequestConfiguration(
     val parameters: Parameters? = null,
     val parameterEncoding: ParameterEncoding? = null,
     val version: Int = 0
-)
+) {
+    val versionedPath: String get() = "v$version/$path"
+}
 
 suspend fun HttpClient.request(config: RequestConfiguration): HttpResponse {
     val versionedPath = "v${config.version}/${config.path}"

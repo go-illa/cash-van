@@ -27,9 +27,7 @@ class MerchantRepositoryImpl(
     override suspend fun createMerchant(request: CreateMerchantRequest): ApiResult<CreateMerchantResponse> {
         return try {
             val config = ApiEndpoints.Merchant.createMerchant()
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Post
                 contentType(ContentType.Application.Json)
                 setBody(request)
@@ -44,7 +42,7 @@ class MerchantRepositoryImpl(
     override suspend fun getRoutes(): ApiResult<RoutesResponse> {
         return try {
             val config = ApiEndpoints.Merchant.getRoutes()
-            val response = httpClient.request("v${config.version}/${config.path}") {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
             }.body<RoutesResponse>()
             ApiResult.Success(response)
@@ -56,9 +54,7 @@ class MerchantRepositoryImpl(
     override suspend fun getGovernorates(): ApiResult<GovernoratesResponse> {
         return try {
             val config = ApiEndpoints.Merchant.getGovernorates()
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
             }.body<GovernoratesResponse>()
 
@@ -71,9 +67,7 @@ class MerchantRepositoryImpl(
     override suspend fun getMerchantTypes(): ApiResult<MerchantTypesResponse> {
         return try {
             val config = ApiEndpoints.Merchant.getMerchantTypes()
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
             }.body<MerchantTypesResponse>()
 
@@ -92,9 +86,7 @@ class MerchantRepositoryImpl(
     ): ApiResult<UpdateMerchantResponse> {
         return try {
             val config = ApiEndpoints.Merchant.updateMerchant(merchantId)
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Put
                 url {
                     parameters.append("latitude", latitude.toString())
@@ -116,13 +108,10 @@ class MerchantRepositoryImpl(
     ): ApiResult<ReverseGeocodeResponse> {
         return try {
             val config = ApiEndpoints.Merchant.reverseGeocode(latitude, longitude)
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
-                url {
-                    parameters.append("latitude", latitude)
-                    parameters.append("longitude", longitude)
+                config.parameters?.forEach { key, values ->
+                    url.parameters.appendAll(key, values)
                 }
             }.body<ReverseGeocodeResponse>()
 

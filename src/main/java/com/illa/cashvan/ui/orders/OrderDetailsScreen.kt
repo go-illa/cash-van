@@ -54,8 +54,9 @@ import com.illa.cashvan.feature.orders.data.model.Order
 import com.illa.cashvan.feature.orders.presentation.mapper.toOrderSpecs
 import com.illa.cashvan.feature.orders.presentation.mapper.toPaymentSummary
 import com.illa.cashvan.feature.orders.presentation.mapper.toUIMerchant
-import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderViewModel
-import com.illa.cashvan.feature.orders.presentation.viewmodel.ProductPriceInfo
+import com.illa.cashvan.feature.orders.presentation.mapper.ProductPriceInfo
+import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderDetailsViewModel
+import com.illa.cashvan.feature.orders.presentation.viewmodel.OrderListViewModel
 import com.illa.cashvan.ui.common.CashVanHeader
 import com.illa.cashvan.ui.common.ErrorSnackbar
 import com.illa.cashvan.ui.common.SuccessSnackbar
@@ -75,12 +76,13 @@ fun OrderDetailsScreen(
     orderId: String,
     onBackClick: () -> Unit = {},
     onConfirmOrder: () -> Unit = {},
-    orderViewModel: OrderViewModel = koinViewModel()
+    orderListViewModel: OrderListViewModel = koinViewModel(),
+    orderDetailsViewModel: OrderDetailsViewModel = koinViewModel()
 ) {
-    val orderDetailsState by orderViewModel.orderDetailsUiState.collectAsStateWithLifecycle()
+    val orderDetailsState by orderDetailsViewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(orderId) {
-        orderViewModel.loadOrderById(orderId)
+        orderDetailsViewModel.loadOrderById(orderId)
     }
 
     when {
@@ -98,7 +100,8 @@ fun OrderDetailsScreen(
                 modifier = modifier,
                 order = orderDetailsState.order ?: return,
                 onBackClick = onBackClick,
-                orderViewModel = orderViewModel
+                orderListViewModel = orderListViewModel,
+                orderDetailsViewModel = orderDetailsViewModel
             )
         }
         else -> {
@@ -166,10 +169,11 @@ private fun OrderDetailsContent(
     modifier: Modifier = Modifier,
     order: Order,
     onBackClick: () -> Unit,
-    orderViewModel: OrderViewModel = koinViewModel()
+    orderListViewModel: OrderListViewModel = koinViewModel(),
+    orderDetailsViewModel: OrderDetailsViewModel = koinViewModel()
 ) {
-    val uiState by orderViewModel.uiState.collectAsStateWithLifecycle()
-    val orderDetailsState by orderViewModel.orderDetailsUiState.collectAsStateWithLifecycle()
+    val uiState by orderListViewModel.uiState.collectAsStateWithLifecycle()
+    val orderDetailsState by orderDetailsViewModel.uiState.collectAsStateWithLifecycle()
     val orderSpecs = order.toOrderSpecs()
     val merchant = order.toUIMerchant()
     val paymentSummary = order.toPaymentSummary()
@@ -290,10 +294,10 @@ private fun OrderDetailsContent(
                         EditableOrderItemCard(
                             item = item,
                             onQuantityChange = { id, qty ->
-                                orderViewModel.updateProductQuantity(id, qty)
+                                orderDetailsViewModel.updateProductQuantity(id, qty)
                             },
                             onRemoveItem = { id ->
-                                orderViewModel.deleteProductImmediately(id)
+                                orderDetailsViewModel.deleteProductImmediately(id)
                             }
                         )
                     } else {
@@ -321,7 +325,7 @@ private fun OrderDetailsContent(
                             Spacer(modifier = Modifier.height(8.dp))
                             OutlinedTextField(
                                 value = orderDetailsState.rebateValue,
-                                onValueChange = { orderViewModel.updateRebateValue(it) },
+                                onValueChange = { orderDetailsViewModel.updateRebateValue(it) },
                                 modifier = Modifier.fillMaxWidth(),
                                 placeholder = {
                                     Text(

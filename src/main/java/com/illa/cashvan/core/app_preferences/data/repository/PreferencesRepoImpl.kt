@@ -51,8 +51,6 @@ class PreferencesRepoImpl(
         }
     }
 
-    private val encryptedSharedPreferences: SharedPreferences
-        get() = securePreferences
 
     override suspend fun <T> setValue(
         key: String,
@@ -62,7 +60,7 @@ class PreferencesRepoImpl(
     ) {
         val jsonString = json.encodeToString(serializer, value)
         if (encrypt) {
-            encryptedSharedPreferences.edit().putString(key, jsonString).apply()
+            securePreferences.edit().putString(key, jsonString).apply()
         } else {
             setValue(key, jsonString)
         }
@@ -118,7 +116,7 @@ class PreferencesRepoImpl(
     ): Flow<T> {
         return if (decrypt) {
             kotlinx.coroutines.flow.flow {
-                val jsonString = encryptedSharedPreferences.getString(key, null)
+                val jsonString = securePreferences.getString(key, null)
                 val value = if (jsonString != null) {
                     try {
                         json.decodeFromString(serializer, jsonString)
@@ -186,7 +184,7 @@ class PreferencesRepoImpl(
     override suspend fun doesPreferenceExist(key: String): Flow<Boolean> {
         return context.dataStore.data.map { preferences ->
             preferences.contains(stringPreferencesKey(key)) ||
-                    encryptedSharedPreferences.contains(key)
+                    securePreferences.contains(key)
         }
     }
 
@@ -200,13 +198,13 @@ class PreferencesRepoImpl(
             preferences.remove(floatPreferencesKey(key))
             preferences.remove(doublePreferencesKey(key))
         }
-        encryptedSharedPreferences.edit().remove(key).apply()
+        securePreferences.edit().remove(key).apply()
     }
 
     override suspend fun clearAppData() {
         context.dataStore.edit { preferences ->
             preferences.clear()
         }
-        encryptedSharedPreferences.edit().clear().apply()
+        securePreferences.edit().clear().apply()
     }
 }

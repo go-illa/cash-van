@@ -33,9 +33,7 @@ class OrderRepositoryImpl(
     ): ApiResult<OrdersResponse> {
         return try {
             val config = ApiEndpoints.Orders.getOrders(planId, createdAtDateEq, orderTypeEq)
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
                 config.parameters?.forEach { key, values ->
                     url.parameters.appendAll(key, values)
@@ -51,9 +49,7 @@ class OrderRepositoryImpl(
     override suspend fun getOrderById(orderId: String): ApiResult<Order> {
         return try {
             val config = ApiEndpoints.Orders.getOrder(orderId)
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
                 config.parameters?.forEach { key, values ->
                     url.parameters.appendAll(key, values)
@@ -69,9 +65,7 @@ class OrderRepositoryImpl(
     override suspend fun getOngoingPlan(): ApiResult<OngoingPlanResponse?> {
         return try {
             val config = ApiEndpoints.Plans.getOngoingPlan()
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
             }.body<OngoingPlanResponse>()
 
@@ -84,9 +78,7 @@ class OrderRepositoryImpl(
     override suspend fun searchMerchants(query: String, latitude: Double, longitude: Double, page: Int, items: Int): ApiResult<MerchantSearchResponse> {
         return try {
             val config = ApiEndpoints.Merchant.searchNearestMerchants(query, latitude, longitude, page = page, items = items)
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
                 config.parameters?.forEach { key, values ->
                     url.parameters.appendAll(key, values)
@@ -104,9 +96,7 @@ class OrderRepositoryImpl(
     override suspend fun getPlanProducts(planId: String, query: String?, priceTier: String?, page: Int, items: Int): ApiResult<PlanProductsResponse> {
         return try {
             val config = ApiEndpoints.Plans.getPlanProducts(planId, query, priceTier, page, items)
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
                 config.parameters?.forEach { key, values ->
                     url.parameters.appendAll(key, values)
@@ -124,9 +114,7 @@ class OrderRepositoryImpl(
     override suspend fun createOrder(request: CreateOrderRequest): ApiResult<CreateOrderResponse> {
         return try {
             val config = ApiEndpoints.Orders.createOrder()
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Post
                 contentType(ContentType.Application.Json)
                 setBody(request)
@@ -141,9 +129,7 @@ class OrderRepositoryImpl(
     override suspend fun updateOrder(orderId: String, request: UpdateOrderRequest): ApiResult<Order> {
         return try {
             val config = ApiEndpoints.Orders.updateOrder(orderId)
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Put
                 contentType(ContentType.Application.Json)
                 setBody(request)
@@ -163,9 +149,7 @@ class OrderRepositoryImpl(
     ): ApiResult<ProductPriceCalculationResponse> {
         return try {
             val config = ApiEndpoints.Orders.getProductTotalPrice(planId, productId, orderId, quantity)
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
                 config.parameters?.forEach { key, values ->
                     url.parameters.appendAll(key, values)
@@ -181,8 +165,7 @@ class OrderRepositoryImpl(
     override suspend fun voidInvoice(orderId: String): ApiResult<VoidInvoiceResponse> {
         return try {
             val config = ApiEndpoints.Orders.voidInvoice(orderId)
-            val versionedPath = "v${config.version}/${config.path}"
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Post
                 contentType(ContentType.Application.Json)
             }.body<VoidInvoiceResponse>()
@@ -200,9 +183,7 @@ class OrderRepositoryImpl(
     ): ApiResult<ProductPriceCalculationResponse> {
         return try {
             val config = ApiEndpoints.Orders.getCashVanProductTotalPrice(planId, productId, merchantId, quantity)
-            val versionedPath = "v${config.version}/${config.path}"
-
-            val response = httpClient.request(versionedPath) {
+            val response = httpClient.request(config.versionedPath) {
                 method = HttpMethod.Get
                 config.parameters?.forEach { key, values ->
                     url.parameters.appendAll(key, values)
