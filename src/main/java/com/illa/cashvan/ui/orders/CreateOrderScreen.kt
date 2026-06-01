@@ -567,7 +567,7 @@ fun CreateOrderScreen(
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = "تعديل اسم التاجر",
+                                            text = "تعديل بيانات التاجر",
                                             fontSize = 13.sp,
                                             fontFamily = FontFamily(Font(R.font.zain_regular)),color = Color(0xFF0D3773)
                                         )

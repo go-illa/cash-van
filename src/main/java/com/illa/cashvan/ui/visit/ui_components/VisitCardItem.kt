@@ -29,6 +29,7 @@ import com.illa.cashvan.R
 import com.illa.cashvan.feature.visit.data.model.VisitItem
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.TimeZone
 
 @Composable
 fun VisitCardItem(
@@ -104,7 +105,8 @@ fun VisitCardItem(
 private fun formatVisitDate(dateStr: String?): String {
     if (dateStr.isNullOrBlank()) return "—"
     return try {
-        val inputFmt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.getDefault())
+        val inputFmt = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+            .apply { timeZone = TimeZone.getTimeZone("UTC") }
         val outputFmt = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
         val date = inputFmt.parse(dateStr)
         outputFmt.format(date ?: return dateStr)

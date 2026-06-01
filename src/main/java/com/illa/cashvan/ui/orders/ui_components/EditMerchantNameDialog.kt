@@ -63,7 +63,7 @@ fun EditMerchantNameDialog(
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Text(
-                    text = "تعديل اسم التاجر",
+                    text = "تعديل بيانات التاجر",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily(Font(R.font.zain_bold)),
