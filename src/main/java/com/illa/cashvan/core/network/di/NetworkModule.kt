@@ -1,21 +1,25 @@
 package com.illa.cashvan.core.network.di
 
+import android.content.Context
+import android.util.Log
+import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.illa.cashvan.BuildConfig
 import com.illa.cashvan.core.app_preferences.domain.use_case.app_cache.ClearAppDataUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetRefreshTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.SaveAccessTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.SaveRefreshTokenUseCase
-import com.illa.cashvan.core.session.SessionManager
 import com.illa.cashvan.core.network.model.AppClientRequestException
 import com.illa.cashvan.core.network.model.AppRedirectResponseException
 import com.illa.cashvan.core.network.model.AppServerResponseException
 import com.illa.cashvan.core.network.util.getLocalizedError
+import com.illa.cashvan.core.session.SessionManager
 import com.illa.cashvan.core.utils.getLanguage
 import com.illa.cashvan.di.SharedConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
+import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.HttpTimeout
@@ -23,7 +27,6 @@ import io.ktor.client.plugins.RedirectResponseException
 import io.ktor.client.plugins.ServerResponseException
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
-import android.util.Log
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
@@ -38,6 +41,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import kotlin.time.Duration.Companion.minutes
@@ -45,7 +49,7 @@ import kotlin.time.Duration.Companion.seconds
 
 val networkModule = module {
     single { SharedConfig() }
-    single { provideHttpClient(get(), get(), get(), get(), get(), get(), get()) }
+    single { provideHttpClient(androidContext(), get(), get(), get(), get(), get(), get(), get()) }
     single(named("supabase")) { provideSupabaseHttpClient() }
 }
 
@@ -80,6 +84,7 @@ fun provideSupabaseHttpClient(): HttpClient = HttpClient(Android) {
 }
 
 fun provideHttpClient(
+    context: Context,
     sharedConfig: SharedConfig,
     getTokenUseCase: GetTokenUseCase,
     getRefreshTokenUseCase: GetRefreshTokenUseCase,
@@ -88,7 +93,11 @@ fun provideHttpClient(
     clearAppDataUseCase: ClearAppDataUseCase,
     sessionManager: SessionManager
 ): HttpClient {
-    return HttpClient(Android) {
+    return HttpClient(OkHttp) {
+        engine {
+            addInterceptor(ChuckerInterceptor.Builder(context).build())
+        }
+
         expectSuccess = true
 
         install(HttpTimeout) {

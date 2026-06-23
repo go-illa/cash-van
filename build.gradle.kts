@@ -109,6 +109,7 @@ dependencies {
 
     // Ktor Client
     implementation("io.ktor:ktor-client-android:2.3.7")
+    implementation("io.ktor:ktor-client-okhttp:2.3.7")
     implementation("io.ktor:ktor-client-content-negotiation:2.3.7")
     implementation("io.ktor:ktor-client-logging:2.3.7")
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.7")
@@ -144,8 +145,9 @@ dependencies {
     // Timber Logging
     implementation("com.jakewharton.timber:timber:5.0.1")
 
-    // Chucker - HTTP Inspector
-    implementation("com.github.chuckerteam.chucker:library:4.0.0")
+    // Chucker - HTTP Inspector (staging only)
+    "stagingImplementation"("com.github.chuckerteam.chucker:library:4.0.0")
+    "productionImplementation"("com.github.chuckerteam.chucker:library-no-op:4.0.0")
 
     // Honeywell Printer SDK - Multiple Command Languages
     implementation(files("libs/printer_library.jar"))

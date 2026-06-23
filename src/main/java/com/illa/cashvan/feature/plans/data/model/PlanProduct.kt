@@ -11,7 +11,6 @@ data class PlanProduct(
     val updated_at: String,
     val assigned_quantity: Int,
     val sold_quantity: Int,
-    val product_price: String,
     val plan_id: String,
     val product_id: String,
     val product: Product,

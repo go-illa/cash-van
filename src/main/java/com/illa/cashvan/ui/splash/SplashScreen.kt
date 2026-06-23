@@ -71,7 +71,7 @@ fun SplashScreen(
                     modifier = Modifier.size(32.dp)
                 )
                 Text(
-                    text = "CashVan",
+                    text = "Fulfillment App",
                     fontSize = 28.sp,
                     fontFamily = FontFamily(Font(R.font.zain_regular)),
                     fontWeight = FontWeight.Bold,
