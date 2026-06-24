@@ -55,6 +55,7 @@ data class EditableOrderItem(
     val discountAmount: Double,
     val vatAmount: Double,
     val vatPercentage: Double = 0.0,
+    val cashDiscountAmount: Double = 0.0,
     val totalPrice: Double,
     val isLoadingPrice: Boolean = false
 )
@@ -158,6 +159,7 @@ fun EditableOrderItemCard(
                     discountAmount = item.discountAmount,
                     vatAmount = item.vatAmount,
                     vatPercentage = item.vatPercentage,
+                    cashDiscountAmount = item.cashDiscountAmount,
                     totalPrice = item.totalPrice
                 )
             }
@@ -297,6 +299,7 @@ private fun PriceDetailsSection(
     discountAmount: Double,
     vatAmount: Double,
     vatPercentage: Double,
+    cashDiscountAmount: Double,
     totalPrice: Double
 ) {
     Column(
@@ -328,6 +331,13 @@ private fun PriceDetailsSection(
             PriceRow(
                 label = "ضريبة القيمة المضافة",
                 value = "${"%.2f".format(vatAmount)} جنيه"
+            )
+        }
+        if (cashDiscountAmount > 0) {
+            PriceRow(
+                label = "الخصم النقدي",
+                value = "${"%.2f".format(cashDiscountAmount)} جنيه",
+                valueColor = Color(0xFF10B981)
             )
         }
 
@@ -371,28 +381,6 @@ private fun PriceRow(
             fontFamily = FontFamily(Font(R.font.zain_regular)),
             color = valueColor
         )
-    }
-}
-
-@Composable
-fun EditableOrderItemsList(
-    items: List<EditableOrderItem>,
-    onQuantityChange: (String, Int) -> Unit,
-    onRemoveItem: (String) -> Unit,
-    onSaveClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        items.forEach { item ->
-            EditableOrderItemCard(
-                item = item,
-                onQuantityChange = onQuantityChange,
-                onRemoveItem = onRemoveItem
-            )
-        }
     }
 }
 

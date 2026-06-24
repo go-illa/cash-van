@@ -241,15 +241,18 @@ private fun OrderDetailsContent(
                             val basePrice = totalPriceDetails.unit?.base_price ?: 0.0
                             val finalPricePerUnit = totalPriceDetails.unit?.final_price ?: 0.0
                             val vatAmount = totalPriceDetails.unit?.vat_amount ?: 0.0
+                            val cashDiscountAmount = totalPriceDetails.total?.cash_discount_amount?:0.0
                             val discountAmount = totalPriceDetails.unit?.discount_amount ?: 0.0
                             val totalPrice = totalPriceDetails.total?.final_price ?: (finalPricePerUnit * currentQuantity)
+
 
                             ProductPriceInfo(
                                 basePrice = basePrice,
                                 finalPrice = finalPricePerUnit,
                                 discountAmount = discountAmount,
                                 vatAmount = vatAmount,
-                                totalPrice = totalPrice
+                                totalPrice = totalPrice,
+                                cashDiscountAmount = cashDiscountAmount
                             )
                         } else {
                             val priceDetails = orderPlanProduct.plan_product_price?.price_details
@@ -282,6 +285,7 @@ private fun OrderDetailsContent(
                         discountAmount = priceInfo.discountAmount,
                         vatAmount = priceInfo.vatAmount,
                         vatPercentage = vatPercentage,
+                        cashDiscountAmount = priceInfo.cashDiscountAmount,
                         totalPrice = priceInfo.totalPrice,
                         isLoadingPrice = planProductId in orderDetailsState.loadingPriceForProducts
                     )
@@ -887,7 +891,8 @@ private fun ReadOnlyProductCard(item: EditableOrderItem) {
                 discountAmount = item.discountAmount,
                 vatAmount = item.vatAmount,
                 vatPercentage = item.vatPercentage,
-                totalPrice = item.totalPrice
+                cashDiscountAmount = item.cashDiscountAmount,
+                totalPrice = item.totalPrice,
             )
         }
     }
@@ -899,6 +904,7 @@ private fun PriceDetailsReadOnly(
     discountAmount: Double,
     vatAmount: Double,
     vatPercentage: Double,
+    cashDiscountAmount: Double,
     totalPrice: Double
 ) {
     Column(
@@ -931,6 +937,14 @@ private fun PriceDetailsReadOnly(
                 value = "${"%.2f".format(vatAmount)} جنيه"
             )
         }
+        if (discountAmount > 0) {
+            PriceRowReadOnly(
+                label = "الخصم النقدي",
+                value = "${"%.2f".format(cashDiscountAmount)} جنيه",
+                valueColor = Color(0xFF10B981)
+            )
+        }
+
 
         Box(
             modifier = Modifier

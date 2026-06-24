@@ -53,7 +53,8 @@ data class ProductPriceInfo(
     val discountAmount: Double,
     val vatAmount: Double,
     val totalPrice: Double,
-    val vatPercentage: Double = 0.0
+    val vatPercentage: Double = 0.0,
+    val cashDiscountAmount: Double = 0.0
 )
 
 data class OrderDetailsUiState(
@@ -395,8 +396,10 @@ class OrderViewModel(
                             discountAmount = priceResponse.unit.discount_amount ?: 0.0,
                             vatAmount = priceResponse.unit.vat_amount ?: 0.0,
                             totalPrice = priceResponse.total.final_price ?: 0.0,
-                            vatPercentage = priceResponse.vat_percentage ?: 0.0
+                            vatPercentage = priceResponse.vat_percentage ?: 0.0,
+                            cashDiscountAmount = priceResponse.total.cash_discount_amount?:0.0
                         )
+
                     } else {
                         ProductPriceInfo(
                             basePrice = priceResponse.base_price ?: 0.0,
@@ -446,7 +449,8 @@ class OrderViewModel(
                     discountAmount = totalPriceDetails.unit?.discount_amount ?: 0.0,
                     vatAmount = totalPriceDetails.unit?.vat_amount ?: 0.0,
                     totalPrice = totalPriceDetails.total?.final_price ?: 0.0,
-                    vatPercentage = totalPriceDetails.vat_percentage ?: 0.0
+                    vatPercentage = totalPriceDetails.vat_percentage ?: 0.0,
+                    cashDiscountAmount = totalPriceDetails.total?.cash_discount_amount?:0.0
                 )
             } else {
                 val priceDetails = orderPlanProduct.plan_product_price?.price_details

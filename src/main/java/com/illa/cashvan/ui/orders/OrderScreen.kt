@@ -10,16 +10,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Tab
@@ -214,8 +210,7 @@ fun OrderScreen(
                         orderItems.isEmpty() -> {
                             item(key = "empty") {
                                 EmptyOrdersComponent(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    onCreateOrderClick = { showCreateVisitSheet = true }
+                                    modifier = Modifier.fillMaxWidth()
                                 )
                             }
                         }
@@ -251,30 +246,6 @@ fun OrderScreen(
                         }
                     }
                 }
-            }
-        }
-
-        val showMainFab = orderItems.isNotEmpty() && !uiState.isLoading && uiState.error == null &&
-            !(uiState.selectedTab == OrderType.CASH_VAN && cashVanSubTab == CashVanSubTab.WITHOUT_ORDER)
-        if (showMainFab) {
-            FloatingActionButton(
-                onClick = {
-                    analyticsHelper.logEvent("plus_icon")
-                    showCreateVisitSheet = true
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp)
-                    .size(64.dp),
-                containerColor = Color(0xFF0D3773),
-                shape = CircleShape,
-                contentColor = Color.White
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "إضافة طلب جديد",
-                    modifier = Modifier.size(32.dp)
-                )
             }
         }
 
