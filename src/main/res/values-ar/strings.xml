@@ -12,6 +12,7 @@
     <!-- Header Strings -->
     <string name="header_start">ايلانو</string>
     <string name="notifications">الإشعارات</string>
+    <string name="notification_channel_default_name">الإشعارات العامة</string>
 
     <!-- Home Screen Strings -->
     <string name="home_main_message">جاهز لتحقيق أول اوردر في اليوم؟</string>

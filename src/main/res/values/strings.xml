@@ -16,6 +16,7 @@
     <!-- Header Strings -->
     <string name="header_start">Elano</string>
     <string name="notifications">Notifications</string>
+    <string name="notification_channel_default_name">General notifications</string>
 
     <!-- Home Screen Strings -->
     <string name="home_main_message">Ready to receive your first order today?</string>

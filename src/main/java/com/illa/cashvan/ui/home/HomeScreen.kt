@@ -1,6 +1,7 @@
 package com.illa.cashvan.ui.home
 
 import android.Manifest
+import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,9 +36,20 @@ fun HomeScreen(
         }
     }
 
+    // Location and notifications are requested together so the two system dialogs don't race each other
+    val startupPermissionsState = rememberMultiplePermissionsState(
+        buildList {
+            add(Manifest.permission.ACCESS_FINE_LOCATION)
+            add(Manifest.permission.ACCESS_COARSE_LOCATION)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    )
+
     LaunchedEffect(Unit) {
-        if (!locationPermissionsState.allPermissionsGranted) {
-            locationPermissionsState.launchMultiplePermissionRequest()
+        if (!startupPermissionsState.allPermissionsGranted) {
+            startupPermissionsState.launchMultiplePermissionRequest()
         }
     }
 

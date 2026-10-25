@@ -2,6 +2,7 @@ package com.illa.cashvan
 
 import android.app.Application
 import com.illa.cashvan.core.connectivity.NetworkConnectivityService
+import com.illa.cashvan.core.notifications.NotificationHelper
 import com.illa.cashvan.di.appModule
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
@@ -23,5 +24,7 @@ class CashVanApplication : Application() {
 
         val connectivityService: NetworkConnectivityService by inject()
         connectivityService.startMonitoring()
+
+        NotificationHelper.createChannels(this)
     }
 }
