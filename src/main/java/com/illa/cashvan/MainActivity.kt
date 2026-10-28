@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.illa.cashvan.core.connectivity.ConnectivityStatus
 import com.illa.cashvan.core.connectivity.ConnectivityViewModel
-import com.illa.cashvan.navigation.CashVanNavigation
+import com.illa.cashvan.navigation.AppNavigation
 import com.illa.cashvan.ui.common.NoInternetScreen
 import com.illa.cashvan.ui.theme.CashVanTheme
 import org.koin.androidx.compose.koinViewModel
@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
                 val isRetrying by connectivityViewModel.isRetrying.collectAsStateWithLifecycle()
 
                 Box(modifier = Modifier.fillMaxSize()) {
-                    CashVanNavigation(
+                    AppNavigation(
                         onLogout = { restartApp() }
                     )
 

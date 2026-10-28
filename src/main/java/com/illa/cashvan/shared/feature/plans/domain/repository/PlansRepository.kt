@@ -1,0 +1,10 @@
+package com.illa.cashvan.shared.feature.plans.domain.repository
+
+import com.illa.cashvan.core.network.model.ApiResult
+import com.illa.cashvan.shared.feature.plans.data.model.PlanProductsResponse
+import com.illa.cashvan.shared.feature.plans.data.model.PlansResponse
+
+interface PlansRepository {
+    suspend fun getPlans(): ApiResult<PlansResponse>
+    suspend fun getPlanProducts(planId: String, page: Int = 1, items: Int = 20): ApiResult<PlanProductsResponse>
+}

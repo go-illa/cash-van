@@ -1,3 +1,5 @@
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -22,7 +24,13 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "BASE_URL", "\"https://dsbs-api.illa.blue/api/v2/\"")
-        buildConfigField("String", "SUPABASE_ANON_KEY", "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhsemdiaXZnZGNlc2lheW1iaWpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4NzY4MDksImV4cCI6MjA2OTQ1MjgwOX0.Cf79tTPSeSsvQT5rTuxiuUJ5b_yl2TD2MHxLzm8xedE\"")
+        // Roles to assume when the login response has no `roles` field yet, e.g. -PmockRoles=sales,fulfillment.
+        // Staging only; production always falls back to fulfillment.
+        buildConfigField("String", "MOCK_ROLES", "\"\"")
+        // Google Maps SDK key for the Sales coverage map: -PmapsApiKey=... or MAPS_API_KEY in local.properties.
+        manifestPlaceholders["MAPS_API_KEY"] = (project.findProperty("mapsApiKey") as String?)
+            ?: gradleLocalProperties(rootDir, providers).getProperty("MAPS_API_KEY")
+            ?: ""
     }
 
     flavorDimensions += "environment"
@@ -33,13 +41,23 @@ android {
             applicationIdSuffix = ".staging"
             versionNameSuffix = "-staging"
             buildConfigField("String", "BASE_URL", "\"https://dsbs-api-staging.illa.blue/api/\"")
+            // Same Supabase project as the staging sales PWA (sales-agent-pwa.pages.dev).
+            buildConfigField("String", "SUPABASE_URL", "\"https://hlctyyyhrdiredcsfioy.supabase.co\"")
+            buildConfigField("String", "SUPABASE_ANON_KEY", "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhsY3R5eXlocmRpcmVkY3NmaW95Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQxNTQwMTgsImV4cCI6MjA3OTczMDAxOH0.6b4vaz-Cu-Z8f4CLPpGzgLLQ3lJEY5571p-1YzqcERE\"")
             buildConfigField("String", "MIXPANEL_TOKEN", "\"6d02d1dca65e73bd04392f0febacbdb9\"")
+            // QA traffic stays out of the sales dashboards.
+            buildConfigField("String", "SALES_MIXPANEL_TOKEN", "\"6d02d1dca65e73bd04392f0febacbdb9\"")
+            buildConfigField("String", "MOCK_ROLES", "\"${project.findProperty("mockRoles") ?: ""}\"")
         }
 
         create("production") {
             dimension = "environment"
             buildConfigField("String", "BASE_URL", "\"https://dsbs-api.illa.blue/api/\"")
+            buildConfigField("String", "SUPABASE_URL", "\"https://hlzgbivgdcesiaymbijn.supabase.co\"")
+            buildConfigField("String", "SUPABASE_ANON_KEY", "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhsemdiaXZnZGNlc2lheW1iaWpuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM4NzY4MDksImV4cCI6MjA2OTQ1MjgwOX0.Cf79tTPSeSsvQT5rTuxiuUJ5b_yl2TD2MHxLzm8xedE\"")
             buildConfigField("String", "MIXPANEL_TOKEN", "\"09e23c835bbc75a1eac63a9fa79e533d\"")
+            // The sales PWA's project (EU), so its dashboards and funnels keep working during and after the pilot.
+            buildConfigField("String", "SALES_MIXPANEL_TOKEN", "\"29f750dd53a77db594f0fb15179b3d01\"")
         }
     }
 
@@ -65,6 +83,8 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        // java.time on minSdk 24
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -76,6 +96,10 @@ android {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+
+    // Coverage map
+    implementation("com.google.android.gms:play-services-maps:20.0.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -100,9 +124,9 @@ dependencies {
     implementation("androidx.compose.runtime:runtime-livedata:1.5.4")
 
     // Room Database
-    implementation("androidx.room:room-runtime:2.6.0")
-    implementation("androidx.room:room-ktx:2.6.0")
-    kapt("androidx.room:room-compiler:2.6.0")
+    implementation("androidx.room:room-runtime:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")
+    kapt("androidx.room:room-compiler:2.8.4")
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")

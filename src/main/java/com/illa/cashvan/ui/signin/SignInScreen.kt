@@ -40,6 +40,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -59,7 +60,7 @@ fun SignInScreen(
     viewModel: SignInViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    var deliveryRepNumber by remember { mutableStateOf("") }
+    var loginIdentifier by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var showErrorSnackbar by remember { mutableStateOf(false) }
@@ -122,7 +123,7 @@ fun SignInScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = stringResource(R.string.signin_delivery_rep_number),
+                text = stringResource(R.string.signin_login_identifier),
                 fontSize = 20.sp,
                 color = Color.Black,
                 fontFamily = FontFamily(Font(R.font.zain_regular)),
@@ -130,8 +131,8 @@ fun SignInScreen(
             )
 
             OutlinedTextField(
-                value = deliveryRepNumber,
-                onValueChange = { deliveryRepNumber = it },
+                value = loginIdentifier,
+                onValueChange = { loginIdentifier = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -145,7 +146,12 @@ fun SignInScreen(
                 ),
                 shape = RoundedCornerShape(8.dp),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                // Agent codes have letters, e.g. ILLA_001; phones are digits.
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    capitalization = KeyboardCapitalization.Characters,
+                    autoCorrectEnabled = false
+                )
             )
         }
 
@@ -199,7 +205,7 @@ fun SignInScreen(
             Button(
                 onClick = {
                     if (!uiState.isLoading) {
-                        viewModel.login(deliveryRepNumber, password)
+                        viewModel.login(loginIdentifier, password)
                     }
                 },
                 modifier = Modifier

@@ -1,0 +1,670 @@
+package com.illa.cashvan.shared.ui.orders
+
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
+import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.illa.cashvan.R
+import com.illa.cashvan.core.location.LocationPermissionHandler
+import com.illa.cashvan.shared.feature.orders.presentation.viewmodel.CreateOrderViewModel
+import com.illa.cashvan.ui.common.ErrorSnackbar
+import com.illa.cashvan.ui.common.ProximityBannerVariant
+import com.illa.cashvan.ui.common.ProximityInfoBanner
+import com.illa.cashvan.ui.common.SuccessSnackbar
+import com.illa.cashvan.shared.ui.orders.ui_components.EditMerchantNameDialog
+import com.illa.cashvan.shared.ui.orders.ui_components.ProductSelectionComponent
+import com.illa.cashvan.shared.ui.orders.ui_components.SearchableDropdown
+import com.illa.cashvan.shared.ui.orders.ui_components.SelectedProductsList
+import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreateOrderScreen(
+    viewModel: CreateOrderViewModel = koinViewModel(),
+    paymentType: String? = null,
+    merchantCreatedSignal: Int = 0,
+    onAddMerchantClick: () -> Unit = {},
+    onBackClick: () -> Unit = {},
+    onOrderCreated: () -> Unit = {}
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    val scrollState = rememberScrollState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var orderSubmitted by remember { mutableStateOf(false) }
+    var showEditMerchantNameDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(uiState.merchantNameUpdated) {
+        if (uiState.merchantNameUpdated) {
+            showEditMerchantNameDialog = false
+            viewModel.clearMerchantNameUpdated()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.resetState(paymentType = paymentType)
+    }
+
+    LaunchedEffect(merchantCreatedSignal) {
+        if (merchantCreatedSignal > 0) {
+            viewModel.searchMerchants("")
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("تم إضافة التاجر بنجاح")
+            }
+        }
+    }
+
+    LaunchedEffect(uiState.noPlanFound) {
+        if (uiState.noPlanFound) {
+            viewModel.clearNoPlanFound()
+            Toast.makeText(context, "لا يوجد خطة جارية حالياً", Toast.LENGTH_SHORT).show()
+            onBackClick()
+        }
+    }
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
+
+    LocationPermissionHandler(
+        onPermissionGranted = { viewModel.onLocationPermissionGranted() },
+        onPermissionDenied = { viewModel.onLocationPermissionDenied() }
+    ) { requestPermission, isPermissionGranted, _ ->
+        var showLocationDialog by remember { mutableStateOf(false) }
+        var navigatedToSettings by rememberSaveable { mutableStateOf(false) }
+
+        LaunchedEffect(isPermissionGranted) {
+            if (!isPermissionGranted && !navigatedToSettings) showLocationDialog = true
+        }
+
+        if (showLocationDialog && !uiState.locationGranted) {
+            AlertDialog(
+                onDismissRequest = { showLocationDialog = false },
+                title = {
+                    Text(
+                        text = "تحديد الموقع مطلوب",
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        fontWeight = FontWeight.Bold
+                    )
+                },
+                text = {
+                    Text(
+                        text = if (!isPermissionGranted)
+                            "يجب السماح بالوصول للموقع لعرض التجار القريبين. يرجى تفعيل صلاحية الموقع."
+                        else
+                            "تعذر تحديد موقعك. تأكد من تفعيل خدمة الموقع في جهازك وحاول مرة أخرى.",
+                        fontFamily = FontFamily(Font(R.font.zain_regular))
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (!isPermissionGranted) requestPermission()
+                            else viewModel.onLocationPermissionGranted()
+                            showLocationDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D3773))
+                    ) {
+                        Text(
+                            text = if (!isPermissionGranted) "السماح" else "إعادة المحاولة",
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color.White
+                        )
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = {
+                            navigatedToSettings = true
+                            val intent = if (isPermissionGranted) {
+                                Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                            } else {
+                                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                }
+                            }
+                            context.startActivity(intent)
+                            showLocationDialog = false
+                        }
+                    ) {
+                        Text(
+                            text = "فتح الإعدادات",
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color(0xFF0D3773)
+                        )
+                    }
+                }
+            )
+        }
+
+        if (showEditMerchantNameDialog) {
+            EditMerchantNameDialog(
+                currentSignName = uiState.selectedMerchant?.sign_name ?: uiState.selectedMerchant?.name ?: "",
+                currentPhoneNumber = uiState.selectedMerchant?.phone_number,
+                isLoading = uiState.isUpdatingMerchantName,
+                error = uiState.updateMerchantNameError,
+                onConfirm = { signName, phoneNumber -> viewModel.updateMerchantSignName(signName, phoneNumber) },
+                onDismiss = {
+                    showEditMerchantNameDialog = false
+                    viewModel.clearMerchantNameUpdated()
+                }
+            )
+        }
+
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                if (data.visuals.message.contains("بنجاح")) {
+                    SuccessSnackbar(
+                        message = data.visuals.message,
+                        onDismiss = { snackbarHostState.currentSnackbarData?.dismiss() }
+                    )
+                } else {
+                    ErrorSnackbar(
+                        message = data.visuals.message,
+                        onDismiss = { snackbarHostState.currentSnackbarData?.dismiss() }
+                    )
+                }
+            }
+        },
+        topBar = {
+            TopAppBar(
+                title = {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Start
+                    ) {
+                        Text(
+                            text = "إنشاء طلب جديد",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color.White,
+                            textAlign = TextAlign.Start
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBackClick) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "العودة",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF0D3773)
+                )
+            )
+        },
+        bottomBar = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(16.dp)
+            ) {
+                val totalAmount = uiState.selectedProducts.entries.sumOf { (planProductId, quantity) ->
+                    val priceInfo = uiState.productPrices[planProductId]
+                    if (priceInfo != null) {
+                        priceInfo.totalPrice
+                    } else {
+                        val product = uiState.allProducts.find { it.id == planProductId }
+                        product?.product_price?.toDoubleOrNull()?.times(quantity) ?: 0.0
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "إجمالي الطلب",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color(0xFF6B7280)
+                    )
+
+                    Text(
+                        text = "${String.format("%.2f", totalAmount)} جنيه",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color(0xFF0D3773)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                val hasInvalidQuantity = uiState.selectedProducts.any { (planProductId, quantity) ->
+                    val product = uiState.allProducts.find { it.id == planProductId }
+                    product == null || quantity > (product.cash_van_available_quantity ?: 0)
+                }
+
+                Button(
+                    onClick = {
+                        orderSubmitted = true
+                        viewModel.createOrder()
+                        onOrderCreated()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF0D3773),
+                        disabledContainerColor = Color(0xFFE5E7EB)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !orderSubmitted &&
+                              uiState.selectedMerchant != null &&
+                              uiState.selectedProducts.isNotEmpty() &&
+                              !hasInvalidQuantity
+                ) {
+                    Text(
+                        text = "إتمام الطلب",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color.White
+                    )
+                }
+            }
+        }
+    ) { paddingValues ->
+        if (uiState.currentPlan == null && uiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = Color(0xFF0D3773)
+                )
+            }
+        } else if (uiState.currentPlan == null && uiState.error != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = uiState.error ?: "خطأ في تحميل الخطة",
+                        fontSize = 16.sp,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color(0xFFDC2626),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 24.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(
+                        onClick = { viewModel.retryLoadPlan() },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D3773)),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "إعادة المحاولة",
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color(0xFFF8F9FA))
+                    .padding(paddingValues)
+                    .verticalScroll(scrollState)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                uiState.currentPlan?.let { plan ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.White, RoundedCornerShape(12.dp))
+                            .padding(16.dp)
+                    ) {
+                        Text(
+                            text = "الخطة الحالية",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            fontFamily = FontFamily(Font(R.font.zain_regular)),
+                            color = Color(0xFF6B7280)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        plan.formatted_code?.let {
+                            Text(
+                                text = it,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color(0xFF0D3773)
+                            )
+                        }
+                    }
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(8.dp))
+                        .padding(horizontal = 23.dp, vertical = 24.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "اختيار التاجر",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color.Black
+                            )
+                            Text(
+                                text = " *",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color(0xFFE23636)
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = onAddMerchantClick,
+                            modifier = Modifier.height(32.dp),
+                            shape = RoundedCornerShape(200.dp),
+                            border = BorderStroke(1.dp, Color(0xFF0D3773)),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFF0D3773)
+                            )
+                        ) {
+                            Text(
+                                text = "+ أضافة تاجر",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color(0xFF0D3773)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(7.dp))
+
+                    when {
+                        uiState.isGettingLocation -> {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(18.dp),
+                                    strokeWidth = 2.dp,
+                                    color = Color(0xFF0D3773)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "جاري تحديد الموقع...",
+                                    fontSize = 14.sp,
+                                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                    color = Color(0xFF6B7280)
+                                )
+                            }
+                        }
+                        !uiState.locationGranted -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "يرجى تفعيل خدمة الموقع للبحث عن التجار القريبين",
+                                    fontSize = 13.sp,
+                                    fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                    color = Color(0xFF6B7280),
+                                    textAlign = TextAlign.Center
+                                )
+                                Button(
+                                    onClick = {
+                                        navigatedToSettings = false
+                                        showLocationDialog = true
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D3773)),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text(
+                                        text = "تفعيل الموقع",
+                                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                        color = Color.White,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+                        }
+                        else -> {
+                            SearchableDropdown(
+                                label = "",
+                                placeholder = "أبحث بالاسم او رقم التيليفون",
+                                searchQuery = uiState.merchantSearchQuery,
+                                onSearchQueryChange = { viewModel.searchMerchants(it) },
+                                items = uiState.merchants,
+                                selectedItem = uiState.selectedMerchant,
+                                onItemSelected = { viewModel.selectMerchant(it) },
+                                itemText = { it.displayName },
+                                isLoading = uiState.isSearchingMerchants,
+                                enabled = !uiState.isLoading,
+                                onExpanded = {
+                                    if (uiState.merchantSearchQuery.isEmpty()) {
+                                        viewModel.searchMerchants("")
+                                    }
+                                },
+                                onClear = { viewModel.clearMerchant() },
+                                onLoadMore = { viewModel.loadMoreMerchants() },
+                                isLoadingMore = uiState.isLoadingMoreMerchants,
+                                analyticsEventName = "select_merchant"
+                            )
+                            val showEmptyResults = uiState.merchantSearchQuery.isNotEmpty()
+                                    && uiState.merchants.isEmpty()
+                                    && !uiState.isSearchingMerchants
+                            Spacer(modifier = Modifier.height(8.dp))
+                            if (showEmptyResults) {
+                                ProximityInfoBanner(variant = ProximityBannerVariant.EMPTY_RESULTS)
+                            } else if (uiState.selectedMerchant == null) {
+                                ProximityInfoBanner(variant = ProximityBannerVariant.INITIAL_HINT)
+                            }
+                            if (uiState.selectedMerchant != null) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(onClick = { showEditMerchantNameDialog = true }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Edit,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp),
+                                            tint = Color(0xFF0D3773)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "تعديل بيانات التاجر",
+                                            fontSize = 13.sp,
+                                            fontFamily = FontFamily(Font(R.font.zain_regular)),color = Color(0xFF0D3773)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                ProductSelectionComponent(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                        .padding(16.dp),
+                    searchQuery = uiState.productSearchQuery,
+                    onSearchQueryChange = { viewModel.searchProducts(it) },
+                    products = uiState.products,
+                    onProductSelected = { product, quantity ->
+                        viewModel.addProductToOrder(product.id, quantity)
+                    },
+                    isLoading = uiState.isSearchingProducts,
+                    enabled = !uiState.isLoading,
+                    onFetchPricePreview = { planProductId, quantity ->
+                        viewModel.fetchPreviewPrice(planProductId, quantity)
+                    },
+                    previewPrice = uiState.previewProductPrice,
+                    isLoadingPreviewPrice = uiState.isLoadingPreviewPrice,
+                    merchantSelected = uiState.selectedMerchant != null,
+                    onLoadMore = { viewModel.loadMoreProducts() },
+                    isLoadingMore = uiState.isLoadingMoreProducts,
+                    onOpenDropdown = { viewModel.refreshProducts() }
+                )
+
+                if (uiState.selectedProducts.isNotEmpty()) {
+                    SelectedProductsList(
+                        modifier = Modifier.fillMaxWidth(),
+                        selectedProducts = uiState.selectedProducts,
+                        products = uiState.allProducts,
+                        onQuantityChange = { planProductId, quantity ->
+                            viewModel.updateProductQuantity(planProductId, quantity)
+                        },
+                        onRemoveProduct = { planProductId ->
+                            viewModel.removeProduct(planProductId)
+                        },
+                        productPrices = uiState.productPrices,
+                        loadingPriceForProducts = uiState.loadingPriceForProducts
+                    )
+                }
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color.White, RoundedCornerShape(12.dp))
+                        .padding(16.dp)
+                ) {
+                    Text(
+                        text = "الخصم المؤجل (اختياري)",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily(Font(R.font.zain_regular)),
+                        color = Color.Black
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = uiState.rebateValue,
+                        onValueChange = { viewModel.updateRebateValue(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = {
+                            Text(
+                                text = "أدخل قيمة الخصم المؤجل",
+                                fontFamily = FontFamily(Font(R.font.zain_regular)),
+                                color = Color(0xFF9CA3AF)
+                            )
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        shape = RoundedCornerShape(8.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF0D3773),
+                            unfocusedBorderColor = Color(0xFFE5E7EB)
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(100.dp))
+            }
+        }
+
+    }
+    }
+}
+
+@Preview(showBackground = true, locale = "ar")
+@Composable
+fun CreateOrderScreenPreview() {
+    MaterialTheme {
+        CreateOrderScreen()
+    }
+}

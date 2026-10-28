@@ -5,6 +5,10 @@ import com.illa.cashvan.core.app_preferences.domain.repository.PreferencesRepo
 import com.illa.cashvan.core.app_preferences.domain.use_case.app_cache.ClearAppDataUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.auth.IsUserLoggedInUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.auth.LogoutUseCase
+import com.illa.cashvan.core.app_preferences.domain.use_case.session.GetActiveModuleUseCase
+import com.illa.cashvan.core.app_preferences.domain.use_case.session.GetAgentSessionUseCase
+import com.illa.cashvan.core.app_preferences.domain.use_case.session.SaveActiveModuleUseCase
+import com.illa.cashvan.core.app_preferences.domain.use_case.session.SaveAgentSessionUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.ClearAccessTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.ClearRefreshTokenUseCase
 import com.illa.cashvan.core.app_preferences.domain.use_case.token.GetRefreshTokenUseCase
@@ -40,9 +44,14 @@ val preferencesModule = module {
     single { GetUserUseCase(get()) }
     single { ClearUserUseCase(get()) }
 
-    single { IsUserLoggedInUseCase(get(), get()) }
-    single { LogoutUseCase(get(), get()) }
+    single { SaveAgentSessionUseCase(get()) }
+    single { GetAgentSessionUseCase(get()) }
+    single { SaveActiveModuleUseCase(get()) }
+    single { GetActiveModuleUseCase(get()) }
+
+    single { IsUserLoggedInUseCase(get(), get(), get()) }
+    single { LogoutUseCase(get(), get(), getAll()) }
 
     viewModel { UserViewModel(get()) }
-    viewModel { AuthenticationViewModel(get(), get(), get()) }
+    viewModel { AuthenticationViewModel(get(), get(), get(), get(), get(), get(), get()) }
 }

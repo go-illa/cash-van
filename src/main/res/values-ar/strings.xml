@@ -4,7 +4,7 @@
     <!-- Sign In Screen Strings -->
     <string name="signin_title">ابدأ مشوارك من هنا!</string>
     <string name="signin_subtitle">سجّل دخول وابدأ الآن</string>
-    <string name="signin_delivery_rep_number">رقم مندوب التوصيل</string>
+    <string name="signin_login_identifier">رقم الهاتف أو كود المندوب</string>
     <string name="signin_password">كلمة السر</string>
     <string name="signin_button">سجّل دخول</string>
     <string name="signin_delivery_rep_placeholder">12341</string>

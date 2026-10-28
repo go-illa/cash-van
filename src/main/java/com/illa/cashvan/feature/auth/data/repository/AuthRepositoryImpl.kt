@@ -14,6 +14,7 @@ import com.illa.cashvan.feature.auth.data.model.RefreshTokenRequest
 import com.illa.cashvan.feature.auth.data.model.RefreshTokenResponse
 import com.illa.cashvan.feature.auth.data.model.SalesAgent
 import com.illa.cashvan.feature.auth.data.model.TokenData
+import com.illa.cashvan.feature.auth.domain.model.LoginIdentifier
 import com.illa.cashvan.feature.auth.domain.repository.AuthRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -36,14 +37,9 @@ class AuthRepositoryImpl(
         private const val FCM_DEVICE_TOKEN_HEADER = "fcm-device-token"
     }
 
-    override suspend fun login(phoneNumber: String, password: String): ApiResult<LoginResponse> {
+    override suspend fun login(identifier: LoginIdentifier, password: String): ApiResult<LoginResponse> {
         return try {
-            val request = LoginRequest(
-                sales_agent = SalesAgent(
-                    phone_number = phoneNumber,
-                    password = password
-                )
-            )
+            val request = LoginRequest(sales_agent = SalesAgent.from(identifier, password))
             val fcmToken = fcmTokenProvider.getToken()
 
             val config = ApiEndpoints.Auth.signIn()
@@ -65,6 +61,8 @@ class AuthRepositoryImpl(
         return try {
             val accessToken = getTokenUseCase().first()
             val refreshToken = getRefreshTokenUseCase().first()
+            // A presell-only agent has no Rails session to end; calling would 401 and force a logout loop.
+            if (accessToken.isBlank()) return ApiResult.Success(LogoutResponse())
 
             val logoutRequest = LogoutRequest(
                 tokens = TokenData(

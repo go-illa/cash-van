@@ -4,6 +4,7 @@ import com.illa.cashvan.BuildConfig
 import com.illa.cashvan.core.analytics.CashVanAnalyticsHelper
 import com.illa.cashvan.core.analytics.CashVanAnalyticsManager
 import com.illa.cashvan.core.analytics.CashVanMixPanelAnalytics
+import com.illa.cashvan.core.analytics.SalesAnalytics
 import com.mixpanel.android.mpmetrics.MixpanelAPI
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module
@@ -22,4 +23,6 @@ val analyticsModule = module {
     }
 
     single<CashVanAnalyticsHelper> { get<CashVanAnalyticsManager>() }
+
+    single { SalesAnalytics(androidContext()) }
 }

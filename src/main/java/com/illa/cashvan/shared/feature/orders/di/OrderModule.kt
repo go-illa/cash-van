@@ -1,0 +1,40 @@
+package com.illa.cashvan.shared.feature.orders.di
+
+import com.illa.cashvan.shared.feature.orders.data.repository.OrderRepositoryImpl
+import com.illa.cashvan.shared.feature.orders.domain.repository.OrderRepository
+import com.illa.cashvan.shared.feature.orders.domain.usecase.CreateOrderUseCase
+import com.illa.cashvan.shared.feature.orders.domain.usecase.GetOngoingPlanUseCase
+import com.illa.cashvan.shared.feature.orders.domain.usecase.GetOrderByIdUseCase
+import com.illa.cashvan.shared.feature.orders.domain.usecase.GetOrdersUseCase
+import com.illa.cashvan.shared.feature.orders.domain.usecase.GetPlanProductsUseCase
+import com.illa.cashvan.shared.feature.orders.domain.usecase.SearchMerchantsUseCase
+import com.illa.cashvan.shared.feature.orders.domain.usecase.UpdateOrderUseCase
+import com.illa.cashvan.shared.feature.orders.domain.usecase.GetInvoiceContentUseCase
+import com.illa.cashvan.shared.feature.orders.domain.usecase.GetProductTotalPriceUseCase
+import com.illa.cashvan.shared.feature.orders.domain.usecase.GetCashVanProductTotalPriceUseCase
+import com.illa.cashvan.shared.feature.orders.domain.usecase.VoidInvoiceUseCase
+import com.illa.cashvan.shared.feature.merchant.domain.usecase.UpdateMerchantUseCase
+import com.illa.cashvan.shared.feature.orders.presentation.viewmodel.CreateOrderViewModel
+import com.illa.cashvan.shared.feature.orders.presentation.viewmodel.OrderViewModel
+import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.viewmodel.dsl.viewModel
+import org.koin.dsl.module
+
+val orderModule = module {
+    single<OrderRepository> { OrderRepositoryImpl(get()) }
+
+    factory { GetOrdersUseCase(get(), get()) }
+    factory { GetOrderByIdUseCase(get()) }
+    factory { CreateOrderUseCase(get()) }
+    factory { UpdateOrderUseCase(get()) }
+    factory { GetOngoingPlanUseCase(get()) }
+    factory { SearchMerchantsUseCase(get()) }
+    factory { GetPlanProductsUseCase(get()) }
+    factory { GetInvoiceContentUseCase() }
+    factory { GetProductTotalPriceUseCase(get()) }
+    factory { GetCashVanProductTotalPriceUseCase(get()) }
+    factory { VoidInvoiceUseCase(get()) }
+
+    viewModel { OrderViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { CreateOrderViewModel(androidContext(), get(), get(), get(), get(), get(), get(), get(), get(), get()) }
+}

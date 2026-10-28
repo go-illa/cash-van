@@ -1,0 +1,13 @@
+package com.illa.cashvan.shared.feature.plans.domain.usecase
+
+import com.illa.cashvan.core.network.model.ApiResult
+import com.illa.cashvan.shared.feature.plans.data.model.PlanProductsResponse
+import com.illa.cashvan.shared.feature.plans.domain.repository.PlansRepository
+
+class GetPlanProductsUseCase(
+    private val plansRepository: PlansRepository
+) {
+    suspend operator fun invoke(planId: String, page: Int = 1, items: Int = 20): ApiResult<PlanProductsResponse> {
+        return plansRepository.getPlanProducts(planId, page, items)
+    }
+}

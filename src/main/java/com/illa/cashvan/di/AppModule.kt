@@ -7,14 +7,15 @@ import com.illa.cashvan.core.location.di.locationModule
 import com.illa.cashvan.core.network.di.networkModule
 import com.illa.cashvan.core.notifications.di.notificationsModule
 import com.illa.cashvan.feature.auth.di.authModule
-import com.illa.cashvan.feature.kpi.di.kpiModule
-import com.illa.cashvan.feature.merchant.di.merchantModule
-import com.illa.cashvan.feature.orders.di.orderModule
-import com.illa.cashvan.feature.plans.di.plansModule
-import com.illa.cashvan.feature.profile.di.profileModule
-import com.illa.cashvan.feature.visit.di.visitModule
+import com.illa.cashvan.sales.di.salesModule
+import com.illa.cashvan.shared.feature.kpi.di.kpiModule
+import com.illa.cashvan.shared.feature.merchant.di.merchantModule
+import com.illa.cashvan.shared.feature.orders.di.orderModule
+import com.illa.cashvan.shared.feature.plans.di.plansModule
+import com.illa.cashvan.shared.feature.profile.di.profileModule
+import com.illa.cashvan.shared.feature.visit.di.visitModule
 import org.koin.dsl.module
 
 val appModule = module {
-    includes(preferencesModule, networkModule, connectivityModule, analyticsModule, authModule, profileModule, locationModule, merchantModule, plansModule, orderModule, visitModule, kpiModule, notificationsModule)
+    includes(preferencesModule, networkModule, connectivityModule, analyticsModule, authModule, profileModule, locationModule, merchantModule, plansModule, orderModule, visitModule, kpiModule, notificationsModule, salesModule)
 }

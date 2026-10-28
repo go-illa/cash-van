@@ -14,6 +14,7 @@ import com.illa.cashvan.core.network.model.AppRedirectResponseException
 import com.illa.cashvan.core.network.model.AppServerResponseException
 import com.illa.cashvan.core.network.util.getLocalizedError
 import com.illa.cashvan.core.session.SessionManager
+import com.illa.cashvan.core.supabase.SupabaseClient
 import com.illa.cashvan.core.utils.getLanguage
 import com.illa.cashvan.di.SharedConfig
 import io.ktor.client.HttpClient
@@ -21,6 +22,7 @@ import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpResponseValidator
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.RedirectResponseException
@@ -35,6 +37,8 @@ import io.ktor.client.request.request
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import java.io.IOException
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.Dispatchers
@@ -50,16 +54,30 @@ import kotlin.time.Duration.Companion.seconds
 val networkModule = module {
     single { SharedConfig() }
     single { provideHttpClient(androidContext(), get(), get(), get(), get(), get(), get(), get()) }
-    single(named("supabase")) { provideSupabaseHttpClient() }
+    single(named("supabase")) { provideSupabaseHttpClient(androidContext()) }
+    single { SupabaseClient(get(named("supabase"))) }
 }
 
-fun provideSupabaseHttpClient(): HttpClient = HttpClient(Android) {
+fun provideSupabaseHttpClient(context: Context): HttpClient = HttpClient(OkHttp) {
+    engine {
+        addInterceptor(ChuckerInterceptor.Builder(context).build())
+    }
+    // Field networks drop often: retry reads, never writes (orders and requests carry idempotency keys instead).
+    install(HttpRequestRetry) {
+        retryIf(maxRetries = SUPABASE_READ_RETRIES) { request, response ->
+            request.method == HttpMethod.Get && response.status.value >= 500
+        }
+        retryOnExceptionIf(maxRetries = SUPABASE_READ_RETRIES) { request, cause ->
+            request.method == HttpMethod.Get && cause is IOException
+        }
+        exponentialDelay()
+    }
     install(HttpTimeout) {
         connectTimeoutMillis = 20.seconds.inWholeMilliseconds
         socketTimeoutMillis = 30.seconds.inWholeMilliseconds
     }
     install(ContentNegotiation) {
-        json(Json { ignoreUnknownKeys = true; isLenient = true })
+        json(Json { ignoreUnknownKeys = true; isLenient = true; coerceInputValues = true })
     }
     install(Logging) {
         logger = object : Logger {
@@ -76,12 +94,14 @@ fun provideSupabaseHttpClient(): HttpClient = HttpClient(Android) {
         level = LogLevel.ALL
     }
     defaultRequest {
-        url("https://hlzgbivgdcesiaymbijn.supabase.co/functions/v1/")
+        url("${BuildConfig.SUPABASE_URL}/functions/v1/")
         header(HttpHeaders.Authorization, "Bearer ${BuildConfig.SUPABASE_ANON_KEY}")
         header(HttpHeaders.ContentType, ContentType.Application.Json)
         header("apikey", BuildConfig.SUPABASE_ANON_KEY)
     }
 }
+
+private const val SUPABASE_READ_RETRIES = 2
 
 fun provideHttpClient(
     context: Context,
