@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +17,7 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 import com.illa.cashvan.core.auth.presentation.viewmodel.AuthenticationViewModel
 import com.illa.cashvan.core.session.SessionManager
+import com.illa.cashvan.ui.commission.CommissionScreen
 import com.illa.cashvan.ui.home.HomeScreen
 import com.illa.cashvan.ui.inventory.InventoryScreen
 import com.illa.cashvan.ui.merchant.CreateMerchantScreen
@@ -87,6 +89,7 @@ fun CashVanNavigation(
     val bottomNavItems = listOf(
         BottomNavItem(HomeKey, Icons.Default.Home, "الاوردرات", "orders_tab"),
         BottomNavItem(InventoryKey, Icons.Default.Inventory, "مخزون", "stock_tab"),
+        BottomNavItem(CommissionKey, Icons.Default.Payments, "العمولة", "commission_tab"),
         BottomNavItem(ProfileKey, Icons.Default.Person, "الملف الشخصي", "profile_tab"),
     )
 
@@ -166,6 +169,9 @@ fun CashVanNavigation(
                                 backStack.add(CreateOrderKey())
                             },
                         )
+                    }
+                    CommissionKey -> NavEntry(key) {
+                        CommissionScreen()
                     }
                     is CreateOrderKey -> NavEntry(key) {
                         CreateOrderScreen(

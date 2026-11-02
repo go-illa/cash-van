@@ -7,6 +7,7 @@ import com.illa.cashvan.core.location.di.locationModule
 import com.illa.cashvan.core.network.di.networkModule
 import com.illa.cashvan.core.notifications.di.notificationsModule
 import com.illa.cashvan.feature.auth.di.authModule
+import com.illa.cashvan.feature.commission.di.commissionModule
 import com.illa.cashvan.feature.kpi.di.kpiModule
 import com.illa.cashvan.feature.merchant.di.merchantModule
 import com.illa.cashvan.feature.orders.di.orderModule
@@ -16,5 +17,5 @@ import com.illa.cashvan.feature.visit.di.visitModule
 import org.koin.dsl.module
 
 val appModule = module {
-    includes(preferencesModule, networkModule, connectivityModule, analyticsModule, authModule, profileModule, locationModule, merchantModule, plansModule, orderModule, visitModule, kpiModule, notificationsModule)
+    includes(preferencesModule, networkModule, connectivityModule, analyticsModule, authModule, profileModule, locationModule, merchantModule, plansModule, orderModule, visitModule, kpiModule, commissionModule, notificationsModule)
 }

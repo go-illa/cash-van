@@ -47,6 +47,8 @@ import org.koin.dsl.module
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
+const val SUPABASE_URL = "https://hlzgbivgdcesiaymbijn.supabase.co"
+
 val networkModule = module {
     single { SharedConfig() }
     single { provideHttpClient(androidContext(), get(), get(), get(), get(), get(), get(), get()) }
@@ -76,7 +78,7 @@ fun provideSupabaseHttpClient(): HttpClient = HttpClient(Android) {
         level = LogLevel.ALL
     }
     defaultRequest {
-        url("https://hlzgbivgdcesiaymbijn.supabase.co/functions/v1/")
+        url("$SUPABASE_URL/functions/v1/")
         header(HttpHeaders.Authorization, "Bearer ${BuildConfig.SUPABASE_ANON_KEY}")
         header(HttpHeaders.ContentType, ContentType.Application.Json)
         header("apikey", BuildConfig.SUPABASE_ANON_KEY)
