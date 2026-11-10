@@ -204,7 +204,7 @@ private fun TargetProgressCard(commission: FulfillmentCommission) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "${commission.achievedOrders} من ${commission.targetOrders} أوردر",
+                text = "${commission.achievedOrders} من ${commission.targetOrders} كرتونة",
                 fontSize = 20.sp,
                 fontFamily = FontFamily(Font(R.font.zain_bold)),
                 color = Color.Black
@@ -283,7 +283,7 @@ private fun OrdersStat(
             color = color
         )
         Text(
-            text = "أوردر",
+            text = "كرتونة",
             fontSize = 12.sp,
             fontFamily = FontFamily(Font(R.font.zain_regular)),
             color = SecondaryTextColor
@@ -299,9 +299,9 @@ private fun LockedCommissionCard(commission: FulfillmentCommission) {
             iconColor = SecondaryTextColor,
             title = "العمولة لسه مقفولة",
             subtitle = if (commission.remainingOrders > 0) {
-                "فاضل ${commission.remainingOrders} أوردر وتوصل للمستهدف وتفتح العمولة"
+                "فاضل ${commission.remainingOrders} كرتونة وتوصل للمستهدف وتفتح العمولة"
             } else {
-                "وصلت لمستهدف الأوردرات، لكن باقي شروط العمولة لسه متحققتش"
+                "وصلت لمستهدف الكراتين، لكن باقي شروط العمولة لسه متحققتش"
             }
         )
 
